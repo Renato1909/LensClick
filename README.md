@@ -25,6 +25,8 @@ npm run check
 
 Os testes cobrem cadastro, hash de senha, sessao, perfil, foto no R2, contato, newsletter, logout, novo login, protecao de origem e scripts das paginas.
 
+O GitHub Actions executa essas verificacoes automaticamente em todo Pull Request direcionado a `main` e em cada atualizacao da branch principal. O fluxo de contribuicao da equipe esta documentado em `CONTRIBUTING.md`.
+
 Com `npm start` em execucao, a verificacao HTTP completa pode ser repetida em outro terminal:
 
 ```text
