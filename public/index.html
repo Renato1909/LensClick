@@ -1,0 +1,2021 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LensClick | Capturando Momentos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://images.unsplash.com">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preload" as="image" href="https://images.unsplash.com/photo-1542038784456-1ea8e935640e?q=80&amp;w=1200&amp;auto=format&amp;fit=crop" fetchpriority="high">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    *{box-sizing:border-box}
+    html,body{height:100%; scroll-behavior: smooth;}
+    body{
+      margin:0; font-family:Poppins, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:var(--text);
+      background: radial-gradient(1200px 800px at 50% 10%, #6a39f0 0%, #4b2a9f 40%, #20123a 100%) fixed;
+      overflow-x: hidden;
+    }
+    
+    /* Scrollbar personalizada */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--surface);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--accent-1);
+      border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-2);
+    }
+    
+    /* ---------- Utilities ---------- */
+    .container{width:100%; max-width:var(--maxw); margin:0 auto; padding:0 20px}
+    .gradient-text{background:linear-gradient(90deg, var(--accent-1), var(--accent-2)); -webkit-background-clip:text; background-clip:text; color:transparent}
+    .section{
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 100px 0;
+    }
+    .eyebrow{letter-spacing:.14em; text-transform:uppercase; font-weight:700; font-size:.9rem; color:#c9c9e6}
+    .title-xl{font-size:clamp(34px, 6vw, 64px); line-height:1.05; margin:0 0 14px}
+    .title-lg{font-size:clamp(28px,5vw,46px); line-height:1.1; margin:0 0 24px}
+    .title-md{font-size:clamp(22px,3.6vw,32px); margin:0 0 14px}
+    p{color:var(--muted); line-height:1.7}
+    
+    /* Indicador de seção ativa */
+    .section-indicator {
+      position: fixed;
+      right: 30px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .section-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+    }
+    .section-dot.active {
+      background: var(--accent-1);
+      box-shadow: 0 0 10px var(--accent-1);
+    }
+    .section-dot::after {
+      content: attr(data-section);
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(10,12,22,0.9);
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      opacity: 0;
+      transition: var(--transition);
+      pointer-events: none;
+    }
+    .section-dot:hover::after {
+      opacity: 1;
+    }
+    
+    /* Botão de voltar ao topo */
+    .back-to-top {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      transition: var(--transition);
+      box-shadow: var(--shadow);
+      z-index: 1000;
+    }
+    .back-to-top.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    .back-to-top:hover {
+      transform: translateY(-5px);
+    }
+
+    /* ---------- Header ---------- */
+    header{
+      position:fixed; 
+      top:0; 
+      width: 100%;
+      z-index:50;
+      backdrop-filter:saturate(130%) blur(10px);
+      background:linear-gradient(180deg, rgba(8,9,16,.85), rgba(8,9,16,.55));
+      border-bottom:1px solid rgba(255,255,255,.06);
+      transition: var(--transition);
+    }
+    header.scrolled {
+      background: rgba(8,9,16,0.95);
+      box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    }
+    .nav{display:flex; align-items:center; justify-content:space-between; gap:16px; height:66px}
+    .brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.5px}
+    .brand .logo{width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg, var(--accent-1), var(--accent-2)); box-shadow:0 6px 20px rgba(125, 112, 255, .35); display: flex; align-items: center; justify-content: center;}
+    .brand .logo i {font-size: 18px;}
+    .brand span{font-size:1.15rem}
+    .brand .lens{color:#fff}
+    .brand .click{
+      background:linear-gradient(90deg, var(--accent-1), var(--accent-2));
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+    }
+    /* header user name truncation styling */
+    .user-name{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle}
+    nav ul{display:flex; gap:22px; list-style:none; padding:0; margin:0}
+    nav a{color:#e8e9ff; text-decoration:none; font-weight:500; opacity:.85; transition: var(--transition); position: relative;}
+    nav a:hover, nav a.active{opacity:1}
+    nav a::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 2px;
+      bottom: -5px;
+      left: 0;
+      background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
+      transition: var(--transition);
+    }
+    nav a:hover::after, nav a.active::after {
+      width: 100%;
+    }
+
+    .menu-btn{display:none; border:1px solid rgba(255,255,255,.15); background:transparent; color:#fff; padding:8px 10px; border-radius:10px; transition: var(--transition);}
+    .menu-btn:hover {background: rgba(255,255,255,0.1);}    
+    /* language toggle button visible on desktop */
+    .lang-toggle{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border:1px solid rgba(255,255,255,.12);
+      background:transparent;
+      color:#fff;
+      padding:8px 10px;
+      border-radius:10px;
+      cursor:pointer;
+      transition: var(--transition);
+      font-weight:600;
+    }
+    .lang-toggle:hover{ background: rgba(255,255,255,0.06); transform: translateY(-2px); }
+  .lang-toggle .flag{ font-size:18px; line-height:1; display:inline-block; margin-right:8px }
+  .lang-toggle .abbr{ font-weight:700 }
+
+    /* move language toggle slightly left on small screens (mobile) */
+    @media (max-width: 600px) {
+      #langToggle { transform: translateX(-10px); }
+      /* if parent inline margin exists, ensure button shift takes effect */
+      #langToggle { margin-left: 0 !important; }
+    }
+
+    /* Botões de login/cadastro no header */
+    .auth-buttons {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .user-profile {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .user-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .user-avatar i {
+      color: rgba(255,255,255,0.5);
+      font-size: 16px;
+    }
+    .auth-btn {
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    .auth-btn.login {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.3);
+      color: var(--text);
+    }
+    .auth-btn.signup {
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      color: #0a0b14;
+      border: none;
+    }
+    .auth-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-soft);
+    }
+
+    /* Responsividade dos botões de login/cadastro */
+    @media (max-width:880px){
+      nav ul{display:none}
+      nav ul.open{
+        display: flex; 
+        position: fixed; 
+        top: 66px; 
+        left: 0; 
+        right: 0; 
+        flex-direction: column; 
+        gap: 0; 
+        background: rgba(10,12,22,.98); 
+        border-bottom: 1px solid rgba(255,255,255,.06);
+        backdrop-filter: blur(10px);
+        padding: 10px 0 0 0;
+        animation: slideDown 0.3s ease;
+        z-index: 100;
+      }
+      nav ul.open li{border-top:1px solid rgba(255,255,255,.05)}
+      nav ul.open a{display:block; padding:16px 20px; transition: var(--transition);}
+      nav ul.open a:hover {padding-left: 25px; background: rgba(255,255,255,0.05);}
+      .menu-btn{display:inline-grid; place-items:center}
+      .section-indicator {
+        display: none;
+      }
+      /* Remover botões do header em mobile */
+      .auth-buttons {
+        display: none !important;
+      }
+      /* Botões dentro do menu lateral mobile */
+      .mobile-auth-btns {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 18px 20px 10px 20px;
+        align-items: center;
+        width: 100%;
+      }
+      .mobile-auth-btns .auth-btn {
+        width: 90vw;
+        max-width: 320px;
+        text-align: center;
+        font-size: 1.1rem;
+        margin: 0;
+      }
+    }
+
+    /* ---------- Hero com Carousel ---------- */
+    .hero{
+      padding: 0; 
+      background: radial-gradient(800px 600px at 50% 10%, rgba(165,105,255,.25), transparent 60%);
+      position: relative;
+      overflow: hidden;
+      height: 100vh;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: var(--accent-1);
+      filter: blur(90px);
+      opacity: 0.2;
+      top: 10%;
+      left: 10%;
+      animation: float 8s ease-in-out infinite;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: var(--accent-2);
+      filter: blur(90px);
+      opacity: 0.2;
+      bottom: 10%;
+      right: 10%;
+      animation: float 10s ease-in-out infinite reverse;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0) translateX(0); }
+      50% { transform: translateY(-20px) translateX(20px); }
+    }
+    
+    /* Carousel Styles */
+    .carousel {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .carousel-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    .carousel-item {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transition: opacity 1s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-size: cover;
+      background-position: center;
+    }
+    .carousel-item.active {
+      opacity: 1;
+    }
+    .carousel-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom, rgba(10,12,26,0.7), rgba(10,12,26,0.9));
+    }
+    .carousel-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      max-width: 800px;
+      padding: 0 20px;
+      animation: fadeInUp 1s ease;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .carousel-controls {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+    .carousel-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .carousel-dot.active {
+      background: var(--accent-1);
+      transform: scale(1.2);
+    }
+    .carousel-arrows {
+      position: absolute;
+      top: 50%;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 10;
+      transform: translateY(-50%);
+    }
+    .carousel-arrow {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      cursor: pointer;
+      transition: var(--transition);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .carousel-arrow:hover {
+      background: var(--accent-1);
+      transform: scale(1.1);
+    }
+
+    .hero .content{
+      max-width:900px; 
+      position: relative; 
+      z-index: 2;
+      text-align: center;
+      margin: 0 auto;
+    }
+    .hero p{font-size:1.15rem; max-width: 600px; margin: 0 auto;}
+
+    .cta-row{display:flex; gap:18px; margin-top:26px; flex-wrap:wrap; justify-content: center;}
+    .btn{
+      appearance:none; border:none; padding:16px 28px; border-radius:14px; font-weight:600; cursor:pointer; 
+      transition:transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: var(--transition);
+    }
+    .btn:hover::before {
+      left: 100%;
+    }
+    .btn-primary{
+      background:linear-gradient(135deg, var(--accent-1), var(--accent-2)); color:#0a0b14; box-shadow:var(--shadow)
+    }
+    .btn-primary:hover{
+      transform:translateY(-2px); box-shadow: 0 12px 25px rgba(0,0,0,0.4);
+    }
+    .btn-outline{
+      background:transparent; border:2px solid rgba(255,255,255,.75); color:#fff
+    }
+    .btn-outline:hover{
+      background:rgba(255,255,255,.08); transform: translateY(-2px);
+    }
+
+    /* ---------- Páginas de Login e Cadastro ---------- */
+    .auth-section {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 100px 0;
+      background: radial-gradient(1200px 800px at 50% 10%, #6a39f0 0%, #4b2a9f 40%, #20123a 100%) fixed;
+    }
+    .auth-container {
+      width: 100%;
+      max-width: 450px;
+      padding: 0 20px;
+    }
+    .auth-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 30px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .auth-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .auth-logo {
+      width: 60px;
+      height: 60px;
+      border-radius: 15px;
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 15px;
+      box-shadow: 0 8px 25px rgba(125, 112, 255, 0.35);
+    }
+    .auth-logo i {
+      font-size: 28px;
+    }
+    .auth-form {
+      display: grid;
+      gap: 20px;
+    }
+    .form-group {
+      display: grid;
+      gap: 8px;
+    }
+    .form-group label {
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .form-control {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text);
+      font-family: inherit;
+      transition: var(--transition);
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: var(--accent-1);
+      box-shadow: 0 0 0 2px rgba(163, 91, 255, 0.2);
+    }
+    .auth-footer {
+      text-align: center;
+      margin-top: 25px;
+      color: var(--muted);
+    }
+    .auth-link {
+      color: var(--accent-2);
+      text-decoration: none;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+    .auth-link:hover {
+      color: var(--accent-1);
+      text-decoration: underline;
+    }
+    .auth-switch {
+      margin-top: 30px;
+      text-align: center;
+      padding: 20px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* ---------- Sobre ---------- */
+    .about-grid{display:grid; grid-template-columns:1.2fr .9fr; gap:34px; align-items:center}
+    .about-photo{
+      width:100%; border-radius:20px; overflow:hidden; box-shadow:var(--shadow-soft); 
+      border:1px solid rgba(255,255,255,.08); position: relative;
+      transform: perspective(1000px) rotateY(0deg);
+      transition: transform 0.5s ease;
+    }
+    .about-photo:hover {
+      transform: perspective(1000px) rotateY(5deg);
+    }
+    .about-photo img{width:100%; height:auto; display:block; transition: var(--transition);}
+    .about-photo:hover img {transform: scale(1.03);}
+
+    .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; background:rgba(10,12,26,.55); border:1px solid rgba(255,255,255,.08); padding:18px; border-radius:16px; margin-top:26px}
+    .stat{background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:14px; text-align:center; transition: var(--transition);}
+    .stat:hover {transform: translateY(-5px); background: rgba(255,255,255,0.05);}
+    .stat .num{font-weight:800; font-size:1.3rem}
+    .stat .label{font-size:.85rem; color:var(--muted)}
+    @media (max-width:980px){.about-grid{grid-template-columns:1fr}}
+    @media (max-width:620px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+    /* ---------- Serviços ---------- */
+    .services-wrap{display:grid; grid-template-columns:1.2fr .8fr; gap:30px}
+    .service-list{display:grid; gap:18px}
+    .card{
+      background:var(--card); border:1px solid rgba(255,255,255,.07); border-radius:18px; padding:18px; 
+      box-shadow:var(--shadow-soft); transition: var(--transition);
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+      border-color: rgba(255,255,255,0.15);
+    }
+    .card h3{margin:0 0 6px}
+    .price{font-size:.95rem; opacity:.9; margin-bottom:12px}
+    .features{display:grid; gap:8px; margin:12px 0}
+    .features li{list-style:none; position:relative; padding-left:26px; color:#cfd2ff; transition: var(--transition);}
+    .features li:hover {color: #fff; transform: translateX(5px);}
+    .features li::before{content:"✔"; position:absolute; left:0; top:0; opacity:.7}
+    .quote-col{display:flex; flex-direction:column; gap:36px; align-self:start}
+    .quote{
+      padding:20px; background:rgba(255,255,255,.04); border:1px dashed rgba(255,255,255,.15); 
+      border-radius:16px; font-weight:600; font-style:italic; transition: var(--transition);
+    }
+    .quote:hover {
+      transform: translateY(-5px);
+      background: rgba(255,255,255,0.07);
+    }
+    /* Ajuste nos cards de serviços para ficarem alinhados à esquerda */
+    .service-list .card {
+      text-align: left; /* Alinha todo o conteúdo à esquerda */
+    }
+    .service-list .features {
+      text-align: left; /* Alinha lista à esquerda */
+      margin-left: 0;
+      padding-left: 0;
+    }
+    .service-list .features li {
+      /* Remove padding extra se houver */
+      padding-left: 26px;
+    }
+
+    @media (max-width:980px){.services-wrap{grid-template-columns:1fr}}
+
+    /* ---------- Portfólio ---------- */
+    .filters{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px}
+    .chip{
+      padding:10px 14px; border-radius:999px; border:1px solid rgba(255,255,255,.14); 
+      background:rgba(255,255,255,.04); cursor:pointer; font-weight:600; font-size:.9rem;
+      transition: var(--transition);
+      color: #fff; /* Alterado para branco */
+      /* font-family já é herdada do body (Poppins) */
+    }
+    .chip:hover {
+      background: rgba(255,255,255,0.1);
+      transform: translateY(-2px);
+    }
+    .chip.active{
+      background:linear-gradient(135deg, var(--accent-1), var(--accent-2)); color:#0b0d18;
+      box-shadow: 0 5px 15px rgba(125, 112, 255, .3);
+    }
+    .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+    .grid .item{
+      position:relative; overflow:hidden; border-radius:16px; border:1px solid rgba(255,255,255,.1);
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    .grid .item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .grid img{width:100%; height:100%; object-fit:cover; display:block; aspect-ratio:1/1; transition: var(--transition);}
+    .grid .item:hover img {
+      transform: scale(1.05);
+    }
+    .grid .item::after{
+      content:"\f002"; font-family: "Font Awesome 6 Free"; font-weight:900; 
+      position:absolute; right:10px; bottom:10px; opacity:0; transition:opacity .2s;
+      color: white;
+      background: rgba(0,0,0,0.7);
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .grid .item:hover::after{opacity:1}
+    @media (max-width:980px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:540px){.grid{grid-template-columns:1fr}}
+
+    /* Modal para imagens do portfólio */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.9);
+      backdrop-filter: blur(5px);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal.open {
+      display: flex;
+      opacity: 1;
+    }
+    .modal-content {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 30px rgba(125, 112, 255, 0.3);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+    .modal.open .modal-content {
+      transform: scale(1);
+    }
+    .modal-close {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      color: white;
+      font-size: 40px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .modal-close:hover {
+      color: var(--accent-1);
+      transform: rotate(90deg);
+    }
+
+    /* ---------- Contato ---------- */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.1fr;
+      gap: 26px;
+    }
+    .contact-info {
+      display: grid;
+      gap: 14px;
+    }
+    .info-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      transition: var(--transition);
+    }
+    .info-card:hover {
+      transform: translateX(5px);
+      background: rgba(255,255,255,0.08);
+    }
+    .info-card .icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      color: #0c0f1b;
+      font-weight: 900;
+    }
+    .hours, .studios {
+      margin-top: 12px;
+    }
+    .hours ul, .studios ul {
+      padding-left: 18px;
+    }
+    form {
+      display: grid;
+      gap: 14px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #0e1120;
+      border: 1px solid rgba(255,255,255,.12);
+      color: #fff;
+      font-family: inherit;
+      transition: var(--transition);
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent-1);
+      box-shadow: 0 0 0 2px rgba(163, 91, 255, 0.2);
+    }
+    textarea {
+      min-height: 140px;
+      resize: vertical;
+    }
+    
+    /* Novos estilos para a seção de contato */
+    .contact-section {
+      position: relative;
+    }
+    
+    .newsletter-card {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 18px;
+      padding: 24px;
+      margin-top: 30px;
+      box-shadow: var(--shadow-soft);
+      transition: var(--transition);
+    }
+    
+    .newsletter-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    }
+    
+    .newsletter-form {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    
+    .newsletter-form input {
+      flex: 1;
+      margin: 0;
+    }
+    
+    .newsletter-form .btn {
+      white-space: nowrap;
+    }
+    
+    .contact-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      padding-bottom: 15px;
+    }
+    
+    .contact-tab {
+      padding: 10px 20px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      cursor: pointer;
+      transition: var(--transition);
+      font-weight: 500;
+    }
+    
+    .contact-tab.active {
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      color: #0b0d18;
+    }
+    
+    .contact-tab:hover:not(.active) {
+      background: rgba(255,255,255,.1);
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .contact-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+    
+    .contact-option {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    
+    .contact-option:hover {
+      background: rgba(255,255,255,.08);
+      transform: translateY(-5px);
+    }
+    
+    .contact-option i {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: var(--accent-1);
+    }
+    
+    /* Melhorias de responsividade para a seção de contato */
+    @media (max-width: 980px) {
+      .contact-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .row {
+        grid-template-columns: 1fr;
+      }
+      
+      .newsletter-form {
+        flex-direction: column;
+      }
+      
+      .contact-options {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .contact-tabs {
+        flex-wrap: wrap;
+      }
+      
+      .contact-tab {
+        flex: 1;
+        text-align: center;
+        min-width: 120px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .contact-tabs {
+        flex-direction: column;
+      }
+    }
+
+    /* ---------- Avaliações ---------- */
+    .review-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:18px}
+    .review-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:18px}
+    .review{position:relative}
+    .review .quote-mark{position:absolute; right:16px; top:10px; opacity:.25; font-size:42px;}
+    .stars{color:#ffd36b; letter-spacing:2px; font-size:18px}
+    /* Avaliações - aumentar tamanho das estrelas */
+    .review .stars {
+      font-size: 28px; /* Tamanho maior */
+      color: #ffd36b;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+    @media (max-width:980px){.review-grid{grid-template-columns:1fr} .review-stats{grid-template-columns:repeat(2,1fr)}}
+
+    /* ---------- FAQ ---------- */
+    .faq-list{display:grid; gap:12px}
+    .faq-item{
+      border:1px solid rgba(255,255,255,.12); border-radius:14px; overflow:hidden; 
+      background:rgba(255,255,255,.04); transition: var(--transition);
+    }
+    .faq-item:hover {
+      background: rgba(255,255,255,0.06);
+    }
+    .faq-q{
+      display:flex; justify-content:space-between; align-items:center; gap:10px; padding:16px; 
+      cursor:pointer; transition: var(--transition);
+    }
+    .faq-q:hover {
+      background: rgba(255,255,255,0.03);
+    }
+    .faq-q h4{margin:0; font-size:1.05rem}
+    .faq-a{
+      max-height:0; overflow:hidden; transition:max-height .3s ease, padding .3s ease; 
+      padding:0 16px; background: rgba(0,0,0,0.1);
+    }
+    .faq-item.open .faq-a{max-height:240px; padding:0 16px 16px}
+    .faq-item.open .menu-btn {
+      transform: rotate(45deg);
+    }
+
+    /* ---------- Footer ---------- */
+    footer{
+      padding:26px 0; border-top:1px solid rgba(255,255,255,.08); 
+      background:linear-gradient(180deg, rgba(8,9,16,.2), rgba(8,9,16,.55))
+    }
+    .foot{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap}
+    .social{display:flex; gap:12px}
+    .social a{
+      width:36px; height:36px; display:grid; place-items:center; border-radius:10px; 
+      border:1px solid rgba(255,255,255,.15); color:#fff; text-decoration:none;
+      transition: var(--transition);
+    }
+    .social a:hover {
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      border-color: transparent;
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    /* Links do centro do rodapé (copyright / privacidade / termos) */
+    footer .foot-links a,
+    footer .foot-links a:link,
+    footer .foot-links a:visited{
+      color: var(--accent-2) !important;
+      text-decoration: underline !important;
+      margin-right: 12px;
+      font-weight: 600;
+      transition: color .18s ease, transform .18s ease;
+      text-decoration-thickness: 1.5px;
+      text-underline-offset: 3px;
+    }
+    footer .foot-links a:hover,
+    footer .foot-links a:focus{
+      color: var(--accent-1) !important;
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    /* ---------- Animações ---------- */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    [data-reveal]{opacity:0; transform:translateY(18px); transition:opacity .6s ease, transform .6s ease}
+    [data-reveal].reveal{opacity:1; transform:none}
+    /* Ícone do calendário branco para input[type="date"] */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+    }
+    input[type="date"]::-moz-calendar-picker-indicator {
+      filter: invert(1);
+    }
+    input[type="date"]::-ms-input-placeholder {
+      color: #fff;
+    }
+    input[type="date"]::placeholder {
+      color: #fff;
+    }
+  </style>
+  <link rel="stylesheet" href="refinements.css">
+</head>
+<body class="home-page">
+  <!-- Header -->
+  <header id="mainHeader">
+    <div class="container nav">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"><i class="fas fa-camera"></i></div>
+        <span><span class="lens">LENS</span><span class="click">CLICK</span></span>
+      </div>
+      <nav aria-label="Navegação principal" data-a11y-pt="Navegação principal" data-a11y-en="Main navigation">
+        <button class="menu-btn" id="menuBtn" aria-label="Abrir menu" aria-expanded="false" aria-controls="menuList"><i class="fas fa-bars"></i></button>
+        <ul id="menuList">
+          <li><a href="#home" class="active" data-i18n="nav.home">Home</a></li>
+          <li><a href="#sobre" data-i18n="nav.about">Sobre</a></li>
+          <li><a href="#servicos" data-i18n="nav.services">Serviços</a></li>
+          <li><a href="#portfolio" data-i18n="nav.portfolio">Portfólio</a></li>
+          <li><a href="#contato" data-i18n="nav.contact">Contato</a></li>
+          <li><a href="#avaliacoes" data-i18n="nav.reviews">Avaliações</a></li>
+          <li><a href="#faq" data-i18n="nav.faq">FAQ</a></li>
+          <!-- Botões de autenticação dentro do menu mobile -->
+          <li class="mobile-auth-btns" style="display:none;">
+            <a href="login.html" class="auth-btn login" data-i18n="auth.login">Entrar</a>
+            <a href="cadastro.html" class="auth-btn signup" data-i18n="auth.signup">Cadastrar</a>
+          </li>
+        </ul>
+      </nav>
+      <div class="auth-buttons" id="authBtns">
+        <a href="login.html" class="auth-btn login" data-i18n="auth.login">Entrar</a>
+        <a href="cadastro.html" class="auth-btn signup" data-i18n="auth.signup">Cadastrar</a>
+      </div>
+      <!-- User profile when logged in -->
+      <a href="perfil.html" class="user-profile" id="userProfile" aria-label="Abrir perfil" data-a11y-pt="Abrir perfil" data-a11y-en="Open profile">
+        <div class="user-avatar">
+          <img src="" alt="" id="headerProfilePic" style="display:none">
+          <i class="fas fa-user" id="headerDefaultIcon" aria-hidden="true"></i>
+        </div>
+        <span class="user-name" id="headerUserName" style="display:none;margin-left:8px;font-weight:600;color:var(--text)"></span>
+      </a>
+      <!-- Language toggle -->
+      <div style="margin-left:8px">
+        <button id="langToggle" class="lang-toggle" aria-label="Trocar idioma"><span class="flag">🇧🇷</span> <span class="abbr">PT</span></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Indicador de seções -->
+  <div class="section-indicator" role="navigation" aria-label="Atalhos das seções" data-a11y-pt="Atalhos das seções" data-a11y-en="Section shortcuts">
+    <button type="button" class="section-dot active" data-section="Home" data-i18n-section="section.home" data-target="home" aria-current="true"></button>
+    <button type="button" class="section-dot" data-section="Sobre" data-i18n-section="section.about" data-target="sobre"></button>
+    <button type="button" class="section-dot" data-section="Serviços" data-i18n-section="section.services" data-target="servicos"></button>
+    <button type="button" class="section-dot" data-section="Portfólio" data-i18n-section="section.portfolio" data-target="portfolio"></button>
+    <button type="button" class="section-dot" data-section="Contato" data-i18n-section="section.contact" data-target="contato"></button>
+    <button type="button" class="section-dot" data-section="Avaliações" data-i18n-section="section.reviews" data-target="avaliacoes"></button>
+    <button type="button" class="section-dot" data-section="FAQ" data-i18n-section="section.faq" data-target="faq"></button>
+  </div>
+
+  <main id="main-content" tabindex="-1">
+  <!-- Hero com Carousel -->
+  <section id="home" class="hero">
+    <div class="carousel" role="region" aria-roledescription="carrossel" aria-label="Destaques da LensClick" data-a11y-pt="Destaques da LensClick" data-a11y-en="LensClick highlights">
+      <div class="carousel-inner">
+        <div class="carousel-item active" id="hero-slide-1" role="group" aria-roledescription="slide" aria-label="1 de 3" aria-hidden="false" style="background-image: url('https://images.unsplash.com/photo-1542038784456-1ea8e935640e?q=80&w=1200&auto=format&fit=crop')">
+          <div class="carousel-content">
+            <h1 class="title-xl" data-i18n="hero.title1" data-i18n-html="true">SEU MOMENTO, <span class="gradient-text">DO SEU JEITO</span></h1>
+            <p data-i18n="hero.lead">Retratos, casamentos e eventos fotografados com direção leve e atenção aos detalhes.</p>
+            <div class="cta-row">
+              <a class="btn btn-primary" href="#portfolio" data-i18n="hero.cta.view">VER NOSSO TRABALHO</a>
+              <a class="btn btn-outline" href="#contato" data-i18n="hero.cta.contact">FALAR COM A EQUIPE</a>
+            </div>
+          </div>
+        </div>
+        <div class="carousel-item" id="hero-slide-2" role="group" aria-roledescription="slide" aria-label="2 de 3" aria-hidden="true" inert data-background="https://images.unsplash.com/photo-1554048612-b6a482bc67e5?q=80&amp;w=1200&amp;auto=format&amp;fit=crop">
+          <div class="carousel-content">
+            <h2 class="title-xl" data-i18n-html="true" data-i18n="hero.slide2.title">IMAGENS COM <span class="gradient-text">IDENTIDADE</span></h2>
+            <p data-i18n="hero.slide2.lead">Cada sessão é pensada para combinar com você, com o lugar e com o momento.</p>
+            <div class="cta-row">
+              <a class="btn btn-primary" href="#servicos" data-i18n="hero.slide2.cta.services">NOSSOS SERVIÇOS</a>
+              <a class="btn btn-outline" href="#sobre" data-i18n="hero.slide2.cta.about">SOBRE NÓS</a>
+            </div>
+          </div>
+        </div>
+        <div class="carousel-item" id="hero-slide-3" role="group" aria-roledescription="slide" aria-label="3 de 3" aria-hidden="true" inert data-background="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&amp;w=1200&amp;auto=format&amp;fit=crop">
+          <div class="carousel-content">
+            <h2 class="title-xl" data-i18n-html="true" data-i18n="hero.slide3.title">O AMOR COMO <span class="gradient-text">ELE ACONTECE</span></h2>
+            <p data-i18n="hero.slide3.lead">Registramos gestos, olhares e detalhes sem tirar você do momento.</p>
+            <div class="cta-row">
+              <a class="btn btn-primary" href="#contato" data-i18n="hero.slide3.cta.book">CONSULTAR UMA DATA</a>
+              <a class="btn btn-outline" href="#avaliacoes" data-i18n="hero.slide3.cta.reviews">AVALIAÇÕES</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="carousel-controls">
+        <button type="button" class="carousel-dot active" data-index="0" aria-controls="hero-slide-1" aria-label="Mostrar destaque 1" aria-pressed="true"></button>
+        <button type="button" class="carousel-dot" data-index="1" aria-controls="hero-slide-2" aria-label="Mostrar destaque 2" aria-pressed="false"></button>
+        <button type="button" class="carousel-dot" data-index="2" aria-controls="hero-slide-3" aria-label="Mostrar destaque 3" aria-pressed="false"></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sobre -->
+  <section id="sobre" class="section">
+    <div class="container">
+    <h2 class="title-lg" data-reveal data-i18n-html="true" data-i18n="about.title"> SOBRE <span class="gradient-text">NÓS</span></h2>
+      <div class="about-grid">
+        <div data-reveal>
+          <h3 class="title-md" data-i18n-html="true" data-i18n="about.historyTitle">NOSSA <span class="gradient-text">HISTÓRIA</span></h3>
+          <p data-i18n="about.p1">A Lens Click nasceu em 2025, criada por estudantes que perceberam como era difícil encontrar e escolher o serviço fotográfico certo. O site surgiu para tornar essa decisão mais simples.</p>
+          <p data-i18n="about.p2">Antes de fotografar, ouvimos o que você quer guardar. Depois, cuidamos da direção, da luz e dos detalhes para criar imagens que tenham a sua cara.</p>
+          <div class="stats">
+            <div class="stat"><div class="num" data-counter="23">0</div><div class="label" data-i18n="stats.projects">Projetos realizados</div></div>
+            <div class="stat"><div class="num" data-counter="6">0</div><div class="label" data-i18n="stats.months">Meses de experiência</div></div>
+            <div class="stat"><div class="num" data-counter="10" data-plus>0</div><div class="label" data-i18n="stats.couples">Casais felizes</div></div>
+            <div class="stat"><div class="num" data-counter="20" data-plus>0</div><div class="label" data-i18n="stats.events">Eventos cobertos</div></div>
+          </div>
+        </div>
+        <div class="about-photo" data-reveal>
+          <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=1200&auto=format&fit=crop" alt="Fotógrafo segurando câmera" loading="lazy" decoding="async"/>
+        </div>
+      </div>
+    </div>
+  </section>
+
+ <!-- Serviços -->
+<section id="servicos" class="section">
+  <div class="container">
+  <h2 class="title-lg" data-reveal data-i18n-html="true" data-i18n="section.servicesTitle">NOSSOS <span class="gradient-text">SERVIÇOS</span></h2>
+    <div class="services-wrap">
+      <div class="service-list" data-reveal>
+        <!-- card 1 -->
+        <article class="card">
+          <h3 data-i18n="services.portrait">Ensaios de Retrato</h3>
+          <div class="price"><span data-i18n="services.from">A partir de</span> <strong>R$ 600</strong></div>
+          <ul class="features">
+            <li data-i18n="services.portrait.f1">Sessão de 1h</li>
+            <li data-i18n="services.portrait.f2">20 fotos editadas</li>
+            <li data-i18n="services.portrait.f3">Orientação de poses</li>
+            <li data-i18n="services.portrait.f4">Local à escolha</li>
+          </ul>
+          <button class="btn btn-primary" data-scroll="#contato" data-service-index="1" data-i18n="services.request">Solicitar orçamento</button>
+        </article>
+        <!-- card 2 -->
+        <article class="card">
+          <h3 data-i18n="services.wedding">Fotografia de Casamento</h3>
+          <div class="price"><span data-i18n="services.from">A partir de</span> <strong>R$ 2.500</strong></div>
+          <ul class="features">
+            <li data-i18n="services.wedding.f1">Cobertura</li>
+            <li data-i18n="services.wedding.f2">Álbum digital</li>
+            <li data-i18n="services.wedding.f3">Fotos espontâneas</li>
+            <li data-i18n="services.wedding.f4">Sessão pós-wedding</li>
+          </ul>
+          <button class="btn btn-primary" data-scroll="#contato" data-service-index="2" data-i18n="services.request">Solicitar orçamento</button>
+        </article>
+        <!-- card 3 -->
+        <article class="card">
+          <h3 data-i18n="services.events">Fotografia de Eventos</h3>
+          <div class="price"><span data-i18n="services.range">Entre</span> <strong>R$ 500 <span class="price-sep">a</span> R$ 1000</strong></div>
+          <ul class="features">
+            <li data-i18n="services.events.f1">Cobertura completa</li>
+            <li data-i18n="services.events.f2">Fotos em alta resolução</li>
+            <li data-i18n="services.events.f3">Galeria Online</li>
+            <li data-i18n="services.events.f4">Suporte total</li>
+          </ul>
+          <button class="btn btn-primary" data-scroll="#contato" data-service-index="3" data-i18n="services.request">Solicitar orçamento</button>
+        </article>
+        <!-- card 4 -->
+        <article class="card">
+          <h3 data-i18n="services.commercial">Fotografia Comercial</h3>
+          <div class="price"><span data-i18n="services.range">Entre</span> <strong>R$ 300 <span class="price-sep">a</span> R$ 600</strong></div>
+          <ul class="features">
+            <li data-i18n="services.commercial.f1">Fotos de produtos</li>
+            <li data-i18n="services.commercial.f2">Pacotes corporativos</li>
+            <li data-i18n="services.commercial.f3">Ensaios comerciais</li>
+            <li data-i18n="services.commercial.f4">Uso comercial</li>
+          </ul>
+          <button class="btn btn-primary" data-scroll="#contato" data-service-index="4" data-i18n="services.request">Solicitar orçamento</button>
+        </article>
+      </div>
+
+      <div class="quote-col" data-reveal>
+  <div class="quote" data-i18n="quotes.q1">"Seu momento, sem poses forçadas."</div>
+  <div class="quote" data-i18n="quotes.q2">"Direção quando você precisar."</div>
+  <div class="quote" data-i18n="quotes.q3">"Os detalhes também merecem uma foto."</div>
+  <div class="quote" data-i18n="quotes.q4">"Você vive. A gente registra."</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+  <!-- Portfólio -->
+  <section id="portfolio" class="section">
+    <div class="container">
+  <h2 class="title-lg" data-reveal data-i18n-html="true" data-i18n="section.portfolioTitle">NOSSO <span class="gradient-text">PORTFÓLIO</span></h2>
+      <div class="filters" data-reveal role="group" aria-label="Filtrar portfólio" data-a11y-pt="Filtrar portfólio" data-a11y-en="Filter portfolio">
+        <button class="chip active" data-filter="all" data-i18n="filter.all" aria-pressed="true">Tudo</button>
+        <button class="chip" data-filter="retratos" data-i18n="filter.retratos" aria-pressed="false">Retratos</button>
+        <button class="chip" data-filter="casamentos" data-i18n="filter.weddings" aria-pressed="false">Casamentos</button>
+        <button class="chip" data-filter="eventos" data-i18n="filter.events" aria-pressed="false">Eventos</button>
+        <button class="chip" data-filter="comercial" data-i18n="filter.commercial" aria-pressed="false">Comercial</button>
+      </div>
+      <div class="grid" id="portfolioGrid" data-reveal>
+        <!-- Retratos -->
+        <div class="item retratos" data-src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=688&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D">
+          <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=688&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Retrato" loading="lazy" decoding="async"/>
+        </div>
+        <div class="item retratos" data-src="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?q=80&w=600&auto=format&fit=crop">
+          <img src="https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?q=80&w=600&auto=format&fit=crop" alt="Retrato" loading="lazy" decoding="async"/>
+        </div>
+        <div class="item retratos" data-src="https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=600&auto=format&fit=crop">
+          <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=600&auto=format&fit=crop" alt="Retrato" loading="lazy" decoding="async"/>
+        </div>
+        <!-- Casamentos -->
+        <div class="item casamentos" data-src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=1469&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D">
+          <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=1469&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Casamento" loading="lazy" decoding="async"/>
+        </div>
+        <div class="item casamentos" data-src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?q=80&w=600&auto=format&fit=crop">
+          <img src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?q=80&w=600&auto=format&fit=crop" alt="Casamento" loading="lazy" decoding="async"/>
+        </div>
+        <div class="item casamentos" data-src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D">
+          <img src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Casamento" loading="lazy" decoding="async"/>
+        </div>
+        <!-- Eventos -->
+        <div class="item eventos" data-src="https://images.unsplash.com/photo-1517263904808-5dc91e3e7044?q=80&w=688&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D">
+          <img src="https://images.unsplash.com/photo-1517263904808-5dc91e3e7044?q=80&w=688&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Evento" loading="lazy" decoding="async"/>
+        </div>
+        <div class="item eventos" data-src="https://images.unsplash.com/photo-1459749411175-04bf5292ceea?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D">
+          <img src="https://images.unsplash.com/photo-1459749411175-04bf5292ceea?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Evento" loading="lazy" decoding="async"/>
+        </div>
+        <div class="item eventos" data-src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D">
+          <img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Evento" loading="lazy" decoding="async"/>
+        </div>
+        <!-- Comercial -->
+        <div class="item comercial" data-src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=600&auto=format&fit=crop">
+          <img src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=600&auto=format&fit=crop" alt="Produto" loading="lazy" decoding="async"/>
+        </div>
+        <div class="item comercial" data-src="https://images.unsplash.com/photo-1560347876-aeef00ee58a1?q=80&w=600&auto=format&fit=crop">
+          <img src="https://images.unsplash.com/photo-1560347876-aeef00ee58a1?q=80&w=600&auto=format&fit=crop" alt="Produto" loading="lazy" decoding="async"/>
+        </div>
+        <div class="item comercial" data-src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600&auto=format&fit=crop">
+          <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600&auto=format&fit=crop" alt="Produto" loading="lazy" decoding="async"/>
+        </div>
+      </div>
+  <p style="margin-top:18px" data-reveal data-i18n-html="true" data-i18n="portfolio.lead">Veja uma seleção de <b><span class="gradient-text">retratos, casamentos e eventos</span></b>, além de trabalhos <b><span class="gradient-text">comerciais</span></b> da Lens Click.</p>
+    </div>
+  </section>
+
+  <!-- Contato -->
+  <section id="contato" class="section contact-section">
+    <div class="container">
+  <h2 class="title-lg" data-reveal data-i18n-html="true" data-i18n="contact.title">VAMOS <span class="gradient-text">CONVERSAR</span></h2>
+      
+      <!-- Abas de navegação -->
+      <div class="contact-tabs" data-reveal role="tablist" aria-label="Opções de contato">
+        <button type="button" class="contact-tab active" id="contact-tab-form" role="tab" aria-selected="true" aria-controls="form-tab" tabindex="0" data-tab="form" data-i18n="contact.tabs.form">Formulário</button>
+        <button type="button" class="contact-tab" id="contact-tab-info" role="tab" aria-selected="false" aria-controls="info-tab" tabindex="-1" data-tab="info" data-i18n="contact.tabs.info">Informações</button>
+        <button type="button" class="contact-tab" id="contact-tab-newsletter" role="tab" aria-selected="false" aria-controls="newsletter-tab" tabindex="-1" data-tab="newsletter" data-i18n="contact.tabs.newsletter">Newsletter</button>
+      </div>
+      
+      <div class="tab-content active" id="form-tab" role="tabpanel" aria-labelledby="contact-tab-form" tabindex="0">
+        <div class="contact-grid" style="display: flex; flex-direction: column; align-items: center;">
+          <div class="contact-info" data-reveal style="width:100%; max-width:500px; text-align:center; margin-bottom:32px;">
+            <p data-i18n="contact.lead">Conte o que você está planejando. Respondemos com disponibilidade, próximos passos e um orçamento claro.</p>
+          </div>
+          <form id="contactForm" data-reveal style="width:100%; max-width:500px;">
+            <div class="row">
+              <label><span class="eyebrow" data-i18n="contact.form.name">Nome *</span><br><input required name="nome" autocomplete="name" data-i18n-placeholder="contact.form.name.placeholder" placeholder="Seu nome completo"/></label>
+              <label><span class="eyebrow" data-i18n="contact.form.phone">Telefone</span><br><input name="tel" autocomplete="tel" data-i18n-placeholder="contact.form.phone.placeholder" placeholder="(11) 12345-6781"/></label>
+            </div>
+            <div class="row">
+              <label><span class="eyebrow" data-i18n="contact.form.email">E-mail *</span><br><input required type="email" name="email" autocomplete="email" data-i18n-placeholder="contact.form.email.placeholder" placeholder="seu@email.com"/></label>
+              <label><span class="eyebrow" data-i18n="contact.form.service">Tipo de Serviço</span><br>
+                <select name="tipo">
+                  <option data-i18n="contact.form.selectService">Selecione o serviço desejado</option>
+                  <option data-i18n="contact.form.service.portrait">Retrato</option>
+                  <option data-i18n="contact.form.service.wedding">Casamento</option>
+                  <option data-i18n="contact.form.service.event">Evento</option>
+                  <option data-i18n="contact.form.service.commercial">Comercial</option>
+                </select>
+              </label>
+            </div>
+            <div class="row">
+              <label><span class="eyebrow" data-i18n="contact.form.date">Data do Evento</span><br><input type="date" name="data" data-i18n-placeholder="contact.form.date.placeholder" placeholder="dd/mm/aaaa"/></label>
+              <div></div>
+            </div>
+            <label><span class="eyebrow" data-i18n="contact.form.message">Mensagem *</span><br><textarea required name="msg" data-i18n-placeholder="contact.form.message.placeholder" placeholder="Conte o que você quer fotografar, a data e qualquer detalhe importante."></textarea></label>
+            <button class="btn btn-primary" type="submit" data-i18n="contact.form.submit">ENVIAR MENSAGEM</button>
+            <p id="formMsg" class="feedback-message" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+          </form>
+        </div>
+      </div>
+      
+      <div class="tab-content" id="info-tab" role="tabpanel" aria-labelledby="contact-tab-info" tabindex="0" hidden>
+        <div class="contact-grid">
+          <div data-reveal>
+            <h3 class="title-md" data-i18n-html="true" data-i18n="contact.info.title">FALE COM A <span class="gradient-text">EQUIPE</span></h3>
+            <p data-i18n="contact.info.lead">Escolha o canal que preferir para tirar dúvidas, consultar datas ou conversar sobre seu projeto.</p>
+            
+            <div class="info-card"><div class="icon"><i class="fas fa-envelope"></i></div><div><strong data-i18n="contact.info.emailLabel">Email</strong><br>lensck@gmail.com</div></div>
+            <div class="info-card"><div class="icon"><i class="fas fa-phone"></i></div><div><strong data-i18n="contact.info.phoneLabel">Telefone</strong><br>(11) 99827-2133</div></div>
+            <div class="info-card"><div class="icon"><i class="fas fa-map-marker-alt"></i></div><div><strong data-i18n="contact.info.locationLabel">Localização</strong><br><span data-i18n="contact.info.location">São Paulo, SP</span></div></div>
+          </div>
+          
+          <div data-reveal>
+            <h3 class="title-md" data-i18n-html="true" data-i18n="contact.hoursTitle">HORÁRIOS DE <span class="gradient-text">ATENDIMENTO</span></h3>
+            
+            <div class="hours">
+              <ul>
+                <li data-i18n="contact.hours.week">Segunda – Sexta: 9h às 18h</li>
+                <li data-i18n="contact.hours.sat">Sábado: 9h às 14h</li>
+                <li data-i18n="contact.hours.sun">Domingo: Fechado</li>
+              </ul>
+            </div>
+            
+            <h3 class="title-md" style="margin-top: 30px;" data-i18n-html="true" data-i18n="contact.studiosTitle">NOSSOS <span class="gradient-text">ESTÚDIOS</span></h3>
+            
+            <div class="studios">
+              <ul>
+                <li>Rua 23 de Maio, 512, SP</li>
+                <li>Rua dos Morangos, 03, SP</li>
+                <li>Rua Doutor César, 174, SP</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="tab-content" id="newsletter-tab" role="tabpanel" aria-labelledby="contact-tab-newsletter" tabindex="0" hidden>
+        <div class="contact-grid">
+          <div data-reveal>
+            <h3 class="title-md" data-i18n-html="true" data-i18n="newsletter.title">NOVIDADES DA <span class="gradient-text">LENS CLICK</span></h3>
+            <p data-i18n="newsletter.lead">Bastidores, dicas e novidades da Lens Click, direto no seu e-mail.</p>
+            <p data-i18n="newsletter.specials">De vez em quando, enviamos também ofertas para inscritos.</p>
+            
+            <div class="info-card"><div class="icon"><i class="fas fa-gift"></i></div><div><strong data-i18n="newsletter.tipTitle">Vantagens para inscritos</strong><br><span data-i18n="newsletter.tipLead">Ofertas e condições especiais</span></div></div>
+            <div class="info-card"><div class="icon"><i class="fas fa-lightbulb"></i></div><div><strong data-i18n="newsletter.proTitle">Dicas práticas</strong><br><span data-i18n="newsletter.proLead">Orientações simples para fotos melhores</span></div></div>
+            <div class="info-card"><div class="icon"><i class="fas fa-calendar-alt"></i></div><div><strong data-i18n="newsletter.firstTitle">Em primeira mão</strong><br><span data-i18n="newsletter.firstLead">Novos trabalhos e serviços</span></div></div>
+          </div>
+          
+          <div data-reveal>
+            <div class="newsletter-card">
+              <h3 class="title-md">NEWSLETTER <span class="gradient-text">LENS CLICK</span></h3>
+              <p data-i18n="newsletter.cta">Cadastre seu e-mail e receba gratuitamente o guia “10 dicas práticas para fotos melhores”.</p>
+              
+              <form id="newsletterForm" class="newsletter-form">
+                <input type="email" name="email" autocomplete="email" aria-label="E-mail para newsletter" required data-i18n-placeholder="newsletter.emailPlaceholder" placeholder="seu@email.com" />
+                <button type="submit" class="btn btn-primary" data-i18n="newsletter.submit">QUERO RECEBER</button>
+              </form>
+              
+              <p id="newsletterMsg" class="feedback-message" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+              
+              <div style="margin-top: 20px; font-size: 0.85rem; opacity: 0.7;">
+                <p data-i18n="newsletter.privacyNote"><i class="fas fa-shield-alt"></i> Seu e-mail será usado apenas para administrar sua inscrição.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Avaliações -->
+  <section id="avaliacoes" class="section">
+    <div class="container">
+  <h2 class="title-lg" data-reveal data-i18n="reviews.title">AVALIAÇÕES</h2>
+      <div class="review-stats" data-reveal>
+  <div class="card stat"><div class="num" data-counter="23">0</div><div class="label" data-i18n="stats.projects">Projetos realizados</div></div>
+  <div class="card stat"><div class="num" data-counter="6">0</div><div class="label" data-i18n="stats.months">Meses de experiência</div></div>
+  <div class="card stat"><div class="num" data-counter="10" data-plus>0</div><div class="label" data-i18n="stats.couples">Casais felizes</div></div>
+  <div class="card stat"><div class="num" data-counter="20" data-plus>0</div><div class="label" data-i18n="stats.events">Eventos cobertos</div></div>
+      </div>
+      <div class="review-grid" data-reveal>
+        <article class="card review">
+          <div class="stars">★★★★★</div>
+          <h3 data-i18n="review.r1.name">Maurício e Maria <span style="opacity:.7; font-weight:500">— Casamento</span></h3>
+          <p data-i18n="review.r1.text">"A Lens Click capturou perfeitamente a magia do nosso casamento. Cada foto conta uma história e nos emociona até hoje. Profissionalismo e talento excepcionais!"</p>
+          <div class="quote-mark">"</div>
+        </article>
+        <article class="card review">
+          <div class="stars">★★★★★</div>
+          <h3 data-i18n="review.r2.name">Empresa TechStart <span style="opacity:.7; font-weight:500">— Fotografia Corporativa</span></h3>
+          <p data-i18n="review.r2.text">"Precisávamos de fotos profissionais para nosso equipe e o resultado superou todas as expectativas. Recomendamos a todos!"</p>
+          <div class="quote-mark">"</div>
+        </article>
+        <article class="card review">
+          <div class="stars">★★★★★</div>
+          <h3 data-i18n="review.r3.name">Marina Mendes <span style="opacity:.7; font-weight:500">— Ensaio individual</span></h3>
+          <p data-i18n="review.r3.text">"Uma experiência incrível! Me senti confiante e as fotos ficaram maravilhosas."</p>
+          <div class="quote-mark">"</div>
+        </article>
+        <article class="card review">
+          <div class="stars">★★★★☆</div>
+          <h3 data-i18n="review.r4.name">Rafael e Sofia <span style="opacity:.7; font-weight:500">— Pré-casamento</span></h3>
+          <p data-i18n="review.r4.text">"O ensaio pré-casamento foi incrível! A equipe nos deixou super confortáveis e as fotos ficaram de tirar o fôlego."</p>
+          <div class="quote-mark">"</div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="section">
+    <div class="container">
+      <h2 class="title-lg" data-reveal data-i18n-html="true" data-i18n="faq.title">PERGUNTAS <span class="gradient-text">FREQUENTES</span></h2>
+      <div class="faq-list" data-reveal>
+        <div class="faq-item">
+          <div class="faq-q"><h4 data-i18n="faq.q1">Qual o prazo de entrega?</h4><button class="menu-btn"><i class="fas fa-plus"></i></button></div>
+          <div class="faq-a"><p data-i18n="faq.a1">Entre 7 e 20 dias úteis, dependendo do serviço contratado e da quantidade de fotos.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><h4 data-i18n="faq.q2">Como funciona o pagamento?</h4><button class="menu-btn"><i class="fas fa-plus"></i></button></div>
+          <div class="faq-a"><p data-i18n="faq.a2">Aceitamos PIX, cartão e boleto. Geralmente 30% na reserva e o restante na entrega.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><h4 data-i18n="faq.q3">Posso escolher as fotos que serão editadas?</h4><button class="menu-btn"><i class="fas fa-plus"></i></button></div>
+          <div class="faq-a"><p data-i18n="faq.a3">Sim! Enviamos uma galeria para seleção e, a partir dela, seguimos com a edição final.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><h4 data-i18n="faq.q4">Vocês oferecem álbuns físicos e virtuais?</h4><button class="menu-btn"><i class="fas fa-plus"></i></button></div>
+          <div class="faq-a"><p data-i18n="faq.a4">Oferecemos ambos. Temos diferentes formatos e acabimentos para você escolher.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><h4 data-i18n="faq.q5">Como é feito a entrega das fotos?</h4><button class="menu-btn"><i class="fas fa-plus"></i></button></div>
+          <div class="faq-a"><p data-i18n="faq.a5">Por galeria online com link protegido e opção de download. Para pacotes premium, também em pendrive.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><h4 data-i18n="faq.q6">Vocês têm seguro para os equipamentos?</h4><button class="menu-btn"><i class="fas fa-plus"></i></button></div>
+          <div class="faq-a"><p data-i18n="faq.a6">Sim, todo o nosso equipamento é segurado para garantir a continuidade do trabalho.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><h4 data-i18n="faq.q7">Vocês fazem ensaios externos?</h4><button class="menu-btn"><i class="fas fa-plus"></i></button></div>
+          <div class="faq-a"><p data-i18n="faq.a7">Fazemos sim. Podemos sugerir locais ou realizar no lugar de sua preferência.</p></div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><h4 data-i18n="faq.q8">Como funciona o agendamento de um ensaio?</h4><button class="menu-btn"><i class="fas fa-plus"></i></button></div>
+          <div class="faq-a"><p data-i18n="faq.a8">Entre em contato pelo formulário informando a data desejada. Confirmamos disponibilidade e fechamos os detalhes.</p></div>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container foot">
+      <div class="brand"><div class="logo" aria-hidden="true"><i class="fas fa-camera"></i></div><span><span class="lens">LENS</span><span class="click">CLICK</span></span></div>
+  <div class="foot-links" style="opacity:.85" data-i18n-html="true" data-i18n="privacy.footer">© 2025–2026 Lens Click. Todos os direitos reservados | <a href="privacidade.html">Política de Privacidade</a> | <a href="termos.html">Termos de Uso</a></div>
+      <div class="social">
+        <a href="https://www.instagram.com/lensclick_fotografias/?utm_source=qr#" aria-label="Instagram" target="_blank" rel="noopener"><i class="fab fa-instagram" aria-hidden="true"></i></a>
+        <a href="https://x.com/LensLick" aria-label="X" target="_blank" rel="noopener"><i class="fab fa-twitter" aria-hidden="true"></i></a>
+        <a href="https://www.youtube.com/channel/UCkyVvIHJ6xuVdX4uPLSbu9Q" aria-label="Youtube" target="_blank" rel="noopener"><i class="fab fa-youtube" aria-hidden="true"></i></a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal para imagens do portfólio -->
+  <div class="modal" id="imageModal" role="dialog" aria-modal="true" aria-label="Visualização da fotografia" data-a11y-pt="Visualização da fotografia" data-a11y-en="Photo preview" aria-hidden="true">
+    <button type="button" class="modal-close" id="modalClose" aria-label="Fechar imagem" data-a11y-pt="Fechar imagem" data-a11y-en="Close image">&times;</button>
+    <img class="modal-content" id="modalImage" alt="Fotografia ampliada" decoding="async">
+  </div>
+
+  <!-- Botão de voltar ao topo -->
+  <button type="button" class="back-to-top" id="backToTop" aria-label="Voltar ao topo" data-a11y-pt="Voltar ao topo" data-a11y-en="Back to top">
+    <i class="fas fa-arrow-up" aria-hidden="true"></i>
+  </button>
+
+  <script src="lang.js"></script>
+  <script src="ux.js"></script>
+  <script>
+    const UX = window.LensClickUX;
+    // Mobile menu toggle
+    const menuBtn = document.getElementById('menuBtn');
+    const menuList = document.getElementById('menuList');
+    const authBtns = document.getElementById('authBtns');
+    const mobileAuthBtns = document.querySelector('.mobile-auth-btns');
+    function setMenuOpen(open, returnFocus = false) {
+      menuList.classList.toggle('open', open);
+      menuBtn.setAttribute('aria-expanded', String(open));
+      menuBtn.setAttribute('aria-label', open
+        ? UX.textByLanguage('Fechar menu', 'Close menu')
+        : UX.textByLanguage('Abrir menu', 'Open menu'));
+      menuBtn.innerHTML = open
+        ? '<i class="fas fa-times" aria-hidden="true"></i>'
+        : '<i class="fas fa-bars" aria-hidden="true"></i>';
+      if (mobileAuthBtns) mobileAuthBtns.style.display = open && window.innerWidth <= 880 ? 'flex' : 'none';
+      if (!open && returnFocus) menuBtn.focus();
+    }
+
+    menuBtn?.addEventListener('click',()=>setMenuOpen(!menuList.classList.contains('open')));
+
+    // Garante que os botões móveis sejam recolhidos no desktop
+    window.addEventListener('resize',()=>{
+      if(window.innerWidth > 880){
+        setMenuOpen(false);
+      }
+    });
+
+    // Header scroll effect
+    const header = document.getElementById('mainHeader');
+
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 50) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+    }, { passive: true });
+
+    // Smooth scroll for anchors & custom buttons
+    function smoothTo(hash, moveFocus = false){
+      const el = document.querySelector(hash);
+      if(!el) return;
+      const y = el.getBoundingClientRect().top + window.scrollY - 64;
+      window.scrollTo({top:y, behavior: UX.prefersReducedMotion() ? 'auto' : 'smooth'});
+      setMenuOpen(false);
+      if (moveFocus) {
+        el.setAttribute('tabindex', '-1');
+        el.focus({ preventScroll: true });
+        history.replaceState(null, '', hash);
+      }
+      
+      // Atualizar indicador de seção
+      updateSectionIndicator(hash.substring(1));
+    }
+    document.querySelectorAll('a[href^="#"]').forEach(a=>{
+      a.addEventListener('click',e=>{ 
+        if(a.getAttribute('href')!=='#'){ 
+          e.preventDefault(); 
+          smoothTo(a.getAttribute('href'), true); 
+        } 
+      });
+    });
+    document.querySelectorAll('[data-scroll]').forEach(btn=>btn.addEventListener('click',()=>{
+      if (btn.dataset.serviceIndex) {
+        activateContactTab('form');
+        const serviceSelect = document.querySelector('#contactForm select[name="tipo"]');
+        serviceSelect.selectedIndex = Number(btn.dataset.serviceIndex);
+        serviceSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        UX.highlight(serviceSelect);
+      }
+      smoothTo(btn.dataset.scroll);
+    }));
+
+    // Navegação por pontos de seção
+    const sectionDots = document.querySelectorAll('.section-dot');
+    function updateSectionIndicator(sectionId) {
+      sectionDots.forEach(dot => {
+        const active = dot.getAttribute('data-target') === sectionId;
+        dot.classList.toggle('active', active);
+        if (active) dot.setAttribute('aria-current', 'true');
+        else dot.removeAttribute('aria-current');
+      });
+    }
+    
+    sectionDots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        smoothTo('#' + dot.getAttribute('data-target'));
+      });
+    });
+
+    // Active nav on scroll
+    const sections = ['home','sobre','servicos','portfolio','contato','avaliacoes','faq'].map(id=>document.getElementById(id));
+    const navLinks = Array.from(document.querySelectorAll('nav a'));
+    function setActive(){
+      let current='home';
+      const offset = 110;
+      sections.forEach(sec=>{ 
+        if(sec && window.scrollY + offset >= sec.offsetTop) current = sec.id; 
+      });
+      navLinks.forEach(a=>{
+        const active = a.getAttribute('href')==='#'+current;
+        a.classList.toggle('active', active);
+        if (active) a.setAttribute('aria-current', 'page');
+        else a.removeAttribute('aria-current');
+      });
+      updateSectionIndicator(current);
+    }
+    window.addEventListener('scroll', setActive, { passive: true }); 
+    setActive();
+
+    // Reveal on scroll
+    const io = new IntersectionObserver((entries)=>{
+      for(const e of entries){ 
+        if(e.isIntersecting){ 
+          e.target.classList.add('reveal'); 
+          io.unobserve(e.target);
+        } 
+      }
+    }, {threshold:.12});
+    document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
+
+    // Counters
+    function animateCounter(el){
+      const target = parseInt(el.dataset.counter,10) || 0;
+      const plus = el.hasAttribute('data-plus');
+      if (UX.prefersReducedMotion()) {
+        el.textContent = target + (plus ? '+' : '');
+        return;
+      }
+      const start = 0; 
+      const duration = 1000; 
+      const t0 = performance.now();
+      function step(t){
+        const p = Math.min(1, (t - t0)/duration);
+        const val = Math.round(start + (target - start) * p);
+        el.textContent = val + (plus && p===1 ? '+':'');
+        if(p<1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+    const counters = document.querySelectorAll('[data-counter]');
+    const io2 = new IntersectionObserver((entries)=>{
+      for(const e of entries){ 
+        if(e.isIntersecting){ 
+          animateCounter(e.target); 
+          io2.unobserve(e.target);
+        } 
+      }
+    }, {threshold:.6});
+    counters.forEach(c=>io2.observe(c));
+
+    // Portfolio filters
+    const chips = document.querySelectorAll('.chip');
+    const items = document.querySelectorAll('#portfolioGrid .item');
+    function updatePortfolioAccessibility() {
+      const categories = {
+        retratos: UX.textByLanguage('Retrato', 'Portrait'),
+        casamentos: UX.textByLanguage('Casamento', 'Wedding'),
+        eventos: UX.textByLanguage('Evento', 'Event'),
+        comercial: UX.textByLanguage('Produto', 'Product')
+      };
+      items.forEach(item => {
+        const categoryKey = Object.keys(categories).find(key => item.classList.contains(key));
+        const category = categories[categoryKey] || UX.textByLanguage('Fotografia', 'Photo');
+        const thumbnail = item.querySelector('img');
+        if (thumbnail) thumbnail.alt = category;
+        item.setAttribute('aria-label', UX.textByLanguage(`Ampliar fotografia: ${category}`, `Open photo: ${category}`));
+      });
+    }
+    updatePortfolioAccessibility();
+
+    chips.forEach(ch=>ch.addEventListener('click', ()=>{
+      chips.forEach(c=>{
+        c.classList.remove('active');
+        c.setAttribute('aria-pressed', 'false');
+      }); 
+      ch.classList.add('active');
+      ch.setAttribute('aria-pressed', 'true');
+      const f = ch.dataset.filter;
+      items.forEach(it=>{
+        it.style.display = (f==='all' || it.classList.contains(f)) ? 'block':'none';
+      });
+    }));
+
+    // Portfolio modal
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    const modalClose = document.getElementById('modalClose');
+    let modalTrigger = null;
+
+    function closeModal() {
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      modalTrigger?.focus();
+    }
+    
+    items.forEach(item => {
+      const thumbnail = item.querySelector('img');
+      item.setAttribute('tabindex', '0');
+      item.setAttribute('role', 'button');
+      item.addEventListener('click', () => {
+        modalTrigger = item;
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+        modalImg.src = item.getAttribute('data-src');
+        modalImg.alt = thumbnail?.alt || UX.textByLanguage('Fotografia ampliada', 'Enlarged photo');
+        document.body.style.overflow = 'hidden';
+        modalClose.focus();
+      });
+      item.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          item.click();
+        }
+      });
+    });
+    
+    modalClose.addEventListener('click', closeModal);
+    
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Tab' && modal.classList.contains('open')) {
+        event.preventDefault();
+        modalClose.focus();
+        return;
+      }
+      if (event.key !== 'Escape') return;
+      if (modal.classList.contains('open')) closeModal();
+      if (menuList.classList.contains('open')) setMenuOpen(false, true);
+    });
+
+    // FAQ accordion
+    const faqItems = document.querySelectorAll('.faq-item');
+    function updateFaqLabels() {
+      faqItems.forEach((it, index)=>{
+        const btn = it.querySelector('.menu-btn');
+        const answer = it.querySelector('.faq-a');
+        const question = it.querySelector('h4')?.textContent?.trim() || '';
+        const open = it.classList.contains('open');
+        const answerId = `faq-answer-${index + 1}`;
+        answer.id = answerId;
+        answer.setAttribute('aria-hidden', String(!open));
+        btn.setAttribute('aria-controls', answerId);
+        btn.setAttribute('aria-label', UX.textByLanguage(
+          `${open ? 'Ocultar' : 'Mostrar'} resposta: ${question}`,
+          `${open ? 'Hide' : 'Show'} answer: ${question}`
+        ));
+      });
+    }
+
+    faqItems.forEach(it=>{
+      const btn = it.querySelector('.menu-btn');
+      btn.setAttribute('aria-expanded', 'false');
+      btn.querySelector('i')?.setAttribute('aria-hidden', 'true');
+      it.querySelector('.faq-q').addEventListener('click',()=>{
+        it.classList.toggle('open');
+        btn.setAttribute('aria-expanded', String(it.classList.contains('open')));
+        btn.innerHTML = it.classList.contains('open') ? 
+          '<i class="fas fa-times" aria-hidden="true"></i>' : '<i class="fas fa-plus" aria-hidden="true"></i>';
+        updateFaqLabels();
+      });
+    });
+    updateFaqLabels();
+
+    // Envio real do formulário para o servidor
+    document.getElementById('contactForm').addEventListener('submit', async (event)=>{
+      event.preventDefault();
+      const form = event.currentTarget;
+      const button = form.querySelector('button[type="submit"]');
+      const message = document.getElementById('formMsg');
+      const fields = new FormData(form);
+      UX.showMessage(message, '');
+      UX.setBusy(button, true, { pt: 'Enviando...', en: 'Sending...' });
+      try {
+        await UX.apiFetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: fields.get('nome'), phone: fields.get('tel'), email: fields.get('email'),
+            serviceType: fields.get('tipo'), eventDate: fields.get('data'), message: fields.get('msg')
+          })
+        }, UX.textByLanguage('Não foi possível enviar a mensagem.', 'Could not send the message.'));
+        UX.showMessage(message, UX.textByLanguage('Mensagem recebida! Responderemos em breve.', 'Message received. We will reply soon.'), 'success');
+        form.reset();
+      } catch (error) {
+        UX.showMessage(message, error.message, 'error');
+      } finally {
+        UX.setBusy(button, false);
+      }
+    });
+
+    // Back to top button
+    const backToTopBtn = document.getElementById('backToTop');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 500) {
+        backToTopBtn.classList.add('visible');
+      } else {
+        backToTopBtn.classList.remove('visible');
+      }
+    }, { passive: true });
+    
+    backToTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: UX.prefersReducedMotion() ? 'auto' : 'smooth' });
+    });
+    
+    // Sistema de abas na seção de contato
+    const contactTabs = document.querySelectorAll('.contact-tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    function activateContactTab(tabId, focus = false) {
+      contactTabs.forEach(tab => {
+        const active = tab.dataset.tab === tabId;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-selected', String(active));
+        tab.setAttribute('tabindex', active ? '0' : '-1');
+        if (active && focus) tab.focus();
+      });
+      tabContents.forEach(content => {
+        const active = content.id === `${tabId}-tab`;
+        content.classList.toggle('active', active);
+        content.hidden = !active;
+      });
+    }
+
+    contactTabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => activateContactTab(tab.dataset.tab));
+      tab.addEventListener('keydown', (event) => {
+        let nextIndex = null;
+        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = (index + 1) % contactTabs.length;
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = (index - 1 + contactTabs.length) % contactTabs.length;
+        if (event.key === 'Home') nextIndex = 0;
+        if (event.key === 'End') nextIndex = contactTabs.length - 1;
+        if (nextIndex === null) return;
+        event.preventDefault();
+        activateContactTab(contactTabs[nextIndex].dataset.tab, true);
+      });
+    });
+    activateContactTab('form');
+    
+    // Inscrição real na newsletter
+    document.getElementById('newsletterForm').addEventListener('submit', async (event)=>{
+      event.preventDefault();
+      const form = event.currentTarget;
+      const button = form.querySelector('button[type="submit"]');
+      const message = document.getElementById('newsletterMsg');
+      UX.showMessage(message, '');
+      UX.setBusy(button, true, { pt: 'Cadastrando...', en: 'Subscribing...' });
+      try {
+        await UX.apiFetch('/api/newsletter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: new FormData(form).get('email') })
+        }, UX.textByLanguage('Não foi possível concluir a inscrição.', 'Could not complete the subscription.'));
+        UX.showMessage(message, UX.textByLanguage('Inscrição registrada com sucesso.', 'Subscription saved successfully.'), 'success');
+        form.reset();
+      } catch (error) {
+        UX.showMessage(message, error.message, 'error');
+      } finally {
+        UX.setBusy(button, false);
+      }
+    });
+
+    // Check user authentication state
+    (async function() {
+      const authButtons = document.getElementById('authBtns');
+      const userProfile = document.getElementById('userProfile');
+      const headerProfilePic = document.getElementById('headerProfilePic');
+      const headerDefaultIcon = document.getElementById('headerDefaultIcon');
+      const headerUserName = document.getElementById('headerUserName');
+
+      try {
+        const response = await fetch('/api/auth/me', { headers: { Accept: 'application/json' } });
+        if (response.ok) {
+          const { user } = await response.json();
+          // Hide auth buttons and show profile
+          authButtons.style.display = 'none';
+          userProfile.style.display = 'flex';
+          
+          // Show profile picture if exists
+          if (user.profilePic) {
+            headerProfilePic.src = user.profilePic;
+            headerProfilePic.style.display = 'block';
+            headerDefaultIcon.style.display = 'none';
+          } else {
+            headerProfilePic.style.display = 'none';
+            headerDefaultIcon.style.display = 'block';
+          }
+          // Set first name in header if available (truncate to fit)
+          if (user.name) {
+            const first = String(user.name).trim().split(/\s+/)[0];
+            if (first) {
+              const max = 12;
+              headerUserName.textContent = first.length > max ? first.slice(0, max - 1) + '…' : first;
+              headerUserName.title = first;
+              headerUserName.style.display = 'inline-block';
+            }
+          }
+        } else {
+          authButtons.style.display = 'flex';
+          userProfile.style.display = 'none';
+        }
+      } catch (error) {
+        authButtons.style.display = 'flex';
+        userProfile.style.display = 'none';
+      }
+    })();
+
+    // Carousel funcionalidade
+    const carouselItems = document.querySelectorAll('.carousel-item');
+    const carouselDots = document.querySelectorAll('.carousel-dot');
+    let currentSlide = 0;
+    let slideInterval;
+
+    function updateCarouselAccessibility() {
+      const total = carouselItems.length;
+      const isEnglish = UX.isEnglish();
+      document.querySelector('.carousel')?.setAttribute('aria-roledescription', isEnglish ? 'carousel' : 'carrossel');
+      carouselItems.forEach((item, index) => {
+        item.setAttribute('aria-roledescription', isEnglish ? 'slide' : 'slide');
+        item.setAttribute('aria-label', isEnglish ? `${index + 1} of ${total}` : `${index + 1} de ${total}`);
+      });
+      carouselDots.forEach((dot, index) => {
+        dot.setAttribute('aria-label', isEnglish ? `Show highlight ${index + 1}` : `Mostrar destaque ${index + 1}`);
+      });
+    }
+
+    function showSlide(index) {
+      prepareSlide(index);
+      carouselItems.forEach((item, itemIndex) => {
+        const active = itemIndex === index;
+        item.classList.toggle('active', active);
+        item.setAttribute('aria-hidden', String(!active));
+        item.toggleAttribute('inert', !active);
+      });
+      carouselDots.forEach((dot, dotIndex) => {
+        const active = dotIndex === index;
+        dot.classList.toggle('active', active);
+        dot.setAttribute('aria-pressed', String(active));
+      });
+      currentSlide = index;
+    }
+
+    function prepareSlide(index) {
+      const item = carouselItems[index];
+      const background = item?.dataset.background;
+      if (!background) return;
+      item.style.backgroundImage = `url("${background}")`;
+      delete item.dataset.background;
+    }
+
+    function nextSlide() {
+      let nextIndex = (currentSlide + 1) % carouselItems.length;
+      showSlide(nextIndex);
+    }
+
+    function startCarousel() {
+      if (document.hidden) return;
+      clearInterval(slideInterval);
+      slideInterval = setInterval(nextSlide, 5000); // Troca a cada 5 segundos
+    }
+
+    function stopCarousel() {
+      clearInterval(slideInterval);
+    }
+
+    carouselDots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        stopCarousel();
+        const slideIndex = parseInt(dot.getAttribute('data-index'));
+        showSlide(slideIndex);
+        startCarousel();
+      });
+    });
+
+    // Inicia o carrossel
+    updateCarouselAccessibility();
+    startCarousel();
+
+    const prepareRemainingSlides = () => carouselItems.forEach((_, index) => prepareSlide(index));
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(prepareRemainingSlides, { timeout: 3000 });
+    } else {
+      window.setTimeout(prepareRemainingSlides, 1500);
+    }
+
+    // Pausa ao passar o mouse
+    const carousel = document.querySelector('.carousel');
+    carousel.addEventListener('mouseenter', stopCarousel);
+    carousel.addEventListener('mouseleave', startCarousel);
+    carousel.addEventListener('focusin', stopCarousel);
+    carousel.addEventListener('focusout', (event) => {
+      if (!carousel.contains(event.relatedTarget)) startCarousel();
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stopCarousel();
+      else startCarousel();
+    });
+    document.addEventListener('translations.updated', () => {
+      UX.updateAccessibilityLabels();
+      setMenuOpen(menuList.classList.contains('open'));
+      updateFaqLabels();
+      updatePortfolioAccessibility();
+      updateCarouselAccessibility();
+    });
+  </script>
+</body>
+</html>

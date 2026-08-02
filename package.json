@@ -1,0 +1,27 @@
+{
+  "name": "lensclick",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:migrate:local": "wrangler d1 migrations apply lensclick-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply lensclick-db --remote",
+    "prestart": "npm run db:migrate:local",
+    "start": "wrangler dev --local --port 4174",
+    "predev": "npm run db:migrate:local",
+    "dev": "wrangler dev --local --port 4174",
+    "check": "wrangler deploy --dry-run --outdir dist",
+    "test:smoke": "node scripts/http-smoke.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "workerd@1.20260730.1": true
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

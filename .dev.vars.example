@@ -1,0 +1,2 @@
+# Copie para .dev.vars somente se adicionar segredos locais no futuro.
+# Nunca envie .dev.vars ao controle de versao.

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="login.pageTitle">Login | LensClick</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: Poppins, Arial, sans-serif;
+      background: radial-gradient(1200px 800px at 50% 10%, #6a39f0 0%, #4b2a9f 40%, #20123a 100%) fixed;
+      color: #f0f3ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      /* Remover possíveis margens laterais extras */
+      box-sizing: border-box;
+    }
+    .auth-section {
+      /* Centralizar vertical e horizontalmente */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+      padding: 0;
+    }
+    .auth-container {
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: unset;
+      /* Remover altura mínima para evitar vácuo */
+      padding: 0;
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 370px;
+      margin: 0 auto;
+      padding: 32px 24px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      background: #181a2a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      /* Centralizar o conteúdo do card */
+      justify-content: center;
+    }
+    .auth-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .auth-logo {
+      width: 60px;
+      height: 60px;
+      border-radius: 15px;
+      background: linear-gradient(135deg, #a35bff, #5bb3ff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 15px;
+      box-shadow: 0 8px 25px rgba(125, 112, 255, 0.35);
+    }
+    .auth-logo i {
+      font-size: 28px;
+    }
+    .title-md {
+      font-size: 32px;
+      margin: 0 0 14px;
+      font-weight: 700;
+    }
+    .gradient-text {
+      background: linear-gradient(90deg, #a35bff, #5bb3ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center; /* Centraliza os campos */
+      width: 100%;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center; /* Centraliza label e input */
+      width: 100%;
+    }
+    .form-group label {
+      font-weight: 500;
+      color: #c9c9d6;
+    }
+    .form-control {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #f0f3ff;
+      font-family: inherit;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: #a35bff;
+      box-shadow: 0 0 0 2px rgba(163, 91, 255, 0.2);
+    }
+    .btn {
+      appearance: none;
+      border: none;
+      padding: 16px 16px;
+      border-radius: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(135deg, #a35bff, #5bb3ff);
+      color: #ffffff;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      transition: transform .15s ease, box-shadow .2s ease;
+      width: 80%;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(0,0,0,0.4);
+    }
+    .btn-back {
+      width: 100%;
+      margin-top: 25px;
+      padding: 20px 0;
+      border-radius: 16px;
+      background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
+      color: #fff;
+      font-weight: 600;
+      font-size: 18px;
+      letter-spacing: 0.5px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .btn-back:hover {
+      background: linear-gradient(90deg, var(--accent-2), var(--accent-1));
+      color: #fff;
+    }
+    .auth-footer {
+      text-align: center;
+      margin-top: 25px;
+      color: #c9c9d6;
+    }
+    .auth-link {
+      color: #5bb3ff;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+    .auth-link:hover {
+      color: #a35bff;
+      text-decoration: underline;
+    }
+    .btn:disabled { cursor:wait; opacity:.72; transform:none; }
+    @media (max-width: 600px) {
+      .auth-container {
+        max-width: 100%;
+        padding: 0 12px;
+        box-sizing: border-box;
+      }
+      .auth-card {
+        padding: 20px 12px;
+        border-radius: 14px;
+        width: 92%;
+        max-width: 340px;
+        box-sizing: border-box;
+        margin: 0 auto;
+      }
+      .auth-logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+      }
+      .title-md {
+        font-size: 26px;
+        margin-bottom: 14px;
+      }
+      .auth-form {
+        gap: 12px;
+        width: 94%;
+        margin: 0 auto;
+        align-items: center;
+      }
+      .form-group {
+        gap: 6px;
+        align-items: center;
+        width: 100%;
+      }
+      .form-group label, .form-group input {
+        width: 100%;
+        text-align: left;
+      }
+      .btn, .btn-back {
+        width: 100%;
+        font-size: 1.1rem;
+        padding: 12px 0;
+        margin-top: 8px;
+      }
+      .auth-footer, .auth-switch {
+        font-size: 0.95rem;
+        padding: 10px;
+      }
+      #loginMsg {
+        margin: 18px 0 0;
+        font-size: 1rem;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="refinements.css">
+</head>
+<body class="auth-page login-page">
+  <main id="main-content" class="auth-section" tabindex="-1">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-logo" aria-hidden="true">
+            <i class="fas fa-camera"></i>
+          </div>
+          <h1 class="title-md" data-i18n-html="true" data-i18n="login.title">Entrar na <span class="gradient-text">LensClick</span></h1>
+          <p data-i18n="login.lead">Acesse sua conta para editar seu perfil</p>
+        </div>
+        <form class="auth-form" id="loginForm">
+          <div class="form-group">
+            <label for="loginEmail" data-i18n="login.email.label">E-mail</label>
+            <input type="email" id="loginEmail" class="form-control" placeholder="seu@email.com" data-i18n-placeholder="login.email.placeholder" autocomplete="email" required>
+          </div>
+          <div class="form-group">
+            <label for="loginPassword" data-i18n="login.password.label">Senha</label>
+            <input type="password" id="loginPassword" class="form-control" placeholder="Sua senha" data-i18n-placeholder="login.password.placeholder" autocomplete="current-password" required>
+          </div>
+          <button type="submit" class="btn btn-primary" data-i18n="login.submit">Entrar</button>
+        </form>
+        <div id="loginMsg" class="feedback-message" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+        <div class="auth-footer">
+          <p data-i18n-html="true"><span data-i18n="login.noAccount">Não tem uma conta?</span> <a href="cadastro.html" class="auth-link" data-i18n="login.signupLink">Cadastre-se</a></p>
+          <a class="btn-back" href="index.html" data-i18n="login.back">Voltar ao site</a>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="lang.js"></script>
+  <script src="ux.js"></script>
+  <script>
+    const loginForm = document.getElementById('loginForm');
+    const loginMsg = document.getElementById('loginMsg');
+    const loginButton = loginForm.querySelector('button[type="submit"]');
+    const UX = window.LensClickUX;
+
+    function showLoginMessage(message, type = 'error') {
+      UX.showMessage(loginMsg, message, type);
+    }
+
+    loginForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      showLoginMessage('', 'info');
+      UX.setBusy(loginButton, true, { pt: 'Entrando...', en: 'Signing in...' });
+      try {
+        await UX.apiFetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        }, UX.textByLanguage('Não foi possível entrar.', 'Could not sign in.'));
+        showLoginMessage(UX.textByLanguage('Login realizado com segurança. Redirecionando...', 'Signed in securely. Redirecting...'), 'success');
+        setTimeout(() => { window.location.href = UX.safeNextDestination('perfil.html'); }, 700);
+      } catch (error) {
+        showLoginMessage(error.message);
+        UX.setBusy(loginButton, false);
+      }
+    });
+  </script>
+</body>
+</html>

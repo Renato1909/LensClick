@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="signup.pageTitle">Cadastro | LensClick</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: Poppins, Arial, sans-serif;
+      background: radial-gradient(1200px 800px at 50% 10%, #6a39f0 0%, #4b2a9f 40%, #20123a 100%) fixed;
+      color: #f0f3ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .auth-section {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      height: 100vh;
+      padding: 0;
+    }
+    .auth-container {
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: unset;
+      padding: 0;
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 370px;
+      margin: 0 auto;
+      padding: 32px 24px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      background: #181a2a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    .auth-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .auth-logo {
+      width: 60px;
+      height: 60px;
+      border-radius: 15px;
+      background: linear-gradient(135deg, #a35bff, #5bb3ff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 15px;
+      box-shadow: 0 8px 25px rgba(125, 112, 255, 0.35);
+    }
+    .auth-logo i {
+      font-size: 28px;
+    }
+    .title-md {
+      font-size: 32px;
+      margin: 0 0 14px;
+      font-weight: 700;
+    }
+    .gradient-text {
+      background: linear-gradient(90deg, #a35bff, #5bb3ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center; /* Centraliza os campos */
+      width: 100%;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center; /* Centraliza label e input */
+      width: 100%;
+    }
+    .form-group label {
+      font-weight: 500;
+      color: #c9c9d6;
+      width: 100%;
+      text-align: left;
+    }
+    .form-control {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #f0f3ff;
+      font-family: inherit;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: #a35bff;
+      box-shadow: 0 0 0 2px rgba(163, 91, 255, 0.2);
+    }
+    .btn {
+      appearance: none;
+      border: none;
+      padding: 16px 28px;
+      border-radius: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(135deg, #a35bff, #5bb3ff);
+      color: #ffffff;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      transition: transform .15s ease, box-shadow .2s ease;
+      width: 100%;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(0,0,0,0.4);
+    }
+    .btn-back {
+      width: 100%;
+      margin-top: 25px;
+      padding: 20px 0;
+      border-radius: 16px;
+      background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
+      color: #fff;
+      font-weight: 600;
+      font-size: 18px;
+      letter-spacing: 0.5px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .btn-back:hover {
+      background: linear-gradient(90deg, var(--accent-2), var(--accent-1));
+      color: #fff;
+    }
+    .auth-footer {
+      text-align: center;
+      margin-top: 25px;
+      font-size: 1rem;
+      color: #c9c9d6;
+    }
+    .auth-link {
+      color: #5bb3ff;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+    .auth-link:hover {
+      color: #a35bff;
+      text-decoration: underline;
+    }
+    .form-hint { margin:7px 0 0; color:#aeb3c9; font-size:.78rem; line-height:1.45; }
+    .terms-consent { display:flex; align-items:flex-start; gap:10px; color:#c9c9d6; font-size:.82rem; line-height:1.5; }
+    .terms-consent input { margin-top:4px; accent-color:var(--accent-1); }
+    .terms-consent a { color:var(--accent-2); }
+    .btn:disabled { cursor:wait; opacity:.72; transform:none; }
+    #signupMsg {
+      display:none;
+      margin: 18px 0 0;
+      font-size: 1rem;
+      color:#a6ffbf;
+      text-align:center;
+      font-weight:600;
+    }
+    @media (max-width: 600px) {
+      .auth-container {
+        max-width: 100%;
+        padding: 0 12px;
+        box-sizing: border-box;
+      }
+      .auth-card {
+        padding: 20px 12px;
+        border-radius: 14px;
+        width: 92%;
+        max-width: 340px;
+        box-sizing: border-box;
+        margin: 0 auto;
+      }
+      .auth-logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+      }
+      .title-md {
+        font-size: 26px;
+        margin-bottom: 14px;
+      }
+      .auth-form {
+        gap: 12px;
+        width: 94%;
+        margin: 0 auto;
+        align-items: center;
+      }
+      .form-control {
+        font-size: 15px;
+        padding: 14px 16px;
+      }
+      }
+      .form-control {
+        font-size: 14px;
+        padding: 12px 14px;
+      }
+      .form-group {
+        gap: 6px;
+        align-items: flex-start;
+        width: 100%;
+        padding: 0;
+        margin-bottom: 2px;
+      }
+      }
+      .form-group label, .form-group input {
+        width: 100%;
+        text-align: left;
+      }
+      .btn, .btn-back {
+        width: 100%;
+        font-size: 1.1rem;
+        padding: 12px 0;
+        margin-top: 8px;
+      }
+      .auth-footer, .auth-switch {
+        font-size: 0.95rem;
+        padding: 10px;
+      }
+      #signupMsg {
+        margin: 18px 0 0;
+        font-size: 1rem;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="refinements.css">
+</head>
+<body class="auth-page signup-page">
+  <main id="main-content" class="auth-section" tabindex="-1">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-logo" aria-hidden="true">
+            <i class="fas fa-camera"></i>
+          </div>
+          <h1 class="title-md" data-i18n-html="true" data-i18n="signup.title">Criar <span class="gradient-text">Conta</span></h1>
+          <p data-i18n="signup.lead">Junte-se à nossa comunidade de amantes da fotografia</p>
+        </div>
+        <form class="auth-form" id="signupForm">
+          <div class="form-group">
+            <label for="signupName" data-i18n="signup.name.label">Nome Completo</label>
+            <input type="text" id="signupName" class="form-control" placeholder="Seu nome completo" data-i18n-placeholder="signup.name.placeholder" autocomplete="name" required>
+          </div>
+          <div class="form-group">
+            <label for="signupEmail" data-i18n="signup.email.label">E-mail</label>
+            <input type="email" id="signupEmail" class="form-control" placeholder="seu@email.com" data-i18n-placeholder="signup.email.placeholder" autocomplete="email" required>
+          </div>
+          <div class="form-group">
+            <label for="signupPhone" data-i18n="signup.phone.label">Telefone</label>
+            <input type="tel" id="signupPhone" class="form-control" placeholder="(11) 99999-9999" data-i18n-placeholder="signup.phone.placeholder" autocomplete="tel" required>
+          </div>
+          <div class="form-group">
+            <label for="signupPassword" data-i18n="signup.password.label">Senha</label>
+            <input type="password" id="signupPassword" class="form-control" placeholder="Crie uma senha segura" data-i18n-placeholder="signup.password.placeholder" autocomplete="new-password" minlength="8" aria-describedby="signupPasswordHint" required>
+            <p class="form-hint" id="signupPasswordHint" data-i18n="signup.password.hint">Use pelo menos 8 caracteres, incluindo uma letra e um número.</p>
+          </div>
+          <div class="form-group">
+            <label for="signupConfirmPassword" data-i18n="signup.confirm.label">Confirmar Senha</label>
+            <input type="password" id="signupConfirmPassword" class="form-control" placeholder="Digite novamente sua senha" data-i18n-placeholder="signup.confirm.placeholder" autocomplete="new-password" minlength="8" required>
+          </div>
+          <label class="terms-consent"><input type="checkbox" id="signupConsent" required><span data-i18n="signup.consent" data-i18n-html="true">Li e concordo com os <a href="termos.html" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.</span></label>
+          <button type="submit" class="btn btn-primary" data-i18n="signup.submit">Criar Conta</button>
+        </form>
+        <div id="signupMsg" class="feedback-message" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+        <div class="auth-footer">
+          <p data-i18n-html="true" data-i18n="signup.haveAccount">Já tem uma conta? <a href="login.html" class="auth-link" data-i18n="signup.loginLink">Fazer login</a></p>
+          <a class="btn-back" href="index.html" data-i18n="signup.back">Voltar ao site</a>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="lang.js"></script>
+  <script src="ux.js"></script>
+  <script>
+    const signupForm = document.getElementById('signupForm');
+    const signupMsg = document.getElementById('signupMsg');
+    const signupButton = signupForm.querySelector('button[type="submit"]');
+    const confirmPasswordInput = document.getElementById('signupConfirmPassword');
+    const UX = window.LensClickUX;
+
+    function showSignupMessage(message, type = 'error') {
+      UX.showMessage(signupMsg, message, type);
+    }
+
+    confirmPasswordInput.addEventListener('input', () => confirmPasswordInput.setCustomValidity(''));
+
+    signupForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const name = document.getElementById('signupName').value.trim();
+      const email = document.getElementById('signupEmail').value.trim();
+      const phone = document.getElementById('signupPhone').value.trim();
+      const password = document.getElementById('signupPassword').value;
+      const confirmPassword = document.getElementById('signupConfirmPassword').value;
+      if (password !== confirmPassword) {
+        confirmPasswordInput.setCustomValidity(UX.textByLanguage('As senhas não coincidem.', 'Passwords do not match.'));
+        confirmPasswordInput.reportValidity();
+        confirmPasswordInput.focus();
+        showSignupMessage(confirmPasswordInput.validationMessage);
+        return;
+      }
+
+      showSignupMessage('', 'info');
+      UX.setBusy(signupButton, true, { pt: 'Criando conta...', en: 'Creating account...' });
+      try {
+        await UX.apiFetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, phone, password })
+        }, UX.textByLanguage('Não foi possível criar a conta.', 'Could not create the account.'));
+        showSignupMessage(UX.textByLanguage('Conta criada com segurança. Redirecionando para o perfil...', 'Account created securely. Redirecting to your profile...'), 'success');
+        setTimeout(() => { window.location.href = 'perfil.html'; }, 700);
+      } catch (error) {
+        showSignupMessage(error.message);
+        UX.setBusy(signupButton, false);
+      }
+    });
+  </script>
+</body>
+</html>

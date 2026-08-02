@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="profile.title">Perfil | LensClick</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    html,body{height:100%;}
+    body { margin:0; font-family: Poppins, Arial, sans-serif; background: radial-gradient(1200px 800px at 50% 10%, #6a39f0 0%, #4b2a9f 40%, #20123a 100%) fixed; color:var(--text); -webkit-font-smoothing:antialiased; }
+    .container { max-width:980px; margin:80px auto 36px; padding:20px; }
+  .card { background: linear-gradient(180deg, rgba(15,18,32,0.9), rgba(12,13,22,0.72)); border-radius:18px; padding:28px; box-shadow:0 12px 40px rgba(0,0,0,.45); border:1px solid rgba(255,255,255,0.04); box-sizing: border-box; overflow: hidden; }
+  h1 { margin:0 0 18px 0; font-size:28px; text-align:center; }
+
+    /* layout */
+    .top-row{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;margin-top:15px}
+    .avatar-wrap{width:140px;display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:65px}
+  .avatar{
+    width:140px;
+    height:140px;
+    border-radius:50%;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,0.06);
+    background:#0d0e15;
+    display:flex; /* change to flex to center content */
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2);
+  }
+  .avatar img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:none;
+    border-radius:50%;
+    background:none;
+    position:absolute;
+    z-index:2;
+  }
+  .no-image-message{
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    padding: 0 10px;
+    max-width:85%;
+    z-index:1;
+    margin:0 auto;
+    pointer-events:none;
+  }
+  /* smaller circular upload button positioned inside avatar to avoid overlap */
+  .avatar .upload-label{
+    position:absolute;
+    right:10px;
+    bottom:10px;
+    background:#ffffff;
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#000000;
+    cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,0.2);
+    z-index:3;
+    border:none;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .avatar .upload-label:hover {
+    transform: scale(1.05);
+    box-shadow:0 3px 8px rgba(0,0,0,0.25);
+  }
+  .avatar .upload-label i {
+    font-size: 12px;
+  }
+    .visually-hidden{position:absolute!important;clip:rect(1px,1px,1px,1px);padding:0;border:0;height:1px;width:1px;overflow:hidden}
+
+    /* form */
+    .profile-details{flex:1;min-width:260px}
+  /* make left column slightly narrower so the email field doesn't stretch too far */
+  /* Use equal-width columns so corresponding horizontal fields align (e.g. "You are" and "Age") */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+    .form-grid .full{grid-column:1/-1}
+
+    .label{font-weight:600;color:var(--muted);font-size:0.95rem;margin-bottom:8px}
+  /* Normalize form control and custom current so they render identically */
+  .form-control{width:100%;max-width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);color:var(--text);font-family:inherit;font-size:16px;line-height:20px;height:44px}
+    .form-control:focus{outline:none;box-shadow:0 0 0 3px rgba(99,102,241,0.08);border-color:var(--accent-1)}
+
+    /* Keep selects visually consistent with text inputs */
+    select.form-control{
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.08);
+      padding:12px 14px;
+      box-sizing:border-box;
+    }
+
+    /* Custom select component: replaces native dropdown for better styling control */
+    select.form-control[data-custom="true"]{ display:none; }
+    /* Ensure custom select matches form-control sizing exactly */
+    /* custom-select should match .form-control exactly */
+    .custom-select{ position:relative; width:100%; box-sizing:border-box; display:block }
+    .custom-select .current{
+      box-sizing:border-box; display:flex; align-items:center; justify-content:space-between;
+      width:100%; padding:12px 14px; border-radius:12px; background:rgba(255,255,255,0.03);
+      color:var(--text); border:1px solid rgba(255,255,255,0.08); cursor:pointer; height:44px; overflow:hidden; font-size:16px; line-height:20px;
+    }
+    .custom-select .current .label{ 
+      flex:1;
+      display:flex;
+      align-items:center; /* vertically center the text exactly */
+      height:100%;
+      /* nudge the label a few pixels down for visual alignment */
+      transform: translateY(3px);
+    }
+    .custom-select .current .caret{ display:inline-flex; align-items:center; height:100%; }
+    .custom-select .options{
+      position:absolute; left:0; right:0; top:calc(100% + 8px); background: linear-gradient(180deg, rgba(15,18,32,0.98), rgba(12,13,22,0.98)); color:var(--text);
+      border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,0.45); max-height:220px; overflow:auto; z-index:120; padding:6px; display:none;
+    }
+    .custom-select.open .options{ display:block; }
+    .custom-select .option{ padding:10px 12px; border-radius:6px; cursor:pointer; }
+    .custom-select .option:hover{ background:rgba(255,255,255,0.03); }
+    .custom-select .option.disabled{ opacity:.5; cursor:default }
+
+  .actions{display:flex;gap:12px;align-items:center;margin-top:16px}
+  .actions .left{margin-right:auto}
+  .btn{padding:14px 24px;border-radius:12px;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));border:none;color:#061018;font-weight:700;cursor:pointer;transition:transform 0.18s,box-shadow 0.18s}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,0.25)}
+  /* Darker red for Log out button */
+  .btn.danger{background: linear-gradient(135deg,#c24646,#9b2b2b); color:#fff; border:none}
+  .btn.danger:hover{filter:brightness(0.96); box-shadow:0 8px 22px rgba(155,43,43,0.28)}
+  /* Lighter outline button for 'Voltar ao site' */
+  /* Use provided purple gradient color for the 'Voltar ao site' button */
+  .btn.outline{background: linear-gradient(135deg,#4a2fa3,#6f49de); border: none; color: #ffffff; box-shadow: 0 6px 18px rgba(74,47,163,0.12)}
+  .btn.outline:hover{filter:brightness(1.06); box-shadow: 0 10px 28px rgba(74,47,163,0.18)}
+
+    /* Darker-but-slightly-lighter appearance for the Save button (adjusted per request) */
+    #saveProfile{
+      background: linear-gradient(135deg,#5f3fb0,#452a82); /* lighter purple gradient */
+      color: #ffffff;
+      box-shadow: inset 0 -2px 0 rgba(0,0,0,0.08);
+    }
+    #saveProfile:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(52,28,108,0.35);
+    }
+
+    @media(max-width:760px){
+      .form-grid{grid-template-columns:1fr}
+      .avatar-wrap{width:120px}
+      .avatar{width:120px;height:120px}
+      /* reduce container/card padding on small screens to avoid horizontal overflow */
+      .container{padding:12px}
+      .card{padding:20px}
+      .form-control{padding:10px 12px;border-radius:10px}
+    }
+
+    /* extra safety for very small devices */
+    @media(max-width:420px){
+      .container{padding:10px}
+      .card{padding:16px}
+      .form-control{font-size:15px}
+    }
+  </style>
+  <link rel="stylesheet" href="refinements.css">
+</head>
+<body class="profile-page">
+  <main id="main-content" class="container" tabindex="-1">
+    <div class="card">
+      <h1 data-i18n-html="true" data-i18n="profile.title">Perfil</h1>
+
+      <form id="profileForm">
+        <div class="top-row">
+          <div class="avatar-wrap">
+            <div class="avatar">
+              <div class="no-image-message" id="noImageMessage" data-i18n="profile.noImage">Adicione uma imagem pro seu perfil</div>
+              <img src="" alt="" />
+              <label for="profilePic" class="upload-label" data-i18n-title="profile.addPhoto" title="Adicionar foto" aria-label="Adicionar foto">
+                <i class="fas fa-camera" aria-hidden="true"></i>
+                <input type="file" id="profilePic" class="visually-hidden" accept="image/*">
+              </label>
+            </div>
+          </div>
+
+          <div class="profile-details">
+            <label class="label" for="profileNameInput" data-i18n="profile.nameLabel">Nome</label>
+            <input id="profileNameInput" class="form-control" type="text" autocomplete="name" required minlength="2" />
+
+            <div class="form-grid">
+              <div>
+                <label class="label" for="profileEmail" data-i18n="profile.emailLabel">E-mail</label>
+                <input id="profileEmail" class="form-control" type="email" autocomplete="email" required />
+              </div>
+              <div>
+                <label class="label" for="profilePhone" data-i18n="profile.phoneLabel">Telefone</label>
+                <input id="profilePhone" class="form-control" type="tel" autocomplete="tel" required minlength="8" />
+              </div>
+
+              <div>
+                <label class="label" for="profileRole" data-i18n="profile.roleLabel">Você é</label>
+                <select id="profileRole" class="form-control" data-custom="true">
+                  <option value="client" data-i18n="profile.role.client">Cliente</option>
+                  <option value="photographer" data-i18n="profile.role.photographer">Fotógrafo</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="label" for="profileAge" data-i18n="profile.ageLabel">Idade</label>
+                <input id="profileAge" class="form-control" type="number" min="0" max="120" />
+              </div>
+
+              <div class="full">
+                <label class="label" for="profileGender" data-i18n="profile.genderLabel">Gênero</label>
+                <select id="profileGender" class="form-control" data-custom="true">
+                  <option value="male" data-i18n="profile.gender.male">Masculino</option>
+                  <option value="female" data-i18n="profile.gender.female">Feminino</option>
+                  <option value="other" data-i18n="profile.gender.other">Outro</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <a class="btn outline left" href="index.html" data-i18n="profile.backToSite">Voltar ao site</a>
+          <button id="saveProfile" type="button" class="btn" data-i18n="profile.save">Salvar</button>
+          <button id="logoutBtn" type="button" class="btn danger" data-i18n="profile.logout">Sair</button>
+        </div>
+        <p id="profileMsg" class="feedback-message" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+      </form>
+    </div>
+  </main>
+  <script src="lang.js"></script>
+  <script src="ux.js"></script>
+  <script src="profile-api.js"></script>
+  <script>
+    // lightweight custom select replacement for better dropdown styling
+    (function(){
+      function initCustomSelects(){
+        document.querySelectorAll('select.form-control[data-custom="true"]').forEach(select=>{
+          if(select.__customInited) return;
+          select.__customInited = true;
+          const wrapper = document.createElement('div'); wrapper.className = 'custom-select';
+          const current = document.createElement('div'); current.className = 'current';
+          const label = document.createElement('span'); label.className='label';
+          const arrow = document.createElement('span'); arrow.className='caret'; arrow.innerHTML = '\u25BC'; arrow.style.marginLeft='8px'; arrow.style.opacity='0.9';
+          current.appendChild(label); current.appendChild(arrow);
+          const optionsWrap = document.createElement('div'); optionsWrap.className='options';
+
+          Array.from(select.options).forEach((opt, idx)=>{
+            const o = document.createElement('div'); o.className='option'; o.textContent = opt.text;
+            if(opt.disabled) { o.classList.add('disabled'); }
+            o.addEventListener('click', ()=>{
+              if(opt.disabled) return;
+              select.selectedIndex = idx;
+              select.dispatchEvent(new Event('change', { bubbles:true }));
+              label.textContent = opt.text;
+              wrapper.classList.remove('open');
+            });
+            optionsWrap.appendChild(o);
+          });
+
+          wrapper.appendChild(current); wrapper.appendChild(optionsWrap);
+          // replace native select with wrapper so the custom element occupies the same DOM position
+          select.parentNode.replaceChild(wrapper, select);
+          // move the original select inside the wrapper (kept hidden for form semantics)
+          wrapper.appendChild(select);
+          // keep the native select present but visually hidden (no layout difference)
+          select.style.position = 'absolute';
+          select.style.left = '0';
+          select.style.top = '0';
+          select.style.width = '100%';
+          select.style.height = '100%';
+          select.style.opacity = '0';
+          select.style.pointerEvents = 'none';
+
+          const updateCurrent = ()=>{
+            const s = select.options[select.selectedIndex];
+            label.textContent = s ? s.text : '';
+          };
+
+          updateCurrent();
+
+          current.addEventListener('click', (e)=>{ wrapper.classList.toggle('open'); });
+          // close when clicking outside
+          document.addEventListener('click', (e)=>{ if(!wrapper.contains(e.target)) wrapper.classList.remove('open'); });
+
+          // reflect programmatic changes
+          select.addEventListener('change', updateCurrent);
+        });
+      }
+
+      if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initCustomSelects);
+      else initCustomSelects();
+
+      // update custom selects when translations change
+      document.addEventListener('translations.updated', function(){
+        document.querySelectorAll('select.form-control[data-custom="true"]').forEach(select=>{
+          const wrapper = select.closest('.custom-select');
+          if(!wrapper) return;
+          const optionsWrap = wrapper.querySelector('.options');
+          const currentLabel = wrapper.querySelector('.current .label');
+          // rebuild options
+          optionsWrap.innerHTML = '';
+          Array.from(select.options).forEach((opt, idx)=>{
+            const o = document.createElement('div'); o.className='option'; o.textContent = opt.text;
+            if(opt.disabled) o.classList.add('disabled');
+            o.addEventListener('click', ()=>{
+              if(opt.disabled) return;
+              select.selectedIndex = idx;
+              select.dispatchEvent(new Event('change', { bubbles:true }));
+              currentLabel.textContent = opt.text;
+              wrapper.classList.remove('open');
+            });
+            optionsWrap.appendChild(o);
+          });
+          // update the visible label
+          const s = select.options[select.selectedIndex];
+          currentLabel.textContent = s ? s.text : '';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
