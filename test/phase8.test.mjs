@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const publicDir = resolve('public');
-const pageNames = ['index.html', 'login.html', 'cadastro.html', 'perfil.html', 'termos.html', 'privacidade.html', 'perfil_temp.html'];
+const pageNames = ['index.html', 'login.html', 'cadastro.html', 'recuperar-senha.html', 'redefinir-senha.html', 'perfil.html', 'termos.html', 'privacidade.html', 'perfil_temp.html'];
 const readPublic = (file) => readFileSync(resolve(publicDir, file), 'utf8');
 
 test('a Fase 8 elimina recarregamento indevido e navegacao inline', () => {

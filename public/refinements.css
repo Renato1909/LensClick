@@ -472,6 +472,11 @@ form label:focus-within .eyebrow {
   color: var(--lc-color-text-subtle);
 }
 
+.login-page .form-group .auth-link {
+  align-self: flex-end;
+  font-size: 0.88rem;
+}
+
 /* Perfil */
 .profile-page .container {
   max-width: 920px;

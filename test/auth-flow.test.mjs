@@ -35,10 +35,23 @@ class MockD1 {
   constructor() {
     this.database = new DatabaseSync(':memory:');
     this.database.exec(readFileSync(resolve('migrations/0001_initial.sql'), 'utf8'));
+    this.database.exec(readFileSync(resolve('migrations/0002_password_reset.sql'), 'utf8'));
   }
 
   prepare(sql) {
     return new MockD1Statement(this.database, sql);
+  }
+
+  batch(statements) {
+    this.database.exec('BEGIN');
+    try {
+      const results = statements.map((statement) => statement.run());
+      this.database.exec('COMMIT');
+      return results;
+    } catch (error) {
+      this.database.exec('ROLLBACK');
+      throw error;
+    }
   }
 
   close() {
@@ -170,4 +183,76 @@ test('Worker rejeita mutacoes de outra origem e senhas invalidas', async (t) => 
     body: payload
   }), env);
   assert.equal(weakPassword.status, 400);
+});
+
+test('recuperacao troca a senha sem revelar contas e invalida sessoes', async (t) => {
+  const DB = new MockD1();
+  const sentEmails = [];
+  const env = {
+    DB,
+    PROFILE_IMAGES: new MockR2(),
+    RESEND_API_KEY: 're_test_only',
+    PASSWORD_RESET_FROM: 'LensClick <conta@lensclick.test>',
+    RESEND_FETCH: async (_url, options) => {
+      sentEmails.push(JSON.parse(options.body));
+      return Response.json({ id: 'email-test' });
+    }
+  };
+  const origin = 'https://lensclick.test';
+  let cookie = '';
+  t.after(() => DB.close());
+
+  async function request(path, body, withCookie = true) {
+    const response = await worker.fetch(new Request(origin + path, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: origin,
+        ...(withCookie && cookie ? { Cookie: cookie } : {})
+      },
+      body: JSON.stringify(body)
+    }), env);
+    const setCookie = response.headers.get('set-cookie');
+    if (setCookie) cookie = setCookie.split(';')[0];
+    return { response, json: await response.json() };
+  }
+
+  const registration = await request('/api/auth/register', {
+    name: 'Conta Recuperavel',
+    email: 'recuperar@example.com',
+    phone: '11999999999',
+    password: 'SenhaAntiga1'
+  });
+  assert.equal(registration.response.status, 201);
+  const originalCookie = cookie;
+
+  const known = await request('/api/auth/password-reset/request', { email: 'recuperar@example.com' }, false);
+  const unknown = await request('/api/auth/password-reset/request', { email: 'inexistente@example.com' }, false);
+  assert.equal(known.response.status, 202);
+  assert.equal(unknown.response.status, 202);
+  assert.deepEqual(known.json, unknown.json);
+  assert.equal(sentEmails.length, 1);
+
+  const resetLink = sentEmails[0].text.match(/https:\/\/\S+/)?.[0];
+  assert.ok(resetLink);
+  const token = new URL(resetLink).searchParams.get('token');
+  assert.match(token, /^[A-Za-z0-9_-]{40,100}$/);
+  const storedToken = DB.prepare('SELECT token_hash FROM password_reset_tokens').first('token_hash');
+  assert.notEqual(storedToken, token);
+
+  const reset = await request('/api/auth/password-reset/confirm', { token, password: 'SenhaNova2' }, false);
+  assert.equal(reset.response.status, 200);
+
+  const oldSession = await worker.fetch(new Request(origin + '/api/auth/me', {
+    headers: { Cookie: originalCookie }
+  }), env);
+  assert.equal(oldSession.status, 401);
+
+  const oldPassword = await request('/api/auth/login', { email: 'recuperar@example.com', password: 'SenhaAntiga1' }, false);
+  assert.equal(oldPassword.response.status, 401);
+  const newPassword = await request('/api/auth/login', { email: 'recuperar@example.com', password: 'SenhaNova2' }, false);
+  assert.equal(newPassword.response.status, 200);
+
+  const reused = await request('/api/auth/password-reset/confirm', { token, password: 'OutraSenha3' }, false);
+  assert.equal(reused.response.status, 400);
 });

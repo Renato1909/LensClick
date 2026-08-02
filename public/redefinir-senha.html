@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="recovery.confirm.pageTitle">Nova senha | LensClick</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="refinements.css">
+  <link rel="stylesheet" href="auth-recovery.css">
+</head>
+<body class="auth-page">
+  <button class="recovery-language" id="langToggle" type="button" aria-label="Trocar idioma">PT</button>
+  <main class="recovery-shell" id="main-content">
+    <section class="recovery-card" aria-labelledby="newPasswordTitle">
+      <div class="recovery-logo" aria-hidden="true"><i class="fas fa-shield-halved"></i></div>
+      <div class="recovery-header">
+        <h1 id="newPasswordTitle" data-i18n="recovery.confirm.title">Crie uma nova senha</h1>
+        <p data-i18n="recovery.confirm.lead">Escolha uma senha diferente e difícil de adivinhar.</p>
+      </div>
+      <form class="recovery-form" id="passwordResetForm">
+        <div>
+          <label for="newPassword" data-i18n="recovery.password.label">Nova senha</label>
+          <input id="newPassword" type="password" autocomplete="new-password" minlength="8" required aria-describedby="passwordHint" data-i18n-placeholder="recovery.password.placeholder" placeholder="Digite a nova senha">
+          <p class="form-hint" id="passwordHint" data-i18n="recovery.password.hint">Use pelo menos 8 caracteres, incluindo uma letra e um número.</p>
+        </div>
+        <div>
+          <label for="confirmPassword" data-i18n="recovery.confirmPassword.label">Confirmar nova senha</label>
+          <input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required data-i18n-placeholder="recovery.confirmPassword.placeholder" placeholder="Digite novamente a nova senha">
+        </div>
+        <button class="recovery-submit" type="submit" data-i18n="recovery.confirm.submit">Salvar nova senha</button>
+      </form>
+      <div class="recovery-message" id="resetMessage" role="status" aria-live="polite" hidden></div>
+      <div class="recovery-footer">
+        <a class="recovery-link" href="login.html" data-i18n="recovery.backLogin">Voltar para o login</a>
+      </div>
+    </section>
+  </main>
+  <script src="lang.js"></script>
+  <script src="ux.js"></script>
+  <script>
+    const form = document.getElementById('passwordResetForm');
+    const message = document.getElementById('resetMessage');
+    const button = form.querySelector('button[type="submit"]');
+    const passwordInput = document.getElementById('newPassword');
+    const confirmInput = document.getElementById('confirmPassword');
+    const UX = window.LensClickUX;
+    const token = new URLSearchParams(window.location.search).get('token') || '';
+
+    if (!/^[A-Za-z0-9_-]{40,100}$/.test(token)) {
+      form.hidden = true;
+      UX.showMessage(message, UX.textByLanguage(
+        'Este link é inválido ou expirou. Solicite uma nova recuperação.',
+        'This link is invalid or expired. Request a new password reset.'
+      ), 'error');
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      confirmInput.setCustomValidity('');
+      passwordInput.setCustomValidity('');
+      if (!/^(?=.*\p{L})(?=.*\d).{8,}$/u.test(passwordInput.value)) {
+        passwordInput.setCustomValidity(UX.textByLanguage(
+          'Use pelo menos 8 caracteres, incluindo uma letra e um número.',
+          'Use at least 8 characters, including one letter and one number.'
+        ));
+        passwordInput.reportValidity();
+        return;
+      }
+      if (passwordInput.value !== confirmInput.value) {
+        confirmInput.setCustomValidity(UX.textByLanguage('As senhas não coincidem.', 'Passwords do not match.'));
+        confirmInput.reportValidity();
+        return;
+      }
+      UX.showMessage(message, '', 'info');
+      UX.setBusy(button, true, { pt: 'Salvando...', en: 'Saving...' });
+      try {
+        await UX.apiFetch('/api/auth/password-reset/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, password: passwordInput.value })
+        }, UX.textByLanguage('Não foi possível alterar a senha.', 'Could not change the password.'));
+        form.hidden = true;
+        UX.showMessage(message, UX.textByLanguage(
+          'Senha alterada com segurança. Você já pode entrar novamente.',
+          'Password changed securely. You can now sign in again.'
+        ), 'success');
+      } catch (error) {
+        const translatedError = error.status === 429
+          ? UX.textByLanguage('Muitas tentativas. Aguarde alguns minutos.', 'Too many attempts. Please wait a few minutes.')
+          : UX.textByLanguage(
+            'Este link é inválido ou expirou. Solicite uma nova recuperação.',
+            'This link is invalid or expired. Request a new password reset.'
+          );
+        UX.showMessage(message, translatedError, 'error');
+        UX.setBusy(button, false);
+      }
+    });
+  </script>
+</body>
+</html>

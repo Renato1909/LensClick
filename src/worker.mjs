@@ -1,5 +1,6 @@
 const SESSION_COOKIE = 'lensclick_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
 const MAX_BODY_BYTES = 700_000;
 const MAX_PROFILE_PICTURE_BYTES = 450_000;
 // Cloudflare Workers Web Crypto accepts at most 100,000 PBKDF2 iterations.
@@ -23,6 +24,19 @@ function normalizeEmail(value) {
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254;
+}
+
+function isValidPassword(value) {
+  return value.length >= 8 && /\p{L}/u.test(value) && /\d/.test(value);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 function bytesToBase64Url(bytes) {
@@ -162,11 +176,10 @@ async function createSession(userId, request, env) {
   return sessionCookie(token, request);
 }
 
-async function isRateLimited(request, env, scope, limit, intervalMs) {
+async function consumeRateLimit(env, key, limit, intervalMs) {
   const now = Date.now();
-  const ip = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For')?.split(',')[0].trim() || 'local';
   const bucket = Math.floor(now / intervalMs);
-  const bucketKey = await sha256(`${scope}\0${ip}\0${bucket}`);
+  const bucketKey = await sha256(`${key}\0${bucket}`);
   await env.DB.prepare('DELETE FROM rate_limits WHERE expires_at <= ?').bind(now).run();
   const record = await env.DB.prepare(`
     INSERT INTO rate_limits (bucket_key, request_count, expires_at)
@@ -175,6 +188,46 @@ async function isRateLimited(request, env, scope, limit, intervalMs) {
     RETURNING request_count
   `).bind(bucketKey, (bucket + 1) * intervalMs).first();
   return Number(record?.request_count || 0) > limit;
+}
+
+async function isRateLimited(request, env, scope, limit, intervalMs) {
+  const ip = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For')?.split(',')[0].trim() || 'local';
+  return consumeRateLimit(env, `${scope}\0${ip}`, limit, intervalMs);
+}
+
+async function sendPasswordResetEmail(env, recipient, name, resetUrl, language = 'pt') {
+  if (!env.RESEND_API_KEY || !env.PASSWORD_RESET_FROM) {
+    throw new Error('Password reset email is not configured.');
+  }
+  const safeName = escapeHtml(name || '');
+  const safeUrl = escapeHtml(resetUrl);
+  const english = language === 'en';
+  const subject = english ? 'Reset your LensClick password' : 'Redefina sua senha da LensClick';
+  const text = english
+    ? `Hello${name ? `, ${name}` : ''}. Use this link to reset your LensClick password: ${resetUrl}\n\nThe link expires in 30 minutes and can be used only once. If you did not request this change, ignore this email.`
+    : `Ola${name ? `, ${name}` : ''}. Use este link para redefinir sua senha da LensClick: ${resetUrl}\n\nO link expira em 30 minutos e pode ser usado somente uma vez. Se voce nao solicitou a alteracao, ignore este e-mail.`;
+  const html = english
+    ? `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17182a"><h1 style="font-size:24px">Reset your password</h1><p>Hello${safeName ? `, ${safeName}` : ''}.</p><p>We received a request to change your LensClick account password.</p><p><a href="${safeUrl}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#6f4cff;color:#fff;text-decoration:none;font-weight:700">Create a new password</a></p><p>The link expires in 30 minutes and can be used only once.</p><p>If you did not request this change, ignore this email.</p></div>`
+    : `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17182a"><h1 style="font-size:24px">Redefina sua senha</h1><p>Ola${safeName ? `, ${safeName}` : ''}.</p><p>Recebemos uma solicitacao para alterar a senha da sua conta LensClick.</p><p><a href="${safeUrl}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#6f4cff;color:#fff;text-decoration:none;font-weight:700">Criar nova senha</a></p><p>O link expira em 30 minutos e pode ser usado somente uma vez.</p><p>Se voce nao solicitou a alteracao, ignore este e-mail.</p></div>`;
+  const emailFetch = typeof env.RESEND_FETCH === 'function' ? env.RESEND_FETCH : fetch;
+  const response = await emailFetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from: env.PASSWORD_RESET_FROM,
+      to: [recipient],
+      subject,
+      text,
+      html
+    })
+  });
+  if (!response.ok) {
+    const details = await response.text().catch(() => '');
+    throw new Error(`Resend rejected password reset email (${response.status}): ${details.slice(0, 300)}`);
+  }
 }
 
 function decodeProfilePicture(dataUrl) {
@@ -198,7 +251,7 @@ function decodeProfilePicture(dataUrl) {
   };
 }
 
-async function handleApi(request, env, url) {
+async function handleApi(request, env, url, context) {
   const { pathname } = url;
   const method = request.method.toUpperCase();
   if (!['GET', 'HEAD'].includes(method) && !requestOriginIsAllowed(request)) {
@@ -217,7 +270,7 @@ async function handleApi(request, env, url) {
     if (name.length < 2 || !isValidEmail(email) || phone.length < 8) {
       return json(400, { error: 'Preencha nome, e-mail e telefone corretamente.' });
     }
-    if (password.length < 8 || !/\p{L}/u.test(password) || !/\d/.test(password)) {
+    if (!isValidPassword(password)) {
       return json(400, { error: 'A senha deve ter ao menos 8 caracteres, uma letra e um numero.' });
     }
     if (await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()) {
@@ -249,6 +302,75 @@ async function handleApi(request, env, url) {
     }
     const cookie = await createSession(Number(user.id), request, env);
     return json(200, { user: publicUser(user) }, { 'Set-Cookie': cookie });
+  }
+
+  if (pathname === '/api/auth/password-reset/request' && method === 'POST') {
+    if (!env.RESEND_API_KEY || !env.PASSWORD_RESET_FROM) {
+      return json(503, { error: 'A recuperacao de senha esta temporariamente indisponivel.' });
+    }
+    if (await isRateLimited(request, env, pathname, 5, 60 * 60 * 1000)) {
+      return json(429, { error: 'Muitas solicitacoes. Aguarde antes de tentar novamente.' });
+    }
+    const body = await readJson(request);
+    const email = normalizeEmail(body.email);
+    const language = body.language === 'en' ? 'en' : 'pt';
+    if (!isValidEmail(email)) return json(400, { error: 'Informe um e-mail valido.' });
+
+    const genericResponse = {
+      message: 'Se o e-mail estiver cadastrado, enviaremos as instrucoes para redefinir a senha.'
+    };
+    const emailLimited = await consumeRateLimit(env, `${pathname}:email\0${email}`, 3, 60 * 60 * 1000);
+    const user = emailLimited ? null : await env.DB.prepare('SELECT id, name, email FROM users WHERE email = ?').bind(email).first();
+    if (!user) return json(202, genericResponse);
+
+    const token = randomToken();
+    const now = Date.now();
+    await env.DB.prepare('DELETE FROM password_reset_tokens WHERE expires_at <= ? OR user_id = ?').bind(now, user.id).run();
+    await env.DB.prepare(`
+      INSERT INTO password_reset_tokens (token_hash, user_id, expires_at)
+      VALUES (?, ?, ?)
+    `).bind(await sha256(token), user.id, now + PASSWORD_RESET_TTL_MS).run();
+
+    const resetUrl = new URL('/redefinir-senha.html', request.url);
+    resetUrl.searchParams.set('token', token);
+    const delivery = sendPasswordResetEmail(env, user.email, user.name, resetUrl.toString(), language).catch(async (error) => {
+      console.error('LensClick password reset delivery error:', error);
+      await env.DB.prepare('DELETE FROM password_reset_tokens WHERE token_hash = ?').bind(await sha256(token)).run();
+    });
+    if (context?.waitUntil) context.waitUntil(delivery);
+    else await delivery;
+    return json(202, genericResponse);
+  }
+
+  if (pathname === '/api/auth/password-reset/confirm' && method === 'POST') {
+    if (await isRateLimited(request, env, pathname, 10, 15 * 60 * 1000)) {
+      return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });
+    }
+    const body = await readJson(request);
+    const token = String(body.token || '');
+    const password = String(body.password || '');
+    if (!/^[A-Za-z0-9_-]{40,100}$/.test(token)) {
+      return json(400, { error: 'Este link de recuperacao e invalido ou expirou.' });
+    }
+    if (!isValidPassword(password)) {
+      return json(400, { error: 'A senha deve ter ao menos 8 caracteres, uma letra e um numero.' });
+    }
+
+    const consumed = await env.DB.prepare(`
+      UPDATE password_reset_tokens
+      SET used_at = CURRENT_TIMESTAMP
+      WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?
+      RETURNING user_id
+    `).bind(await sha256(token), Date.now()).first();
+    if (!consumed) return json(400, { error: 'Este link de recuperacao e invalido ou expirou.' });
+
+    await env.DB.batch([
+      env.DB.prepare('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+        .bind(await hashPassword(password), consumed.user_id),
+      env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(consumed.user_id),
+      env.DB.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').bind(consumed.user_id)
+    ]);
+    return json(200, { message: 'Senha alterada com sucesso. Faca login novamente.' });
   }
 
   if (pathname === '/api/auth/logout' && method === 'POST') {
@@ -364,9 +486,9 @@ async function handleApi(request, env, url) {
   return json(404, { error: 'Endpoint nao encontrado.' });
 }
 
-async function handleRequest(request, env) {
+async function handleRequest(request, env, context) {
   const url = new URL(request.url);
-  if (url.pathname.startsWith('/api/')) return handleApi(request, env, url);
+  if (url.pathname.startsWith('/api/')) return handleApi(request, env, url, context);
   const assetResponse = await env.ASSETS.fetch(request);
   const headers = new Headers(assetResponse.headers);
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
@@ -375,9 +497,9 @@ async function handleRequest(request, env) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, context) {
     try {
-      return await handleRequest(request, env);
+      return await handleRequest(request, env, context);
     } catch (error) {
       console.error('LensClick Worker error:', error);
       const status = Number(error?.status) || 500;

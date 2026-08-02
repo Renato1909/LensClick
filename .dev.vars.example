@@ -1,2 +1,4 @@
-# Copie para .dev.vars somente se adicionar segredos locais no futuro.
+# Copie para .dev.vars e substitua os valores apenas durante o desenvolvimento local.
 # Nunca envie .dev.vars ao controle de versao.
+RESEND_API_KEY="re_substitua_pela_chave_de_teste"
+PASSWORD_RESET_FROM="LensClick <conta@seudominio.com>"

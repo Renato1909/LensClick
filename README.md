@@ -23,7 +23,7 @@ npm test
 npm run check
 ```
 
-Os testes cobrem cadastro, hash de senha, sessao, perfil, foto no R2, contato, newsletter, logout, novo login, protecao de origem e scripts das paginas.
+Os 39 testes cobrem cadastro, hash de senha, sessao, recuperacao de senha, perfil, foto no R2, contato, newsletter, logout, novo login, protecao de origem e scripts das paginas.
 
 O GitHub Actions executa essas verificacoes automaticamente em todo Pull Request direcionado a `main` e em cada atualizacao da branch principal. O fluxo de contribuicao da equipe esta documentado em `CONTRIBUTING.md`.
 
@@ -68,6 +68,7 @@ O antigo banco local em `data/lensclick.sqlite`, quando existente, foi preservad
 
 - Landing page institucional.
 - Cadastro e login reais.
+- Recuperacao de senha com token unico de 30 minutos, pronta para ativacao apos configurar o remetente de e-mail.
 - Perfil autenticado com imagem privada.
 - Mensagens de contato persistidas.
 - Inscricoes de newsletter persistidas.
@@ -76,6 +77,10 @@ O antigo banco local em `data/lensclick.sqlite`, quando existente, foi preservad
 O projeto ainda nao contem um dashboard de agendamentos. A tela pos-login e uma area de perfil, conforme o escopo aprovado para a Fase 1.
 
 Os Termos de Uso e a Politica de Privacidade devem receber revisao institucional antes de uma publicacao comercial.
+
+## Ativacao da recuperacao de senha
+
+A funcionalidade usa o Resend para entregar e-mails transacionais. Antes de publica-la, verifique um dominio no provedor, configure `RESEND_API_KEY` e `PASSWORD_RESET_FROM` como segredos do Worker e aplique a migracao `0002_password_reset.sql` no D1 remoto. Os valores locais de exemplo estao em `.dev.vars.example`; segredos reais nunca devem entrar no Git.
 
 ## Documentacao tecnica
 

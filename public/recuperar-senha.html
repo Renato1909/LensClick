@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="recovery.request.pageTitle">Recuperar senha | LensClick</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="refinements.css">
+  <link rel="stylesheet" href="auth-recovery.css">
+</head>
+<body class="auth-page">
+  <button class="recovery-language" id="langToggle" type="button" aria-label="Trocar idioma">PT</button>
+  <main class="recovery-shell" id="main-content">
+    <section class="recovery-card" aria-labelledby="recoveryTitle">
+      <div class="recovery-logo" aria-hidden="true"><i class="fas fa-key"></i></div>
+      <div class="recovery-header">
+        <h1 id="recoveryTitle" data-i18n="recovery.request.title">Recupere sua senha</h1>
+        <p data-i18n="recovery.request.lead">Informe seu e-mail e enviaremos um link seguro para criar uma nova senha.</p>
+      </div>
+      <form class="recovery-form" id="recoveryRequestForm">
+        <div>
+          <label for="recoveryEmail" data-i18n="recovery.email.label">E-mail</label>
+          <input id="recoveryEmail" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="seu@email.com" data-i18n-placeholder="recovery.email.placeholder">
+        </div>
+        <button class="recovery-submit" type="submit" data-i18n="recovery.request.submit">Enviar link seguro</button>
+      </form>
+      <div class="recovery-message" id="recoveryMessage" role="status" aria-live="polite" hidden></div>
+      <div class="recovery-footer">
+        <a class="recovery-link" href="login.html" data-i18n="recovery.backLogin">Voltar para o login</a>
+      </div>
+    </section>
+  </main>
+  <script src="lang.js"></script>
+  <script src="ux.js"></script>
+  <script>
+    const form = document.getElementById('recoveryRequestForm');
+    const message = document.getElementById('recoveryMessage');
+    const button = form.querySelector('button[type="submit"]');
+    const UX = window.LensClickUX;
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      UX.showMessage(message, '', 'info');
+      UX.setBusy(button, true, { pt: 'Enviando...', en: 'Sending...' });
+      try {
+        const { data } = await UX.apiFetch('/api/auth/password-reset/request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: document.getElementById('recoveryEmail').value.trim(),
+            language: document.documentElement.lang.startsWith('en') ? 'en' : 'pt'
+          })
+        }, UX.textByLanguage('Não foi possível solicitar a recuperação.', 'Could not request password recovery.'));
+        UX.showMessage(message, UX.textByLanguage(
+          'Se o e-mail estiver cadastrado, você receberá as instruções em instantes.',
+          'If the email is registered, you will receive instructions shortly.'
+        ), 'success');
+        form.reset();
+      } catch (error) {
+        const translatedError = error.status === 429
+          ? UX.textByLanguage('Muitas solicitações. Aguarde antes de tentar novamente.', 'Too many requests. Please wait before trying again.')
+          : error.status === 503
+            ? UX.textByLanguage('A recuperação está temporariamente indisponível.', 'Password recovery is temporarily unavailable.')
+            : UX.textByLanguage('Não foi possível solicitar a recuperação.', 'Could not request password recovery.');
+        UX.showMessage(message, translatedError, 'error');
+      } finally {
+        UX.setBusy(button, false);
+      }
+    });
+  </script>
+</body>
+</html>
