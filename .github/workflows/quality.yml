@@ -1,0 +1,43 @@
+name: Qualidade
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qualidade-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes-e-validacao:
+    name: Testes e validação
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Preparar o Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependências de forma reproduzível
+        run: npm ci
+
+      - name: Executar testes automatizados
+        run: npm test
+
+      - name: Validar a configuração do Worker
+        run: npm run check
+
