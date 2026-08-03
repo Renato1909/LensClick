@@ -259,6 +259,55 @@
           </button>
         </div>
       </form>
+
+      <section class="portfolio-manager" aria-labelledby="portfolioManagerTitle">
+        <div class="portfolio-heading">
+          <div>
+            <p class="professional-eyebrow" data-i18n="profile.portfolio.eyebrow">Portfólio</p>
+            <h3 id="portfolioManagerTitle" data-i18n="profile.portfolio.title">Trabalhos que contam sua história</h3>
+            <p data-i18n="profile.portfolio.lead">Adicione até 12 imagens. Elas só aparecem para visitantes quando o perfil profissional está público.</p>
+          </div>
+          <span class="portfolio-count" id="portfolioCount">0/12</span>
+        </div>
+
+        <form class="portfolio-upload" id="portfolioUploadForm">
+          <div class="portfolio-file-field">
+            <input class="visually-hidden" id="portfolioImage" type="file" accept="image/jpeg,image/png,image/webp" required>
+            <label for="portfolioImage">
+              <i class="fa-regular fa-images" aria-hidden="true"></i>
+              <span id="portfolioFileLabel" data-i18n="profile.portfolio.choose">Escolher imagem</span>
+            </label>
+            <p data-i18n="profile.portfolio.fileHint">JPG, PNG ou WebP, com até 4 MB.</p>
+          </div>
+          <div class="form-grid professional-grid">
+            <div class="field">
+              <label for="portfolioAltText" data-i18n="profile.portfolio.alt">Descrição da imagem</label>
+              <input id="portfolioAltText" type="text" maxlength="160" required aria-describedby="portfolioAltHint">
+              <p class="field-note" id="portfolioAltHint" data-i18n="profile.portfolio.altHint">Descreva o que aparece na foto para pessoas que usam leitores de tela.</p>
+            </div>
+            <div class="field">
+              <label for="portfolioCaption"><span data-i18n="profile.portfolio.caption">Legenda</span> <span class="optional" data-i18n="profile.optional">opcional</span></label>
+              <input id="portfolioCaption" type="text" maxlength="240">
+            </div>
+          </div>
+          <p id="portfolioUploadMsg" class="feedback-message" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+          <button class="secondary-button portfolio-upload-button" id="portfolioUploadButton" type="submit">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i><span data-i18n="profile.portfolio.add">Adicionar ao portfólio</span>
+          </button>
+        </form>
+
+        <div class="portfolio-empty" id="portfolioEmpty">
+          <i class="fa-regular fa-image" aria-hidden="true"></i>
+          <p data-i18n="profile.portfolio.empty">Seu portfólio começa com a primeira imagem.</p>
+        </div>
+        <div class="portfolio-list" id="portfolioList"></div>
+        <div class="portfolio-actions" id="portfolioActions" hidden>
+          <p id="portfolioMsg" class="feedback-message" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+          <button class="primary-button" id="savePortfolioButton" type="button">
+            <span data-i18n="profile.portfolio.save">Salvar ordem e textos</span><i class="fa-solid fa-check" aria-hidden="true"></i>
+          </button>
+        </div>
+      </section>
     </section>
 
     <section class="danger-zone" aria-labelledby="dangerZoneTitle">

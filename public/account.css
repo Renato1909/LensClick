@@ -316,6 +316,33 @@ body.profile-page {
 .input-prefix input { min-height: 46px; padding-left: 5px; border: 0; background: transparent; box-shadow: none !important; }
 .professional-footer { margin-top: 28px; }
 
+.portfolio-manager { margin-top: 34px; padding-top: 30px; border-top: 1px solid var(--account-border); }
+.portfolio-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.portfolio-heading h3 { margin: 0; font-size: 1.1rem; }
+.portfolio-heading > div > p:last-child { max-width: 680px; margin: 7px 0 0; color: var(--account-muted); font-size: .8rem; line-height: 1.6; }
+.portfolio-count { flex: 0 0 auto; padding: 7px 10px; color: #cdb2fb; border: 1px solid rgba(166, 105, 255, .2); border-radius: 999px; background: rgba(143, 82, 235, .08); font-size: .7rem; font-weight: 700; }
+.portfolio-upload { margin-top: 21px; padding: 18px; border: 1px dashed rgba(174, 125, 255, .28); border-radius: 16px; background: rgba(111, 75, 173, .055); }
+.portfolio-file-field { display: flex; align-items: center; gap: 12px; }
+.portfolio-file-field label { min-height: 43px; display: inline-flex; align-items: center; gap: 9px; padding: 0 14px; color: #efe9ff; border: 1px solid rgba(170, 119, 255, .35); border-radius: 11px; background: rgba(139, 85, 229, .11); font-size: .78rem; font-weight: 600; cursor: pointer; }
+.portfolio-file-field p { margin: 0; color: #9298b4; font-size: .72rem; }
+.portfolio-upload-button { margin-top: 16px; }
+.portfolio-upload .feedback-message { margin: 15px 0 0; }
+.portfolio-empty { min-height: 130px; display: grid; place-items: center; align-content: center; gap: 7px; margin-top: 18px; color: #858ba7; border: 1px solid var(--account-border); border-radius: 15px; background: rgba(255,255,255,.018); text-align: center; }
+.portfolio-empty i { color: #a990d6; font-size: 1.25rem; }
+.portfolio-empty p { margin: 0; font-size: .78rem; }
+.portfolio-list { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; margin-top: 18px; }
+.portfolio-item { min-width: 0; overflow: hidden; border: 1px solid var(--account-border); border-radius: 16px; background: rgba(10,12,25,.28); }
+.portfolio-item img { width: 100%; aspect-ratio: 4/3; display: block; object-fit: cover; background: #0c0d1c; }
+.portfolio-item-fields { display: grid; gap: 10px; padding: 14px; }
+.portfolio-item-fields label { color: #cdd1e6; font-size: .7rem; font-weight: 600; }
+.portfolio-item-fields input { width: 100%; min-height: 40px; margin-top: 6px; padding: 0 11px; color: #fff; border: 1px solid rgba(255,255,255,.11); border-radius: 10px; background: rgba(5,7,17,.35); font: 500 .76rem/1.4 Poppins,sans-serif; }
+.portfolio-item-controls { display: flex; gap: 7px; padding: 0 14px 14px; }
+.portfolio-item-controls button { width: 38px; height: 36px; display: grid; place-items: center; color: #cdd2e9; border: 1px solid var(--account-border); border-radius: 9px; background: rgba(255,255,255,.035); cursor: pointer; }
+.portfolio-item-controls .portfolio-remove { margin-left: auto; color: #ff9ba2; border-color: rgba(255,105,115,.22); }
+.portfolio-item-controls button:disabled { opacity: .35; }
+.portfolio-actions { display: flex; align-items: center; justify-content: flex-end; gap: 15px; margin-top: 18px; }
+.portfolio-actions .feedback-message { flex: 1; margin: 0; }
+
 .danger-zone {
   display: flex;
   align-items: center;
@@ -414,6 +441,9 @@ button:disabled { cursor: wait; opacity: 0.68; transform: none !important; }
   .publish-control { width: 100%; justify-content: space-between; margin-bottom: 22px; }
   .specialty-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .professional-url { align-items: flex-start; flex-direction: column; }
+  .portfolio-heading, .portfolio-file-field, .portfolio-actions { align-items: stretch; flex-direction: column; }
+  .portfolio-list { grid-template-columns: 1fr; }
+  .portfolio-file-field label, .portfolio-actions .primary-button { justify-content: center; width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

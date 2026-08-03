@@ -56,9 +56,23 @@
   const professionalMessage = document.getElementById('professionalMsg');
   const saveProfessionalProfile = document.getElementById('saveProfessionalProfile');
   const specialtyInputs = [...document.querySelectorAll('input[name="specialties"]')];
+  const portfolioUploadForm = document.getElementById('portfolioUploadForm');
+  const portfolioImage = document.getElementById('portfolioImage');
+  const portfolioFileLabel = document.getElementById('portfolioFileLabel');
+  const portfolioAltText = document.getElementById('portfolioAltText');
+  const portfolioCaption = document.getElementById('portfolioCaption');
+  const portfolioUploadButton = document.getElementById('portfolioUploadButton');
+  const portfolioUploadMessage = document.getElementById('portfolioUploadMsg');
+  const portfolioList = document.getElementById('portfolioList');
+  const portfolioEmpty = document.getElementById('portfolioEmpty');
+  const portfolioCount = document.getElementById('portfolioCount');
+  const portfolioActions = document.getElementById('portfolioActions');
+  const portfolioMessage = document.getElementById('portfolioMsg');
+  const savePortfolioButton = document.getElementById('savePortfolioButton');
 
   let profilePicture = '';
   let originalEmail = '';
+  let portfolioItems = [];
 
   function redirectToLogin() {
     window.location.replace('login.html?next=perfil.html');
@@ -142,6 +156,111 @@
     updateProfessionalLink(profile);
   }
 
+  function portfolioLabel(pt, en) {
+    return UX.textByLanguage(pt, en);
+  }
+
+  function renderPortfolio() {
+    portfolioList.replaceChildren();
+    portfolioCount.textContent = `${portfolioItems.length}/12`;
+    portfolioEmpty.hidden = portfolioItems.length > 0;
+    portfolioActions.hidden = portfolioItems.length === 0;
+    portfolioUploadButton.disabled = portfolioItems.length >= 12;
+    portfolioItems.forEach((item, index) => {
+      const card = document.createElement('article');
+      card.className = 'portfolio-item';
+      card.dataset.id = String(item.id);
+      const image = document.createElement('img');
+      image.src = item.imageUrl;
+      image.alt = item.altText;
+
+      const fields = document.createElement('div');
+      fields.className = 'portfolio-item-fields';
+      const altLabel = document.createElement('label');
+      altLabel.textContent = portfolioLabel('Descrição da imagem', 'Image description');
+      const altInput = document.createElement('input');
+      altInput.type = 'text';
+      altInput.maxLength = 160;
+      altInput.required = true;
+      altInput.value = item.altText;
+      altInput.addEventListener('input', () => { item.altText = altInput.value; image.alt = altInput.value; });
+      altLabel.append(altInput);
+      const captionLabel = document.createElement('label');
+      captionLabel.textContent = portfolioLabel('Legenda', 'Caption');
+      const captionInput = document.createElement('input');
+      captionInput.type = 'text';
+      captionInput.maxLength = 240;
+      captionInput.value = item.caption;
+      captionInput.addEventListener('input', () => { item.caption = captionInput.value; });
+      captionLabel.append(captionInput);
+      fields.append(altLabel, captionLabel);
+
+      const controls = document.createElement('div');
+      controls.className = 'portfolio-item-controls';
+      const moveUp = document.createElement('button');
+      moveUp.type = 'button';
+      moveUp.disabled = index === 0;
+      moveUp.setAttribute('aria-label', portfolioLabel('Mover imagem para cima', 'Move image up'));
+      const upIcon = document.createElement('i');
+      upIcon.className = 'fa-solid fa-arrow-up';
+      upIcon.setAttribute('aria-hidden', 'true');
+      moveUp.append(upIcon);
+      moveUp.addEventListener('click', () => {
+        [portfolioItems[index - 1], portfolioItems[index]] = [portfolioItems[index], portfolioItems[index - 1]];
+        renderPortfolio();
+      });
+      const moveDown = document.createElement('button');
+      moveDown.type = 'button';
+      moveDown.disabled = index === portfolioItems.length - 1;
+      moveDown.setAttribute('aria-label', portfolioLabel('Mover imagem para baixo', 'Move image down'));
+      const downIcon = document.createElement('i');
+      downIcon.className = 'fa-solid fa-arrow-down';
+      downIcon.setAttribute('aria-hidden', 'true');
+      moveDown.append(downIcon);
+      moveDown.addEventListener('click', () => {
+        [portfolioItems[index + 1], portfolioItems[index]] = [portfolioItems[index], portfolioItems[index + 1]];
+        renderPortfolio();
+      });
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'portfolio-remove';
+      remove.setAttribute('aria-label', portfolioLabel('Excluir imagem', 'Delete image'));
+      const removeIcon = document.createElement('i');
+      removeIcon.className = 'fa-regular fa-trash-can';
+      removeIcon.setAttribute('aria-hidden', 'true');
+      remove.append(removeIcon);
+      remove.addEventListener('click', () => removePortfolioItem(item, remove));
+      controls.append(moveUp, moveDown, remove);
+      card.append(image, fields, controls);
+      portfolioList.append(card);
+    });
+  }
+
+  async function loadPortfolio() {
+    const { data } = await UX.apiFetch('/api/account/portfolio', { headers: { Accept: 'application/json' } }, portfolioLabel(
+      'Não foi possível carregar o portfólio.', 'Could not load the portfolio.'
+    ));
+    portfolioItems = data.portfolio || [];
+    renderPortfolio();
+  }
+
+  async function removePortfolioItem(item, button) {
+    if (!window.confirm(portfolioLabel('Excluir esta imagem permanentemente?', 'Permanently delete this image?'))) return;
+    UX.setBusy(button, true, { pt: 'Excluindo...', en: 'Deleting...' });
+    try {
+      await UX.apiFetch(`/api/account/portfolio/${item.id}`, { method: 'DELETE' }, portfolioLabel(
+        'Não foi possível excluir a imagem.', 'Could not delete the image.'
+      ));
+      portfolioItems = portfolioItems.filter((entry) => entry.id !== item.id);
+      renderPortfolio();
+      UX.showMessage(portfolioMessage, portfolioLabel('Imagem excluída permanentemente.', 'Image permanently deleted.'), 'success');
+    } catch (error) {
+      if (error.status === 401) return redirectToLogin();
+      UX.showMessage(portfolioMessage, error.message, 'error');
+      UX.setBusy(button, false);
+    }
+  }
+
   async function loadProfessionalProfile() {
     professionalSection.hidden = roleInput.value !== 'photographer';
     if (professionalSection.hidden) return;
@@ -154,6 +273,7 @@
         UX.textByLanguage('Não foi possível carregar o perfil profissional.', 'Could not load the professional profile.')
       );
       populateProfessional(data.profile);
+      await loadPortfolio();
     } catch (error) {
       if (error.status === 401) return redirectToLogin();
       UX.showMessage(professionalMessage, error.message, 'error');
@@ -224,6 +344,75 @@
         UX.showMessage(professionalMessage, UX.textByLanguage('Escolha no máximo seis especialidades.', 'Choose up to six specialties.'), 'error');
       }
     });
+  });
+
+  portfolioImage.addEventListener('change', () => {
+    const file = portfolioImage.files?.[0];
+    portfolioFileLabel.textContent = file?.name || portfolioLabel('Escolher imagem', 'Choose image');
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 4_000_000) {
+      UX.showMessage(portfolioUploadMessage, portfolioLabel(
+        'Escolha uma imagem JPG, PNG ou WebP de até 4 MB.',
+        'Choose a JPG, PNG or WebP image up to 4 MB.'
+      ), 'error');
+      portfolioImage.value = '';
+      portfolioFileLabel.textContent = portfolioLabel('Escolher imagem', 'Choose image');
+    }
+  });
+
+  portfolioUploadForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!portfolioUploadForm.reportValidity()) return;
+    const file = portfolioImage.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('altText', portfolioAltText.value.trim());
+    formData.append('caption', portfolioCaption.value.trim());
+    UX.setBusy(portfolioUploadButton, true, { pt: 'Enviando...', en: 'Uploading...' });
+    UX.showMessage(portfolioUploadMessage, '');
+    try {
+      const { data } = await UX.apiFetch('/api/account/portfolio', { method: 'POST', body: formData }, portfolioLabel(
+        'Não foi possível enviar a imagem.', 'Could not upload the image.'
+      ));
+      portfolioItems.push(data.item);
+      portfolioUploadForm.reset();
+      portfolioFileLabel.textContent = portfolioLabel('Escolher imagem', 'Choose image');
+      renderPortfolio();
+      UX.showMessage(portfolioUploadMessage, portfolioLabel('Imagem adicionada ao portfólio.', 'Image added to the portfolio.'), 'success');
+    } catch (error) {
+      if (error.status === 401) return redirectToLogin();
+      UX.showMessage(portfolioUploadMessage, error.message, 'error');
+    } finally {
+      UX.setBusy(portfolioUploadButton, false);
+      portfolioUploadButton.disabled = portfolioItems.length >= 12;
+    }
+  });
+
+  savePortfolioButton.addEventListener('click', async () => {
+    if (portfolioItems.some((item) => item.altText.trim().length < 3)) {
+      UX.showMessage(portfolioMessage, portfolioLabel(
+        'Descreva todas as imagens antes de salvar.', 'Describe every image before saving.'
+      ), 'error');
+      return;
+    }
+    UX.setBusy(savePortfolioButton, true, { pt: 'Salvando...', en: 'Saving...' });
+    UX.showMessage(portfolioMessage, '');
+    try {
+      const { data } = await UX.apiFetch('/api/account/portfolio', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: portfolioItems.map(({ id, caption, altText }) => ({ id, caption, altText })) })
+      }, portfolioLabel('Não foi possível salvar o portfólio.', 'Could not save the portfolio.'));
+      portfolioItems = data.portfolio;
+      renderPortfolio();
+      UX.showMessage(portfolioMessage, portfolioLabel('Ordem e textos salvos.', 'Order and text saved.'), 'success');
+    } catch (error) {
+      if (error.status === 401) return redirectToLogin();
+      UX.showMessage(portfolioMessage, error.message, 'error');
+    } finally {
+      UX.setBusy(savePortfolioButton, false);
+    }
   });
 
   professionalForm.addEventListener('submit', async (event) => {
@@ -387,7 +576,11 @@
 
   deleteConfirmation.addEventListener('input', validateDeletionConfirmation);
   deleteCurrentPassword.addEventListener('input', validateDeletionConfirmation);
-  document.addEventListener('translations.updated', validateDeletionConfirmation);
+  document.addEventListener('translations.updated', () => {
+    validateDeletionConfirmation();
+    if (portfolioItems.length) renderPortfolio();
+    if (!portfolioImage.files?.length) portfolioFileLabel.textContent = portfolioLabel('Escolher imagem', 'Choose image');
+  });
   cancelDeleteAccount.addEventListener('click', () => deleteAccountDialog.close('cancel'));
 
   deleteAccountForm.addEventListener('submit', async (event) => {

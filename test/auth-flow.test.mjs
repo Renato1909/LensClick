@@ -37,6 +37,7 @@ class MockD1 {
     this.database.exec(readFileSync(resolve('migrations/0001_initial.sql'), 'utf8'));
     this.database.exec(readFileSync(resolve('migrations/0002_password_reset.sql'), 'utf8'));
     this.database.exec(readFileSync(resolve('migrations/0003_professional_profiles.sql'), 'utf8'));
+    this.database.exec(readFileSync(resolve('migrations/0004_portfolio_items.sql'), 'utf8'));
   }
 
   prepare(sql) {
@@ -81,7 +82,7 @@ class MockR2 {
   }
 
   async delete(key) {
-    this.objects.delete(key);
+    for (const item of Array.isArray(key) ? key : [key]) this.objects.delete(item);
   }
 }
 
@@ -340,6 +341,38 @@ test('perfil profissional respeita publicacao, privacidade e mudanca de papel', 
   const publicPhoto = await request(`/api/photographers/${published.json.profile.slug}/photo`, { withCookie: false });
   assert.equal(publicPhoto.response.status, 200);
   assert.match(publicPhoto.response.headers.get('cache-control'), /public/);
+
+  const portfolioForm = new FormData();
+  portfolioForm.append('image', new Blob([Buffer.from(onePixelPng.split(',')[1], 'base64')], { type: 'image/png' }), 'ensaio.png');
+  portfolioForm.append('altText', 'Casal caminhando ao pôr do sol');
+  portfolioForm.append('caption', 'Ensaio ao entardecer');
+  const portfolioUploadResponse = await worker.fetch(new Request(origin + '/api/account/portfolio', {
+    method: 'POST', headers: { Origin: origin, Cookie: cookie }, body: portfolioForm
+  }), env);
+  assert.equal(portfolioUploadResponse.status, 201);
+  const portfolioUpload = await portfolioUploadResponse.json();
+  assert.match(portfolioUpload.item.imageUrl, /^\/api\/account\/portfolio\/\d+\/image/);
+
+  const ownerPortfolio = await request('/api/account/portfolio');
+  assert.equal(ownerPortfolio.response.status, 200);
+  assert.equal(ownerPortfolio.json.portfolio.length, 1);
+  const savedPortfolio = await request('/api/account/portfolio', {
+    method: 'PUT', body: { items: [{ id: portfolioUpload.item.id, altText: 'Casal em silhueta ao pôr do sol', caption: 'Luz de fim de tarde' }] }
+  });
+  assert.equal(savedPortfolio.response.status, 200);
+  assert.equal(savedPortfolio.json.portfolio[0].caption, 'Luz de fim de tarde');
+
+  const publicWithPortfolio = await request(`/api/photographers/${published.json.profile.slug}`, { withCookie: false });
+  assert.equal(publicWithPortfolio.json.profile.portfolio.length, 1);
+  assert.equal(publicWithPortfolio.json.profile.portfolio[0].altText, 'Casal em silhueta ao pôr do sol');
+  assert.equal('object_key' in publicWithPortfolio.json.profile.portfolio[0], false);
+  const publicPortfolioImage = await request(publicWithPortfolio.json.profile.portfolio[0].imageUrl.split('?')[0], { withCookie: false });
+  assert.equal(publicPortfolioImage.response.status, 200);
+  assert.match(publicPortfolioImage.response.headers.get('cache-control'), /public/);
+
+  const removedPortfolio = await request(`/api/account/portfolio/${portfolioUpload.item.id}`, { method: 'DELETE', body: {} });
+  assert.equal(removedPortfolio.response.status, 200);
+  assert.equal((await request('/api/account/portfolio')).json.portfolio.length, 0);
 
   const removedRequiredPhoto = await request('/api/account/photo', { method: 'DELETE', body: {} });
   assert.equal(removedRequiredPhoto.response.status, 200);

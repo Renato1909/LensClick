@@ -1,6 +1,6 @@
 # LensClick
 
-Site institucional e area autenticada da LensClick, executados em Cloudflare Workers. Os dados estruturados ficam no D1 e as fotos de perfil ficam no R2.
+Site institucional e area autenticada da LensClick, executados em Cloudflare Workers. Os dados estruturados ficam no D1 e as imagens profissionais ficam no R2.
 
 ## Requisitos
 
@@ -23,7 +23,7 @@ npm test
 npm run check
 ```
 
-Os 51 testes cobrem cadastro, hash de senha, sessao, recuperacao de senha, gerenciamento e exclusao da conta, perfil profissional publico, controles de privacidade, foto no R2, contato, newsletter, protecao de origem e scripts das paginas.
+Os 54 testes cobrem cadastro, hash de senha, sessao, recuperacao de senha, gerenciamento e exclusao da conta, perfil profissional publico, controles de privacidade, foto no R2, portfolio profissional, contato, newsletter, protecao de origem e scripts das paginas.
 
 O GitHub Actions executa essas verificacoes automaticamente em todo Pull Request direcionado a `main` e em cada atualizacao da branch principal. O fluxo de contribuicao da equipe esta documentado em `CONTRIBUTING.md`.
 
@@ -36,7 +36,7 @@ npm run test:smoke
 ## Dados e seguranca
 
 - D1 armazena usuarios, sessoes, mensagens de contato, newsletter e limites contra abuso.
-- R2 armazena somente imagens de perfil JPG, PNG ou WebP de ate 450 KB.
+- R2 armazena fotos de perfil JPG, PNG ou WebP de ate 450 KB e imagens de portfolio de ate 4 MB.
 - Senhas usam PBKDF2-SHA-256 com salt individual via Web Crypto; nunca sao gravadas em texto puro.
 - O navegador recebe somente um token aleatorio em cookie `HttpOnly`, `SameSite=Lax` e `Secure` em HTTPS.
 - Operacoes de escrita validam origem, formato, tamanho e frequencia.
@@ -45,7 +45,7 @@ npm run test:smoke
 ## Estrutura principal
 
 - `src/worker.mjs`: Worker, autenticacao e APIs.
-- `migrations/`: evolucao versionada do D1, incluindo autenticacao e perfis profissionais.
+- `migrations/`: evolucao versionada do D1, incluindo autenticacao, perfis profissionais e portfolio.
 - `db/schema.ts`: referencia dos nomes e da versao do esquema.
 - `public/`: HTML, JavaScript e demais arquivos publicos.
 - `DESIGN_SYSTEM.md`: tokens, componentes e regras visuais compartilhadas.
@@ -71,6 +71,7 @@ O antigo banco local em `data/lensclick.sqlite`, quando existente, foi preservad
 - Recuperacao de senha ativa com token unico de 30 minutos e envio transacional pela Brevo.
 - Central autenticada para editar dados, trocar a senha e gerenciar a imagem privada do perfil.
 - Perfil profissional com especialidades, localizacao, disponibilidade, faixa inicial e contatos opcionais.
+- Portfolio profissional com ate 12 imagens, descricoes acessiveis, legendas e ordenacao.
 - Pagina publica do fotografo, publicada somente por consentimento explicito.
 - Exclusao definitiva da conta e dos dados controlados por ela, protegida por senha e confirmacao textual.
 - Mensagens de contato persistidas.

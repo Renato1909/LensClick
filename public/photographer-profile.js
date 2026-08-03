@@ -15,6 +15,8 @@
   const radiusRow = document.getElementById('radiusRow');
   const radiusElement = document.getElementById('photographerRadius');
   const contactsElement = document.getElementById('photographerContacts');
+  const portfolioSection = document.getElementById('portfolioSection');
+  const portfolioElement = document.getElementById('photographerPortfolio');
   let currentProfile = null;
 
   const specialtyLabels = {
@@ -71,6 +73,26 @@
       const badge = document.createElement('span');
       badge.textContent = specialtyLabels[specialty]?.[english ? 1 : 0] || specialty;
       specialtiesElement.append(badge);
+    });
+
+    portfolioElement.replaceChildren();
+    const portfolio = Array.isArray(profile.portfolio) ? profile.portfolio : [];
+    portfolioSection.hidden = portfolio.length === 0;
+    portfolio.forEach((item) => {
+      const figure = document.createElement('figure');
+      figure.className = 'portfolio-figure';
+      const image = document.createElement('img');
+      image.src = item.imageUrl;
+      image.alt = item.altText;
+      image.loading = 'lazy';
+      image.decoding = 'async';
+      figure.append(image);
+      if (item.caption) {
+        const caption = document.createElement('figcaption');
+        caption.textContent = item.caption;
+        figure.append(caption);
+      }
+      portfolioElement.append(figure);
     });
 
     priceRow.hidden = profile.startingPriceCents == null;
