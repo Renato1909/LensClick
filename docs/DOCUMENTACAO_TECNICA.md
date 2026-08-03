@@ -33,6 +33,8 @@ A aplicacao utiliza uma arquitetura serverless na Cloudflare:
 - Foto privada de perfil em JPG, PNG ou WebP, limitada a 450 KB.
 - Remocao permanente da foto no R2 pelo proprio usuario.
 - Exclusao definitiva da conta, sessoes, tokens e foto privada.
+- Perfil profissional em rascunho ou publicado, com contatos controlados individualmente.
+- Pagina publica do fotografo com apresentacao, especialidades, localizacao, preco inicial e disponibilidade.
 - Mensagens de contato persistidas.
 - Inscricoes de newsletter persistidas e sem duplicacao por e-mail.
 - Protecao de origem, limite de tentativas e cabecalhos de seguranca.
@@ -55,7 +57,7 @@ A aplicacao utiliza uma arquitetura serverless na Cloudflare:
 4. **Back-end:** um Cloudflare Worker recebe as requisicoes, valida entradas, autentica usuarios e acessa os servicos de dados.
 5. **Persistencia:** D1 guarda usuarios, sessoes, contatos, newsletter e limites contra abuso; R2 guarda apenas as fotos.
 6. **Seguranca:** senhas nunca sao armazenadas em texto puro; sessoes usam cookies HttpOnly; imagens exigem autenticacao.
-7. **Qualidade:** 44 testes verificam o fluxo principal, os scripts, a acessibilidade, a documentacao, a traducao e a integridade dos links.
+7. **Qualidade:** 51 testes verificam o fluxo principal, os scripts, a acessibilidade, a documentacao, a traducao e a integridade dos links.
 8. **Operacao:** o projeto e publicado pelo Wrangler e monitorado no painel da Cloudflare.
 
 ## 3. Arquitetura
@@ -106,6 +108,7 @@ LensClick/
 |   |-- cadastro.html          # Criacao de conta
 |   |-- login.html             # Autenticacao
 |   |-- perfil.html            # Area autenticada
+|   |-- fotografo.html         # Perfil profissional publico
 |   |-- perfil_temp.html       # Redirecionamento legado seguro
 |   |-- recuperar-senha.html   # Solicitacao de recuperacao
 |   |-- redefinir-senha.html   # Confirmacao da nova senha
@@ -114,6 +117,7 @@ LensClick/
 |   |-- lang.js                # Dicionario PT/EN e animacao
 |   |-- ux.js                  # Comportamentos compartilhados
 |   |-- profile-api.js         # Integracao da tela de perfil
+|   |-- photographer-profile.js # Renderizacao segura do perfil publico
 |   |-- account.css            # Layout da central da conta
 |   `-- refinements.css        # Design System e refinamentos
 |-- src/worker.mjs             # Back-end e entrega de assets
@@ -175,7 +179,13 @@ A imagem e validada duas vezes:
 
 O arquivo precisa ser JPG, PNG ou WebP e ter no maximo 450 KB. O navegador converte a imagem para Data URL; o Worker decodifica, valida e grava os bytes no R2.
 
-### 5.5 Traducao - `public/lang.js`
+O fotografo tambem pode manter um perfil profissional em rascunho. A publicacao exige foto, apresentacao com pelo menos 60 caracteres, especialidade, cidade, estado e ao menos um contato profissional. E-mail e telefone possuem controles independentes de visibilidade. Remover a foto ou trocar o papel da conta para cliente despublica o perfil automaticamente.
+
+### 5.5 Perfil profissional publico - `public/fotografo.html`
+
+A pagina recebe o identificador pelo parametro `perfil`, consulta apenas registros publicados e renderiza todo conteudo fornecido pelo usuario com `textContent`. O Worker nao devolve e-mail ou telefone sem o consentimento especifico correspondente. Links externos aceitam apenas HTTP ou HTTPS e abrem com `noopener noreferrer`.
+
+### 5.6 Traducao - `public/lang.js`
 
 Os elementos traduziveis usam chaves como `data-i18n`, `data-i18n-placeholder`, `data-i18n-title`, `data-i18n-aria` e `data-i18n-section`.
 
@@ -190,7 +200,7 @@ O modulo:
 - executa a transicao vertical inspirada na versao antiga;
 - respeita `prefers-reduced-motion`.
 
-### 5.6 UX compartilhada - `public/ux.js`
+### 5.7 UX compartilhada - `public/ux.js`
 
 `window.LensClickUX` expoe funcoes pequenas e reutilizaveis:
 
@@ -202,7 +212,7 @@ O modulo:
 - `safeNextDestination`: valida redirecionamento local;
 - `updateAccessibilityLabels`: sincroniza rotulos PT/EN.
 
-### 5.7 Design System - `public/refinements.css`
+### 5.8 Design System - `public/refinements.css`
 
 Os tokens iniciados por `--lc-` sao a fonte oficial para cores, tipografia, espacamento, raios, sombras, controles e movimento. Os nomes antigos permanecem como aliases para compatibilidade.
 
@@ -265,6 +275,10 @@ O Worker possui duas responsabilidades: atender `/api/*` e entregar os arquivos 
 | POST | `/api/auth/password-reset/confirm` | Nao | Definir senha com token unico | 200, 400, 429 |
 | POST | `/api/auth/logout` | Cookie | Encerrar sessao | 200 |
 | GET | `/api/auth/me` | Cookie | Obter usuario atual | 200, 401 |
+| GET | `/api/account/professional-profile` | Cookie | Obter rascunho profissional | 200, 401 |
+| PUT | `/api/account/professional-profile` | Cookie + papel fotografo | Salvar ou publicar perfil profissional | 200, 400, 401, 403, 429 |
+| GET | `/api/photographers/:slug` | Nao | Obter somente perfil publicado | 200, 404 |
+| GET | `/api/photographers/:slug/photo` | Nao | Entregar foto de perfil publicado | 200, 304, 404 |
 | PUT | `/api/profile` | Cookie | Atualizar perfil e foto; senha atual se o e-mail mudar | 200, 400, 401, 403, 409, 413 |
 | PUT | `/api/account/password` | Cookie | Trocar senha e revogar outras sessoes | 200, 400, 401, 403, 409, 429 |
 | DELETE | `/api/account/photo` | Cookie | Remover foto do D1 e R2 | 200, 401 |
@@ -336,12 +350,13 @@ pbkdf2-sha256$100000$<salt>$<hash>
 
 ### 8.1 MER - Modelo Entidade-Relacionamento
 
-O MER apresenta os conceitos do negocio. Usuario possui sessoes e pode ter uma foto externa. Mensagens de contato e inscricoes de newsletter sao registros independentes. Rate limit representa controle tecnico de abuso.
+O MER apresenta os conceitos do negocio. Usuario possui sessoes, pode ter uma foto externa e, quando fotografo, um perfil profissional. Mensagens de contato e inscricoes de newsletter sao registros independentes. Rate limit representa controle tecnico de abuso.
 
 ```mermaid
 flowchart LR
     U[Usuario] -->|possui 0..N| S[Sessao]
     U -->|possui 0..1| P[Foto de perfil no R2]
+    U -->|possui 0..1| F[Perfil profissional]
     V[Visitante] -->|envia 0..N| C[Mensagem de contato]
     V -->|realiza 0..1 por e-mail| N[Inscricao newsletter]
     V -->|gera| L[Contador de limite]
@@ -352,6 +367,7 @@ flowchart LR
 ```mermaid
 erDiagram
     USERS ||--o{ SESSIONS : possui
+    USERS ||--o| PROFESSIONAL_PROFILES : publica
     USERS {
         INTEGER id PK
         TEXT name
@@ -370,6 +386,21 @@ erDiagram
         INTEGER user_id FK
         INTEGER expires_at
         TEXT created_at
+    }
+    PROFESSIONAL_PROFILES {
+        INTEGER user_id PK,FK
+        TEXT slug UK
+        TEXT bio
+        TEXT specialties
+        TEXT city
+        TEXT state
+        INTEGER starting_price_cents
+        TEXT availability
+        TEXT public_email
+        TEXT public_phone
+        INTEGER show_email
+        INTEGER show_phone
+        INTEGER is_published
     }
     CONTACT_MESSAGES {
         INTEGER id PK
@@ -418,6 +449,15 @@ erDiagram
 - `expires_at`: instante de expiracao em milissegundos Unix.
 - `created_at`: data de criacao.
 
+**`professional_profiles`**
+
+- `user_id`: relacao unica com `users`, removida em cascata junto com a conta;
+- `slug`: identificador publico estavel e unico;
+- `specialties`: lista JSON limitada a categorias reconhecidas pelo Worker;
+- `starting_price_cents`: valor monetario inteiro em centavos;
+- `show_email`, `show_phone` e `is_published`: consentimentos independentes, desativados por padrao;
+- `updated_at`: permite auditoria operacional e evolucao futura do cache.
+
 **`contact_messages`**
 
 - guarda nome, telefone opcional, e-mail, servico, data do evento, mensagem e criacao;
@@ -436,7 +476,7 @@ erDiagram
 
 ## 9. Armazenamento R2
 
-O bucket `lensclick-profile-images` e privado. O navegador nao recebe URL publica do objeto; recebe uma rota da API. O Worker confirma que o ID solicitado pertence ao usuario autenticado antes de ler o R2.
+O bucket `lensclick-profile-images` e privado e nunca expoe a chave real do objeto. Na area da conta, o Worker confirma que o ID solicitado pertence ao usuario autenticado. No perfil profissional, uma rota separada libera a mesma foto somente enquanto o perfil estiver publicado e a conta mantiver o papel de fotografo.
 
 ### 9.1 Fluxo da foto
 
@@ -524,7 +564,7 @@ Portugues e o idioma de origem. Ingles e aplicado por chaves. A preferencia fica
 
 ## 12. Testes e qualidade
 
-O comando `npm test` executa 44 testes com `node --test`.
+O comando `npm test` executa 51 testes com `node --test`.
 
 ### 12.1 Cobertura funcional
 
@@ -538,6 +578,8 @@ O comando `npm test` executa 44 testes com `node --test`.
 - Upload, leitura privada, substituicao e remocao de foto no R2 simulado.
 - Recuperacao de senha com token de uso unico.
 - Exclusao integral sem afetar dados de outro usuario.
+- Perfil profissional privado por padrao, publicacao validada e contatos seletivos.
+- Foto publica somente para perfil publicado e despublicacao automatica por papel ou foto.
 - Contato e newsletter.
 - Logout e novo login.
 - Rejeicao de origem externa.
@@ -631,16 +673,18 @@ O projeto preserva a base original e reduz dependencias. A troca e uma maior res
 
 ### 14.4 Migracoes versionadas
 
-O banco nao e criado manualmente em producao. `migrations/0001_initial.sql` representa a versao 1; mudancas futuras devem criar novos arquivos, nunca editar silenciosamente um banco publicado.
+O banco nao e criado manualmente em producao. `migrations/0001_initial.sql` representa a base, `0002_password_reset.sql` adiciona recuperacao e `0003_professional_profiles.sql` adiciona o perfil profissional. Mudancas futuras devem criar novos arquivos, nunca editar silenciosamente um banco publicado.
 
 ### 14.5 R2 privado
 
-A privacidade tem prioridade sobre uma URL publica simples. A foto passa pela autorizacao do Worker.
+A privacidade tem prioridade sobre uma URL publica simples. A foto privada passa pela autorizacao do Worker; a rota publica exige perfil publicado e papel de fotografo.
 
 ## 15. Limitacoes e roadmap futuro
 
 ### Prioridade alta
 
+- Portfolio profissional com multiplas imagens, capa e ordenacao no R2.
+- Busca real por cidade, especialidade, preco e disponibilidade.
 - Verificacao de e-mail.
 - Exportacao de dados pelo usuario.
 - Painel administrativo protegido por papel real.
@@ -678,7 +722,7 @@ As consultas usam statements preparados e `.bind(...)`, separando o comando SQL 
 
 ### Como uma foto e protegida?
 
-O bucket nao e publico. A rota verifica a sessao e exige que o ID da foto corresponda ao usuario autenticado.
+O bucket nao e publico. Na conta, a rota verifica a sessao e exige que o ID corresponda ao usuario autenticado. No perfil profissional, a rota publica consulta o D1 e so entrega a foto enquanto o perfil estiver publicado.
 
 ### O que acontece se o D1 ou R2 falhar?
 
@@ -694,7 +738,7 @@ Ele utiliza franquias gratuitas. O uso inicial esta muito abaixo dos limites, ma
 
 ### O perfil e um dashboard?
 
-Nao. O escopo atual e uma area autenticada de perfil. Agendamentos e administracao fazem parte de evolucoes futuras.
+Nao. O escopo atual e uma area autenticada de conta e perfil profissional, acompanhada por uma pagina publica. Agendamentos e administracao fazem parte de evolucoes futuras.
 
 ### Por que 100.000 iteracoes no PBKDF2?
 
@@ -719,9 +763,9 @@ O D1 e o R2 podem ser reaproveitados. O Worker precisara adicionar um contrato d
 
 ## 18. Checklist antes da apresentacao
 
-- Executar `npm test` e confirmar 44 testes aprovados.
+- Executar `npm test` e confirmar 51 testes aprovados.
 - Abrir a URL oficial em janela anonima.
-- Testar PT/EN, cadastro, login, perfil, foto e logout.
+- Testar PT/EN, cadastro, login, perfil, pagina publica do fotografo, foto e logout.
 - Preparar uma imagem abaixo de 450 KB.
 - Limpar contas e mensagens de demonstracao quando necessario.
 - Confirmar metricas e ausencia de erros recentes.

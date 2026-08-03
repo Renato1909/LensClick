@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const pages = ['index.html', 'cadastro.html', 'login.html', 'recuperar-senha.html', 'redefinir-senha.html', 'perfil.html', 'privacidade.html', 'termos.html'];
+const pages = ['index.html', 'cadastro.html', 'login.html', 'recuperar-senha.html', 'redefinir-senha.html', 'perfil.html', 'fotografo.html', 'privacidade.html', 'termos.html'];
 
 for (const page of pages) {
   test(`${page} possui scripts inline sintaticamente válidos`, () => {
@@ -22,7 +22,7 @@ test('as páginas ativas não usam dados de conta no localStorage', () => {
   }
 });
 
-for (const script of ['lang.js', 'ux.js', 'profile-api.js']) {
+for (const script of ['lang.js', 'ux.js', 'profile-api.js', 'photographer-profile.js']) {
   test(`${script} possui sintaxe válida`, () => {
     const source = readFileSync(resolve('public', script), 'utf8');
     assert.doesNotThrow(() => new Function(source), `Script inválido em ${script}`);
@@ -37,6 +37,7 @@ test('a camada visual da Fase 2 está vinculada às páginas principais', () => 
     'recuperar-senha.html': 'auth-page',
     'redefinir-senha.html': 'auth-page',
     'perfil.html': 'profile-page',
+    'fotografo.html': 'photographer-page',
     'privacidade.html': 'legal-page',
     'termos.html': 'legal-page'
   };

@@ -36,6 +36,7 @@ class MockD1 {
     this.database = new DatabaseSync(':memory:');
     this.database.exec(readFileSync(resolve('migrations/0001_initial.sql'), 'utf8'));
     this.database.exec(readFileSync(resolve('migrations/0002_password_reset.sql'), 'utf8'));
+    this.database.exec(readFileSync(resolve('migrations/0003_professional_profiles.sql'), 'utf8'));
   }
 
   prepare(sql) {
@@ -252,6 +253,106 @@ test('Worker rejeita mutacoes de outra origem e senhas invalidas', async (t) => 
     body: '{}'
   }), env);
   assert.equal(anonymousPhotoRemoval.status, 401);
+});
+
+test('perfil profissional respeita publicacao, privacidade e mudanca de papel', async (t) => {
+  const DB = new MockD1();
+  const PROFILE_IMAGES = new MockR2();
+  const env = { DB, PROFILE_IMAGES };
+  const origin = 'https://lensclick.test';
+  let cookie = '';
+  t.after(() => DB.close());
+
+  async function request(path, { method = 'GET', body, withCookie = true } = {}) {
+    const response = await worker.fetch(new Request(origin + path, {
+      method,
+      headers: {
+        ...(body ? { Origin: origin, 'Content-Type': 'application/json' } : {}),
+        ...(withCookie && cookie ? { Cookie: cookie } : {})
+      },
+      body: body ? JSON.stringify(body) : undefined
+    }), env);
+    const setCookie = response.headers.get('set-cookie');
+    if (setCookie) cookie = setCookie.split(';')[0];
+    const type = response.headers.get('content-type') || '';
+    return { response, json: type.includes('json') ? await response.json() : null };
+  }
+
+  const registration = await request('/api/auth/register', {
+    method: 'POST',
+    body: { name: 'Clara Luz', email: 'clara@example.com', phone: '11988887777', password: 'Clara123' }
+  });
+  assert.equal(registration.response.status, 201);
+
+  const clientPublish = await request('/api/account/professional-profile', {
+    method: 'PUT', body: { bio: 'Uma apresentação profissional completa para publicar na plataforma LensClick.', isPublished: true }
+  });
+  assert.equal(clientPublish.response.status, 403);
+
+  const onePixelPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+  const photographerAccount = await request('/api/profile', {
+    method: 'PUT',
+    body: { ...registration.json.user, role: 'photographer', age: 31, gender: 'female', profilePic: onePixelPng }
+  });
+  assert.equal(photographerAccount.response.status, 200);
+
+  const draft = await request('/api/account/professional-profile', {
+    method: 'PUT',
+    body: { bio: 'Rascunho breve', specialties: [], city: '', state: '', availability: 'available', isPublished: false }
+  });
+  assert.equal(draft.response.status, 200);
+  assert.equal(draft.json.profile.isPublished, false);
+  assert.match(draft.json.profile.slug, /^clara-luz-\d+$/);
+
+  const hiddenDraft = await request(`/api/photographers/${draft.json.profile.slug}`, { withCookie: false });
+  assert.equal(hiddenDraft.response.status, 404);
+
+  const incompletePublish = await request('/api/account/professional-profile', {
+    method: 'PUT',
+    body: { ...draft.json.profile, isPublished: true }
+  });
+  assert.equal(incompletePublish.response.status, 400);
+
+  const published = await request('/api/account/professional-profile', {
+    method: 'PUT',
+    body: {
+      bio: 'Fotografo histórias com direção leve, atenção aos detalhes e uma entrega pensada para cada cliente.',
+      specialties: ['wedding', 'portrait', 'unknown'],
+      city: 'Campinas', state: 'sp', serviceRadiusKm: 120, startingPriceCents: 180000,
+      availability: 'limited', publicEmail: 'contato@claraluz.com.br', publicPhone: '(19) 99999-0000',
+      instagram: '@claraluz.foto', website: 'https://claraluz.example/', showEmail: false, showPhone: true,
+      isPublished: true
+    }
+  });
+  assert.equal(published.response.status, 200);
+  assert.deepEqual(published.json.profile.specialties, ['wedding', 'portrait']);
+  assert.equal(published.json.profile.isPublished, true);
+
+  const publicResult = await request(`/api/photographers/${published.json.profile.slug}`, { withCookie: false });
+  assert.equal(publicResult.response.status, 200);
+  assert.equal(publicResult.json.profile.name, 'Clara Luz');
+  assert.equal(publicResult.json.profile.contacts.email, '');
+  assert.equal(publicResult.json.profile.contacts.phone, '(19) 99999-0000');
+  assert.equal('publicEmail' in publicResult.json.profile, false);
+  assert.equal('showEmail' in publicResult.json.profile, false);
+  assert.match(publicResult.json.profile.profilePic, /^\/api\/photographers\/clara-luz-\d+\/photo/);
+
+  const publicPhoto = await request(`/api/photographers/${published.json.profile.slug}/photo`, { withCookie: false });
+  assert.equal(publicPhoto.response.status, 200);
+  assert.match(publicPhoto.response.headers.get('cache-control'), /public/);
+
+  const removedRequiredPhoto = await request('/api/account/photo', { method: 'DELETE', body: {} });
+  assert.equal(removedRequiredPhoto.response.status, 200);
+  const hiddenWithoutPhoto = await request(`/api/photographers/${published.json.profile.slug}`, { withCookie: false });
+  assert.equal(hiddenWithoutPhoto.response.status, 404);
+
+  const clientAgain = await request('/api/profile', {
+    method: 'PUT',
+    body: { ...photographerAccount.json.user, role: 'client', profilePic: photographerAccount.json.user.profilePic }
+  });
+  assert.equal(clientAgain.response.status, 200);
+  const unpublished = await request(`/api/photographers/${published.json.profile.slug}`, { withCookie: false });
+  assert.equal(unpublished.response.status, 404);
 });
 
 test('exclusao remove dados controlados pela conta sem apagar registros independentes', async (t) => {

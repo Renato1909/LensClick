@@ -155,6 +155,112 @@
       </section>
     </div>
 
+    <section class="professional-card" id="professionalSection" aria-labelledby="professionalTitle" hidden>
+      <div class="professional-heading">
+        <div class="card-heading">
+          <span class="section-icon" aria-hidden="true"><i class="fa-solid fa-camera-retro"></i></span>
+          <div>
+            <p class="professional-eyebrow" data-i18n="profile.pro.eyebrow">Perfil profissional</p>
+            <h2 id="professionalTitle" data-i18n="profile.pro.title">Sua vitrine na LensClick</h2>
+            <p data-i18n="profile.pro.lead">Conte como você trabalha e escolha exatamente o que ficará visível para clientes.</p>
+          </div>
+        </div>
+        <label class="publish-control" for="professionalPublished">
+          <input id="professionalPublished" type="checkbox">
+          <span class="publish-switch" aria-hidden="true"></span>
+          <span data-i18n="profile.pro.publish">Perfil público</span>
+        </label>
+      </div>
+
+      <form id="professionalForm">
+        <div class="professional-url" id="professionalUrlBox" hidden>
+          <span><i class="fa-solid fa-link" aria-hidden="true"></i> <span data-i18n="profile.pro.publicLink">Seu endereço público</span></span>
+          <a id="professionalPublicLink" href="#" target="_blank" rel="noopener noreferrer"></a>
+        </div>
+
+        <div class="field">
+          <label for="professionalBio" data-i18n="profile.pro.bio">Apresentação profissional</label>
+          <textarea id="professionalBio" maxlength="1200" rows="6" aria-describedby="professionalBioHint"></textarea>
+          <div class="field-meta"><p class="field-note" id="professionalBioHint" data-i18n="profile.pro.bioHint">Fale sobre seu olhar, experiência e maneira de conduzir cada trabalho. Mínimo de 60 caracteres para publicar.</p><span id="professionalBioCount">0/1200</span></div>
+        </div>
+
+        <fieldset class="specialties-fieldset">
+          <legend data-i18n="profile.pro.specialties">Especialidades</legend>
+          <p class="field-note" data-i18n="profile.pro.specialtiesHint">Escolha até seis áreas que representam seu trabalho.</p>
+          <div class="specialty-grid">
+            <label><input type="checkbox" name="specialties" value="wedding"><span data-i18n="specialty.wedding">Casamentos</span></label>
+            <label><input type="checkbox" name="specialties" value="events"><span data-i18n="specialty.events">Eventos</span></label>
+            <label><input type="checkbox" name="specialties" value="portrait"><span data-i18n="specialty.portrait">Retratos</span></label>
+            <label><input type="checkbox" name="specialties" value="family"><span data-i18n="specialty.family">Família</span></label>
+            <label><input type="checkbox" name="specialties" value="corporate"><span data-i18n="specialty.corporate">Corporativo</span></label>
+            <label><input type="checkbox" name="specialties" value="product"><span data-i18n="specialty.product">Produtos</span></label>
+            <label><input type="checkbox" name="specialties" value="fashion"><span data-i18n="specialty.fashion">Moda</span></label>
+            <label><input type="checkbox" name="specialties" value="newborn"><span data-i18n="specialty.newborn">Newborn</span></label>
+            <label><input type="checkbox" name="specialties" value="nature"><span data-i18n="specialty.nature">Natureza</span></label>
+            <label><input type="checkbox" name="specialties" value="real-estate"><span data-i18n="specialty.realEstate">Imóveis</span></label>
+          </div>
+        </fieldset>
+
+        <div class="form-grid professional-grid">
+          <div class="field">
+            <label for="professionalCity" data-i18n="profile.pro.city">Cidade base</label>
+            <input id="professionalCity" type="text" maxlength="80" autocomplete="address-level2">
+          </div>
+          <div class="field">
+            <label for="professionalState" data-i18n="profile.pro.state">Estado (UF)</label>
+            <input id="professionalState" type="text" maxlength="2" autocomplete="address-level1" autocapitalize="characters" placeholder="SP">
+          </div>
+          <div class="field">
+            <label for="professionalRadius" data-i18n="profile.pro.radius">Raio de atendimento (km)</label>
+            <input id="professionalRadius" type="number" min="0" max="1000" inputmode="numeric">
+          </div>
+          <div class="field">
+            <label for="professionalPrice" data-i18n="profile.pro.price">Valor inicial (R$)</label>
+            <input id="professionalPrice" type="number" min="0" max="1000000" step="0.01" inputmode="decimal">
+          </div>
+          <div class="field full-field">
+            <label for="professionalAvailability" data-i18n="profile.pro.availability">Disponibilidade</label>
+            <select id="professionalAvailability">
+              <option value="available" data-i18n="availability.available">Agenda aberta</option>
+              <option value="limited" data-i18n="availability.limited">Poucas datas disponíveis</option>
+              <option value="unavailable" data-i18n="availability.unavailable">Agenda temporariamente fechada</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="professional-divider"><span data-i18n="profile.pro.contacts">Contatos profissionais</span></div>
+        <p class="privacy-note"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span data-i18n="profile.pro.contactsHint">Nada será exibido sem você ativar o controle de visibilidade correspondente.</span></p>
+        <div class="form-grid professional-grid">
+          <div class="field contact-field">
+            <label for="professionalEmail" data-i18n="profile.pro.email">E-mail profissional</label>
+            <input id="professionalEmail" type="email" maxlength="254" autocomplete="email">
+            <label class="visibility-option"><input id="professionalShowEmail" type="checkbox"><span data-i18n="profile.pro.showEmail">Mostrar no perfil público</span></label>
+          </div>
+          <div class="field contact-field">
+            <label for="professionalPhone" data-i18n="profile.pro.phone">Telefone profissional</label>
+            <input id="professionalPhone" type="tel" maxlength="30" autocomplete="tel">
+            <label class="visibility-option"><input id="professionalShowPhone" type="checkbox"><span data-i18n="profile.pro.showPhone">Mostrar no perfil público</span></label>
+          </div>
+          <div class="field">
+            <label for="professionalInstagram">Instagram</label>
+            <div class="input-prefix"><span>@</span><input id="professionalInstagram" type="text" maxlength="30" autocomplete="off"></div>
+          </div>
+          <div class="field">
+            <label for="professionalWebsite" data-i18n="profile.pro.website">Site profissional</label>
+            <input id="professionalWebsite" type="url" maxlength="300" placeholder="https://">
+          </div>
+        </div>
+
+        <div class="form-footer professional-footer">
+          <p id="professionalMsg" class="feedback-message" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+          <button id="saveProfessionalProfile" class="primary-button" type="submit">
+            <span data-i18n="profile.pro.save">Salvar perfil profissional</span>
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </button>
+        </div>
+      </form>
+    </section>
+
     <section class="danger-zone" aria-labelledby="dangerZoneTitle">
       <div class="danger-zone-copy">
         <span class="danger-zone-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span>

@@ -35,6 +35,27 @@
   const deleteAccountMessage = document.getElementById('deleteAccountMsg');
   const cancelDeleteAccount = document.getElementById('cancelDeleteAccount');
   const confirmDeleteAccount = document.getElementById('confirmDeleteAccount');
+  const professionalSection = document.getElementById('professionalSection');
+  const professionalForm = document.getElementById('professionalForm');
+  const professionalBio = document.getElementById('professionalBio');
+  const professionalBioCount = document.getElementById('professionalBioCount');
+  const professionalCity = document.getElementById('professionalCity');
+  const professionalState = document.getElementById('professionalState');
+  const professionalRadius = document.getElementById('professionalRadius');
+  const professionalPrice = document.getElementById('professionalPrice');
+  const professionalAvailability = document.getElementById('professionalAvailability');
+  const professionalEmail = document.getElementById('professionalEmail');
+  const professionalPhone = document.getElementById('professionalPhone');
+  const professionalInstagram = document.getElementById('professionalInstagram');
+  const professionalWebsite = document.getElementById('professionalWebsite');
+  const professionalShowEmail = document.getElementById('professionalShowEmail');
+  const professionalShowPhone = document.getElementById('professionalShowPhone');
+  const professionalPublished = document.getElementById('professionalPublished');
+  const professionalUrlBox = document.getElementById('professionalUrlBox');
+  const professionalPublicLink = document.getElementById('professionalPublicLink');
+  const professionalMessage = document.getElementById('professionalMsg');
+  const saveProfessionalProfile = document.getElementById('saveProfessionalProfile');
+  const specialtyInputs = [...document.querySelectorAll('input[name="specialties"]')];
 
   let profilePicture = '';
   let originalEmail = '';
@@ -84,6 +105,64 @@
     updateIdentity();
   }
 
+  function updateBioCount() {
+    professionalBioCount.textContent = `${professionalBio.value.length}/1200`;
+  }
+
+  function updateProfessionalLink(profile) {
+    const visible = Boolean(profile?.isPublished && profile.slug);
+    professionalUrlBox.hidden = !visible;
+    if (!visible) {
+      professionalPublicLink.removeAttribute('href');
+      professionalPublicLink.textContent = '';
+      return;
+    }
+    const relativeUrl = `fotografo.html?perfil=${encodeURIComponent(profile.slug)}`;
+    professionalPublicLink.href = relativeUrl;
+    professionalPublicLink.textContent = new URL(relativeUrl, window.location.href).toString();
+  }
+
+  function populateProfessional(profile) {
+    professionalBio.value = profile.bio || '';
+    professionalCity.value = profile.city || '';
+    professionalState.value = profile.state || '';
+    professionalRadius.value = profile.serviceRadiusKm ?? '';
+    professionalPrice.value = profile.startingPriceCents == null ? '' : (profile.startingPriceCents / 100).toFixed(2);
+    professionalAvailability.value = profile.availability || 'available';
+    professionalEmail.value = profile.publicEmail || '';
+    professionalPhone.value = profile.publicPhone || '';
+    professionalInstagram.value = profile.instagram || '';
+    professionalWebsite.value = profile.website || '';
+    professionalShowEmail.checked = Boolean(profile.showEmail);
+    professionalShowPhone.checked = Boolean(profile.showPhone);
+    professionalPublished.checked = Boolean(profile.isPublished);
+    const selected = new Set(profile.specialties || []);
+    specialtyInputs.forEach((input) => { input.checked = selected.has(input.value); });
+    updateBioCount();
+    updateProfessionalLink(profile);
+  }
+
+  async function loadProfessionalProfile() {
+    professionalSection.hidden = roleInput.value !== 'photographer';
+    if (professionalSection.hidden) return;
+    professionalForm.setAttribute('aria-busy', 'true');
+    saveProfessionalProfile.disabled = true;
+    try {
+      const { data } = await UX.apiFetch(
+        '/api/account/professional-profile',
+        { headers: { Accept: 'application/json' } },
+        UX.textByLanguage('Não foi possível carregar o perfil profissional.', 'Could not load the professional profile.')
+      );
+      populateProfessional(data.profile);
+    } catch (error) {
+      if (error.status === 401) return redirectToLogin();
+      UX.showMessage(professionalMessage, error.message, 'error');
+    } finally {
+      professionalForm.removeAttribute('aria-busy');
+      saveProfessionalProfile.disabled = false;
+    }
+  }
+
   async function loadProfile() {
     profileForm.setAttribute('aria-busy', 'true');
     passwordForm.setAttribute('aria-busy', 'true');
@@ -95,6 +174,7 @@
         UX.textByLanguage('Não foi possível carregar sua conta.', 'Could not load your account.')
       );
       populate(data.user);
+      await loadProfessionalProfile();
     } catch (error) {
       if (error.status === 401) return redirectToLogin();
       UX.showMessage(profileMessage, error.message, 'error');
@@ -132,6 +212,62 @@
     updateEmailProtection();
   });
 
+  professionalBio.addEventListener('input', updateBioCount);
+  professionalState.addEventListener('input', () => {
+    professionalState.value = professionalState.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
+  });
+  specialtyInputs.forEach((input) => {
+    input.addEventListener('change', () => {
+      const selectedCount = specialtyInputs.filter((item) => item.checked).length;
+      if (selectedCount > 6) {
+        input.checked = false;
+        UX.showMessage(professionalMessage, UX.textByLanguage('Escolha no máximo seis especialidades.', 'Choose up to six specialties.'), 'error');
+      }
+    });
+  });
+
+  professionalForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!professionalForm.reportValidity()) return;
+    const selectedSpecialties = specialtyInputs.filter((input) => input.checked).map((input) => input.value);
+    const priceValue = professionalPrice.value === '' ? null : Math.round(Number(professionalPrice.value) * 100);
+    UX.setBusy(saveProfessionalProfile, true, { pt: 'Salvando...', en: 'Saving...' });
+    UX.showMessage(professionalMessage, '');
+    try {
+      const { data } = await UX.apiFetch('/api/account/professional-profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bio: professionalBio.value.trim(),
+          specialties: selectedSpecialties,
+          city: professionalCity.value.trim(),
+          state: professionalState.value.trim(),
+          serviceRadiusKm: professionalRadius.value,
+          startingPriceCents: priceValue,
+          availability: professionalAvailability.value,
+          publicEmail: professionalEmail.value.trim(),
+          publicPhone: professionalPhone.value.trim(),
+          instagram: professionalInstagram.value.trim(),
+          website: professionalWebsite.value.trim(),
+          showEmail: professionalShowEmail.checked,
+          showPhone: professionalShowPhone.checked,
+          isPublished: professionalPublished.checked
+        })
+      }, UX.textByLanguage('Não foi possível salvar o perfil profissional.', 'Could not save the professional profile.'));
+      populateProfessional(data.profile);
+      UX.showMessage(professionalMessage, UX.textByLanguage(
+        data.profile.isPublished ? 'Perfil profissional publicado com sucesso.' : 'Rascunho profissional salvo com sucesso.',
+        data.profile.isPublished ? 'Professional profile published successfully.' : 'Professional draft saved successfully.'
+      ), 'success');
+    } catch (error) {
+      if (error.status === 401) return redirectToLogin();
+      UX.showMessage(professionalMessage, error.message, 'error');
+      if (error.status === 400 && professionalPublished.checked) professionalPublished.focus();
+    } finally {
+      UX.setBusy(saveProfessionalProfile, false);
+    }
+  });
+
   profileForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!profileForm.reportValidity()) return;
@@ -153,6 +289,7 @@
         })
       }, UX.textByLanguage('Não foi possível salvar os dados.', 'Could not save your details.'));
       populate(data.user);
+      await loadProfessionalProfile();
       picInput.value = '';
       UX.showMessage(profileMessage, UX.textByLanguage('Alterações salvas com segurança.', 'Changes saved securely.'), 'success');
     } catch (error) {
