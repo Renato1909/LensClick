@@ -23,7 +23,7 @@ npm test
 npm run check
 ```
 
-Os 44 testes cobrem cadastro, hash de senha, sessao, recuperacao de senha, gerenciamento e exclusao da conta, troca autenticada de e-mail e senha, foto no R2, contato, newsletter, protecao de origem e scripts das paginas.
+Os 51 testes cobrem cadastro, hash de senha, sessao, recuperacao de senha, gerenciamento e exclusao da conta, perfil profissional publico, controles de privacidade, foto no R2, contato, newsletter, protecao de origem e scripts das paginas.
 
 O GitHub Actions executa essas verificacoes automaticamente em todo Pull Request direcionado a `main` e em cada atualizacao da branch principal. O fluxo de contribuicao da equipe esta documentado em `CONTRIBUTING.md`.
 
@@ -45,7 +45,7 @@ npm run test:smoke
 ## Estrutura principal
 
 - `src/worker.mjs`: Worker, autenticacao e APIs.
-- `migrations/0001_initial.sql`: migracao versionada do D1.
+- `migrations/`: evolucao versionada do D1, incluindo autenticacao e perfis profissionais.
 - `db/schema.ts`: referencia dos nomes e da versao do esquema.
 - `public/`: HTML, JavaScript e demais arquivos publicos.
 - `DESIGN_SYSTEM.md`: tokens, componentes e regras visuais compartilhadas.
@@ -70,6 +70,8 @@ O antigo banco local em `data/lensclick.sqlite`, quando existente, foi preservad
 - Cadastro e login reais.
 - Recuperacao de senha ativa com token unico de 30 minutos e envio transacional pela Brevo.
 - Central autenticada para editar dados, trocar a senha e gerenciar a imagem privada do perfil.
+- Perfil profissional com especialidades, localizacao, disponibilidade, faixa inicial e contatos opcionais.
+- Pagina publica do fotografo, publicada somente por consentimento explicito.
 - Exclusao definitiva da conta e dos dados controlados por ela, protegida por senha e confirmacao textual.
 - Mensagens de contato persistidas.
 - Inscricoes de newsletter persistidas.

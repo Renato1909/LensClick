@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Conheça um fotógrafo profissional na LensClick.">
+  <title data-i18n="photographer.title">Perfil profissional | LensClick</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="refinements.css">
+  <link rel="stylesheet" href="photographer.css">
+</head>
+<body class="photographer-page">
+  <header class="public-topbar">
+    <a class="public-brand" href="index.html" aria-label="LensClick — página inicial"><span>Lens</span><strong>Click</strong></a>
+    <div class="public-actions">
+      <button class="public-language" id="langToggle" type="button" aria-label="Trocar idioma">PT</button>
+      <a class="public-login" href="login.html" data-i18n="photographer.login">Entrar</a>
+    </div>
+  </header>
+
+  <main id="main-content" class="public-shell" tabindex="-1">
+    <div class="profile-loading" id="profileLoading" role="status">
+      <span class="loading-orbit" aria-hidden="true"></span>
+      <p data-i18n="photographer.loading">Preparando o perfil profissional...</p>
+    </div>
+
+    <section class="profile-error" id="profileError" hidden aria-labelledby="profileErrorTitle">
+      <span class="error-icon" aria-hidden="true"><i class="fa-regular fa-compass"></i></span>
+      <h1 id="profileErrorTitle" data-i18n="photographer.errorTitle">Este perfil não está disponível</h1>
+      <p data-i18n="photographer.errorText">O endereço pode estar incorreto ou o fotógrafo ainda não publicou seu perfil.</p>
+      <a href="index.html" class="public-primary" data-i18n="photographer.back">Voltar à LensClick</a>
+    </section>
+
+    <article id="professionalProfile" hidden>
+      <section class="public-hero" aria-labelledby="photographerName">
+        <div class="public-avatar">
+          <img id="photographerImage" alt="" hidden>
+          <span id="photographerInitials" aria-hidden="true">LC</span>
+        </div>
+        <div class="hero-copy">
+          <p class="verified-label"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><span data-i18n="photographer.professional">Perfil profissional</span></p>
+          <h1 id="photographerName"></h1>
+          <p class="hero-location"><i class="fa-solid fa-location-dot" aria-hidden="true"></i><span id="photographerLocation"></span></p>
+          <div class="hero-status" id="photographerAvailability"></div>
+        </div>
+      </section>
+
+      <div class="public-layout">
+        <div class="public-main-column">
+          <section class="public-section" aria-labelledby="aboutTitle">
+            <p class="section-kicker" data-i18n="photographer.aboutKicker">Sobre o profissional</p>
+            <h2 id="aboutTitle" data-i18n="photographer.aboutTitle">Fotografia com identidade</h2>
+            <p class="professional-bio" id="photographerBio"></p>
+          </section>
+
+          <section class="public-section" aria-labelledby="specialtiesTitle">
+            <p class="section-kicker" data-i18n="photographer.specialtiesKicker">Experiência</p>
+            <h2 id="specialtiesTitle" data-i18n="photographer.specialtiesTitle">Especialidades</h2>
+            <div class="public-specialties" id="photographerSpecialties"></div>
+          </section>
+        </div>
+
+        <aside class="professional-summary" aria-labelledby="summaryTitle">
+          <p class="section-kicker" data-i18n="photographer.summaryKicker">Informações práticas</p>
+          <h2 id="summaryTitle" data-i18n="photographer.summaryTitle">Vamos planejar?</h2>
+          <dl class="summary-list">
+            <div id="priceRow" hidden><dt><i class="fa-solid fa-tag" aria-hidden="true"></i><span data-i18n="photographer.price">Investimento inicial</span></dt><dd id="photographerPrice"></dd></div>
+            <div id="radiusRow" hidden><dt><i class="fa-solid fa-route" aria-hidden="true"></i><span data-i18n="photographer.radius">Área de atendimento</span></dt><dd id="photographerRadius"></dd></div>
+          </dl>
+          <div class="contact-list" id="photographerContacts"></div>
+          <p class="contact-privacy" data-i18n="photographer.contactPrivacy">Os contatos abaixo foram publicados pelo próprio profissional.</p>
+        </aside>
+      </div>
+    </article>
+  </main>
+
+  <footer class="public-footer">
+    <a href="index.html" data-i18n="photographer.back">Voltar à LensClick</a>
+    <p data-i18n="footer">© {year} Lens Click. Todos os direitos reservados</p>
+  </footer>
+
+  <script src="lang.js"></script>
+  <script src="ux.js"></script>
+  <script src="photographer-profile.js"></script>
+</body>
+</html>

@@ -3,6 +3,10 @@ const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
 const MAX_BODY_BYTES = 700_000;
 const MAX_PROFILE_PICTURE_BYTES = 450_000;
+const PROFESSIONAL_SPECIALTIES = new Set([
+  'wedding', 'events', 'portrait', 'family', 'corporate',
+  'product', 'fashion', 'newborn', 'nature', 'real-estate'
+]);
 // Cloudflare Workers Web Crypto accepts at most 100,000 PBKDF2 iterations.
 const PBKDF2_ITERATIONS = 100_000;
 
@@ -28,6 +32,40 @@ function isValidEmail(value) {
 
 function isValidPassword(value) {
   return value.length >= 8 && /\p{L}/u.test(value) && /\d/.test(value);
+}
+
+function slugify(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'fotografo';
+}
+
+function normalizeWebsite(value) {
+  const text = cleanText(value, 300);
+  if (!text) return '';
+  try {
+    const url = new URL(text);
+    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+function parseSpecialties(value) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.map((item) => String(item)).filter((item) => PROFESSIONAL_SPECIALTIES.has(item)))].slice(0, 6);
+}
+
+function storedSpecialties(value) {
+  try {
+    return parseSpecialties(JSON.parse(value || '[]'));
+  } catch {
+    return [];
+  }
 }
 
 function escapeHtml(value) {
@@ -153,6 +191,41 @@ function publicUser(row) {
     profilePic: row.profile_pic_key
       ? `/api/profile-picture/${row.id}?v=${encodeURIComponent(row.updated_at || '')}`
       : ''
+  };
+}
+
+function professionalProfile(row, ownerView = false) {
+  if (!row) return null;
+  const base = {
+    slug: row.slug,
+    bio: row.bio || '',
+    specialties: storedSpecialties(row.specialties),
+    city: row.city || '',
+    state: row.state || '',
+    serviceRadiusKm: row.service_radius_km == null ? null : Number(row.service_radius_km),
+    startingPriceCents: row.starting_price_cents == null ? null : Number(row.starting_price_cents),
+    availability: row.availability || 'available',
+    instagram: row.instagram || '',
+    website: row.website || '',
+    isPublished: Boolean(row.is_published)
+  };
+  if (ownerView) {
+    return {
+      ...base,
+      publicEmail: row.public_email || '',
+      publicPhone: row.public_phone || '',
+      showEmail: Boolean(row.show_email),
+      showPhone: Boolean(row.show_phone)
+    };
+  }
+  return {
+    ...base,
+    name: row.name,
+    profilePic: row.profile_pic_key ? `/api/photographers/${encodeURIComponent(row.slug)}/photo?v=${encodeURIComponent(row.user_updated_at || '')}` : '',
+    contacts: {
+      email: row.show_email ? row.public_email || '' : '',
+      phone: row.show_phone ? row.public_phone || '' : ''
+    }
   };
 }
 
@@ -387,6 +460,117 @@ async function handleApi(request, env, url, context) {
     return user ? json(200, { user: publicUser(user) }) : json(401, { error: 'Sessao nao encontrada.' });
   }
 
+  const publicPhotographerPhotoMatch = /^\/api\/photographers\/([a-z0-9-]{3,80})\/photo$/.exec(pathname);
+  if (publicPhotographerPhotoMatch && method === 'GET') {
+    const profile = await env.DB.prepare(`
+      SELECT p.slug, u.profile_pic_key FROM professional_profiles p
+      JOIN users u ON u.id = p.user_id
+      WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
+    `).bind(publicPhotographerPhotoMatch[1]).first();
+    if (!profile?.profile_pic_key) return json(404, { error: 'Imagem nao encontrada.' });
+    const object = await env.PROFILE_IMAGES.get(profile.profile_pic_key);
+    if (!object) return json(404, { error: 'Imagem nao encontrada.' });
+    const headers = new Headers(responseHeaders({ 'Cache-Control': 'public, max-age=300, must-revalidate' }));
+    if (typeof object.writeHttpMetadata === 'function') object.writeHttpMetadata(headers);
+    if (!headers.has('Content-Type')) headers.set('Content-Type', object.httpMetadata?.contentType || 'application/octet-stream');
+    if (object.httpEtag) headers.set('ETag', object.httpEtag);
+    if (object.httpEtag && request.headers.get('If-None-Match') === object.httpEtag) {
+      return new Response(null, { status: 304, headers });
+    }
+    return new Response(object.body, { headers });
+  }
+
+  const publicPhotographerMatch = /^\/api\/photographers\/([a-z0-9-]{3,80})$/.exec(pathname);
+  if (publicPhotographerMatch && method === 'GET') {
+    const profile = await env.DB.prepare(`
+      SELECT p.*, u.name, u.profile_pic_key, u.updated_at AS user_updated_at
+      FROM professional_profiles p
+      JOIN users u ON u.id = p.user_id
+      WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
+    `).bind(publicPhotographerMatch[1]).first();
+    return profile
+      ? json(200, { profile: professionalProfile(profile) }, { 'Cache-Control': 'public, max-age=60' })
+      : json(404, { error: 'Perfil profissional nao encontrado.' });
+  }
+
+  if (pathname === '/api/account/professional-profile' && method === 'GET') {
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const profile = await env.DB.prepare('SELECT * FROM professional_profiles WHERE user_id = ?').bind(current.id).first();
+    return json(200, {
+      profile: profile ? professionalProfile(profile, true) : {
+        slug: `${slugify(current.name)}-${current.id}`,
+        bio: '', specialties: [], city: '', state: '', serviceRadiusKm: null,
+        startingPriceCents: null, availability: 'available', publicEmail: '', publicPhone: '',
+        instagram: '', website: '', showEmail: false, showPhone: false, isPublished: false
+      }
+    });
+  }
+
+  if (pathname === '/api/account/professional-profile' && method === 'PUT') {
+    if (await isRateLimited(request, env, pathname, 30, 60 * 60 * 1000)) {
+      return json(429, { error: 'Muitas alteracoes. Aguarde antes de tentar novamente.' });
+    }
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    if (current.role !== 'photographer') {
+      return json(403, { error: 'Selecione o perfil de fotografo nos dados pessoais para continuar.' });
+    }
+    const body = await readJson(request);
+    const bio = cleanText(body.bio, 1200);
+    const specialties = parseSpecialties(body.specialties);
+    const city = cleanText(body.city, 80);
+    const state = cleanText(body.state, 2).toUpperCase();
+    const availability = ['available', 'limited', 'unavailable'].includes(body.availability) ? body.availability : 'available';
+    const serviceRadiusKm = body.serviceRadiusKm === '' || body.serviceRadiusKm == null ? null : Number(body.serviceRadiusKm);
+    const startingPriceCents = body.startingPriceCents === '' || body.startingPriceCents == null ? null : Number(body.startingPriceCents);
+    const publicEmail = normalizeEmail(body.publicEmail);
+    const publicPhone = cleanText(body.publicPhone, 30);
+    const instagram = cleanText(body.instagram, 30).replace(/^@/, '');
+    const submittedWebsite = cleanText(body.website, 300);
+    const website = normalizeWebsite(submittedWebsite);
+    const showEmail = body.showEmail === true && Boolean(publicEmail);
+    const showPhone = body.showPhone === true && Boolean(publicPhone);
+    const isPublished = body.isPublished === true;
+
+    const invalidDraft =
+      (state && !/^[A-Z]{2}$/.test(state)) ||
+      (serviceRadiusKm !== null && (!Number.isInteger(serviceRadiusKm) || serviceRadiusKm < 0 || serviceRadiusKm > 1000)) ||
+      (startingPriceCents !== null && (!Number.isInteger(startingPriceCents) || startingPriceCents < 0 || startingPriceCents > 100_000_000)) ||
+      (publicEmail && !isValidEmail(publicEmail)) ||
+      (publicPhone && publicPhone.length < 8) ||
+      (instagram && !/^[A-Za-z0-9._]{1,30}$/.test(instagram)) ||
+      (submittedWebsite && !website);
+    if (invalidDraft) return json(400, { error: 'Revise os dados profissionais informados.' });
+
+    const hasPublicContact = showEmail || showPhone || Boolean(instagram) || Boolean(website);
+    const publishable = bio.length >= 60 && specialties.length > 0 && city.length >= 2 && /^[A-Z]{2}$/.test(state) && Boolean(current.profile_pic_key) && hasPublicContact;
+    if (isPublished && !publishable) {
+      return json(400, { error: 'Para publicar, adicione foto, apresentacao, especialidade, localizacao e ao menos um contato profissional.' });
+    }
+
+    const existing = await env.DB.prepare('SELECT slug FROM professional_profiles WHERE user_id = ?').bind(current.id).first();
+    const slug = existing?.slug || `${slugify(current.name)}-${current.id}`;
+    await env.DB.prepare(`
+      INSERT INTO professional_profiles (
+        user_id, slug, bio, specialties, city, state, service_radius_km, starting_price_cents,
+        availability, public_email, public_phone, instagram, website, show_email, show_phone, is_published
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        bio = excluded.bio, specialties = excluded.specialties, city = excluded.city, state = excluded.state,
+        service_radius_km = excluded.service_radius_km, starting_price_cents = excluded.starting_price_cents,
+        availability = excluded.availability, public_email = excluded.public_email,
+        public_phone = excluded.public_phone, instagram = excluded.instagram, website = excluded.website,
+        show_email = excluded.show_email, show_phone = excluded.show_phone,
+        is_published = excluded.is_published, updated_at = CURRENT_TIMESTAMP
+    `).bind(
+      current.id, slug, bio, JSON.stringify(specialties), city, state, serviceRadiusKm, startingPriceCents,
+      availability, publicEmail, publicPhone, instagram, website, Number(showEmail), Number(showPhone), Number(isPublished)
+    ).run();
+    const profile = await env.DB.prepare('SELECT * FROM professional_profiles WHERE user_id = ?').bind(current.id).first();
+    return json(200, { profile: professionalProfile(profile, true), message: isPublished ? 'Perfil profissional publicado.' : 'Perfil profissional salvo.' });
+  }
+
   if (pathname === '/api/profile' && method === 'PUT') {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
@@ -431,6 +615,12 @@ async function handleApi(request, env, url, context) {
           env.DB.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?')
             .bind(current.id, current.authenticated_session_hash),
           env.DB.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').bind(current.id)
+        );
+      }
+      if (role !== 'photographer' || !nextPictureKey) {
+        statements.push(
+          env.DB.prepare('UPDATE professional_profiles SET is_published = 0, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?')
+            .bind(current.id)
         );
       }
       await env.DB.batch(statements);
@@ -484,12 +674,11 @@ async function handleApi(request, env, url, context) {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
     if (current.profile_pic_key) await env.PROFILE_IMAGES.delete(current.profile_pic_key);
-    const user = await env.DB.prepare(`
-      UPDATE users
-      SET profile_pic_key = NULL, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-      RETURNING *
-    `).bind(current.id).first();
+    await env.DB.batch([
+      env.DB.prepare('UPDATE users SET profile_pic_key = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(current.id),
+      env.DB.prepare('UPDATE professional_profiles SET is_published = 0, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?').bind(current.id)
+    ]);
+    const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(current.id).first();
     return json(200, { user: publicUser(user), message: 'Foto removida com sucesso.' });
   }
 
