@@ -155,6 +155,18 @@
       </section>
     </div>
 
+    <section class="danger-zone" aria-labelledby="dangerZoneTitle">
+      <div class="danger-zone-copy">
+        <span class="danger-zone-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span>
+        <div>
+          <p class="danger-zone-label" data-i18n="profile.delete.eyebrow">Zona de perigo</p>
+          <h2 id="dangerZoneTitle" data-i18n="profile.delete.title">Excluir minha conta</h2>
+          <p data-i18n="profile.delete.lead">Apaga permanentemente sua conta, sessões, tokens de recuperação e foto. Esta ação não pode ser desfeita.</p>
+        </div>
+      </div>
+      <button class="danger-outline-button" id="deleteAccountButton" type="button" data-i18n="profile.delete.open">Excluir conta</button>
+    </section>
+
     <a class="back-link" href="index.html">
       <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
       <span data-i18n="profile.backToSite">Voltar ao site</span>
@@ -169,6 +181,37 @@
       <div class="dialog-actions">
         <button class="secondary-button" value="cancel" type="submit" data-i18n="profile.cancel">Cancelar</button>
         <button class="danger-button" id="confirmRemovePhoto" value="confirm" type="submit" data-i18n="profile.photo.confirm">Sim, remover</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="confirmation-dialog account-delete-dialog" id="deleteAccountDialog" aria-labelledby="deleteAccountTitle">
+    <form id="deleteAccountForm">
+      <span class="dialog-icon" aria-hidden="true"><i class="fa-solid fa-user-slash"></i></span>
+      <p class="dialog-eyebrow" data-i18n="profile.delete.eyebrow">Zona de perigo</p>
+      <h2 id="deleteAccountTitle" data-i18n="profile.delete.dialogTitle">Excluir sua conta definitivamente?</h2>
+      <p data-i18n="profile.delete.dialogText">Os dados controlados pela sua conta serão apagados. Não será possível recuperar o perfil depois.</p>
+      <ul class="deletion-list">
+        <li data-i18n="profile.delete.item.account">Dados da conta e todas as sessões</li>
+        <li data-i18n="profile.delete.item.photo">Foto privada armazenada no R2</li>
+        <li data-i18n="profile.delete.item.recovery">Tokens de recuperação de senha</li>
+      </ul>
+      <div class="field">
+        <label for="deleteCurrentPassword" data-i18n="profile.currentPassword">Senha atual</label>
+        <input id="deleteCurrentPassword" type="password" autocomplete="current-password" required minlength="8">
+      </div>
+      <div class="field delete-confirmation-field">
+        <label for="deleteConfirmation">
+          <span data-i18n="profile.delete.confirmationLabel">Para confirmar, digite</span>
+          <strong id="deleteConfirmationPhrase">EXCLUIR</strong>
+        </label>
+        <input id="deleteConfirmation" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" required aria-describedby="deleteConfirmationHint">
+        <p class="field-note" id="deleteConfirmationHint" data-i18n="profile.delete.confirmationHint">A palavra precisa ser digitada exatamente como aparece acima.</p>
+      </div>
+      <p id="deleteAccountMsg" class="feedback-message" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+      <div class="dialog-actions">
+        <button class="secondary-button" id="cancelDeleteAccount" type="button" data-i18n="profile.cancel">Cancelar</button>
+        <button class="danger-button" id="confirmDeleteAccount" type="submit" disabled data-i18n="profile.delete.confirm">Excluir permanentemente</button>
       </div>
     </form>
   </dialog>

@@ -254,6 +254,107 @@ test('Worker rejeita mutacoes de outra origem e senhas invalidas', async (t) => 
   assert.equal(anonymousPhotoRemoval.status, 401);
 });
 
+test('exclusao remove dados controlados pela conta sem apagar registros independentes', async (t) => {
+  const DB = new MockD1();
+  const PROFILE_IMAGES = new MockR2();
+  const env = { DB, PROFILE_IMAGES };
+  const origin = 'https://lensclick.test';
+  let cookie = '';
+  t.after(() => DB.close());
+
+  async function request(path, method, body, withCookie = true) {
+    const response = await worker.fetch(new Request(origin + path, {
+      method,
+      headers: {
+        Origin: origin,
+        'Content-Type': 'application/json',
+        ...(withCookie && cookie ? { Cookie: cookie } : {})
+      },
+      body: JSON.stringify(body)
+    }), env);
+    const setCookie = response.headers.get('set-cookie');
+    if (setCookie && !setCookie.includes('Max-Age=0')) cookie = setCookie.split(';')[0];
+    return { response, json: await response.json() };
+  }
+
+  const registration = await request('/api/auth/register', 'POST', {
+    name: 'Titular Exclusao',
+    email: 'excluir@example.com',
+    phone: '11999999999',
+    password: 'Excluir123'
+  }, false);
+  assert.equal(registration.response.status, 201);
+  const primaryCookie = cookie;
+  const primaryId = registration.json.user.id;
+
+  const otherRegistration = await worker.fetch(new Request(origin + '/api/auth/register', {
+    method: 'POST',
+    headers: { Origin: origin, 'Content-Type': 'application/json', 'CF-Connecting-IP': '198.51.100.20' },
+    body: JSON.stringify({ name: 'Outra Pessoa', email: 'outra@example.com', phone: '11888888888', password: 'OutraSenha1' })
+  }), env);
+  assert.equal(otherRegistration.status, 201);
+
+  const onePixelPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+  const profile = await request('/api/profile', 'PUT', {
+    name: 'Titular Exclusao',
+    email: 'excluir@example.com',
+    phone: '11999999999',
+    role: 'client',
+    age: 30,
+    gender: 'other',
+    profilePic: onePixelPng
+  });
+  assert.equal(profile.response.status, 200);
+  assert.equal(PROFILE_IMAGES.objects.size, 1);
+
+  assert.equal((await request('/api/contact', 'POST', {
+    name: 'Titular Exclusao', email: 'excluir@example.com', message: 'Registro independente que deve permanecer.'
+  })).response.status, 201);
+  assert.equal((await request('/api/newsletter', 'POST', { email: 'excluir@example.com' })).response.status, 201);
+  assert.equal((await request('/api/contact', 'POST', {
+    name: 'Outra Pessoa', email: 'outra@example.com', message: 'Mensagem que deve permanecer.'
+  })).response.status, 201);
+  assert.equal((await request('/api/newsletter', 'POST', { email: 'outra@example.com' })).response.status, 201);
+  DB.prepare('INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
+    .bind('token-hash-deletion-test', primaryId, Date.now() + 60_000).run();
+
+  const anonymousDeletion = await request('/api/account', 'DELETE', {
+    currentPassword: 'Excluir123', confirmation: 'EXCLUIR'
+  }, false);
+  assert.equal(anonymousDeletion.response.status, 401);
+
+  const wrongPhrase = await request('/api/account', 'DELETE', {
+    currentPassword: 'Excluir123', confirmation: 'CONFIRMAR'
+  });
+  assert.equal(wrongPhrase.response.status, 400);
+
+  const wrongPassword = await request('/api/account', 'DELETE', {
+    currentPassword: 'SenhaErrada1', confirmation: 'EXCLUIR'
+  });
+  assert.equal(wrongPassword.response.status, 403);
+
+  const deletion = await request('/api/account', 'DELETE', {
+    currentPassword: 'Excluir123', confirmation: 'DELETE'
+  });
+  assert.equal(deletion.response.status, 200);
+  assert.match(deletion.response.headers.get('set-cookie'), /Max-Age=0/);
+  assert.equal(PROFILE_IMAGES.objects.size, 0);
+
+  assert.equal(DB.prepare('SELECT COUNT(*) AS count FROM users WHERE id = ?').bind(primaryId).first('count'), 0);
+  assert.equal(DB.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').bind(primaryId).first('count'), 0);
+  assert.equal(DB.prepare('SELECT COUNT(*) AS count FROM password_reset_tokens WHERE user_id = ?').bind(primaryId).first('count'), 0);
+  assert.equal(DB.prepare('SELECT COUNT(*) AS count FROM contact_messages WHERE email = ?').bind('excluir@example.com').first('count'), 1);
+  assert.equal(DB.prepare('SELECT COUNT(*) AS count FROM newsletter_subscriptions WHERE email = ?').bind('excluir@example.com').first('count'), 1);
+  assert.equal(DB.prepare('SELECT COUNT(*) AS count FROM users WHERE email = ?').bind('outra@example.com').first('count'), 1);
+  assert.equal(DB.prepare('SELECT COUNT(*) AS count FROM contact_messages WHERE email = ?').bind('outra@example.com').first('count'), 1);
+  assert.equal(DB.prepare('SELECT COUNT(*) AS count FROM newsletter_subscriptions WHERE email = ?').bind('outra@example.com').first('count'), 1);
+
+  const oldSession = await worker.fetch(new Request(origin + '/api/auth/me', { headers: { Cookie: primaryCookie } }), env);
+  assert.equal(oldSession.status, 401);
+  const oldLogin = await request('/api/auth/login', 'POST', { email: 'excluir@example.com', password: 'Excluir123' }, false);
+  assert.equal(oldLogin.response.status, 401);
+});
+
 test('recuperacao troca a senha sem revelar contas e invalida sessoes', async (t) => {
   const DB = new MockD1();
   const sentEmails = [];

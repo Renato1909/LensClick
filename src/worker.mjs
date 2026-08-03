@@ -493,6 +493,36 @@ async function handleApi(request, env, url, context) {
     return json(200, { user: publicUser(user), message: 'Foto removida com sucesso.' });
   }
 
+  if (pathname === '/api/account' && method === 'DELETE') {
+    if (await isRateLimited(request, env, pathname, 5, 60 * 60 * 1000)) {
+      return json(429, { error: 'Muitas tentativas. Aguarde antes de tentar novamente.' });
+    }
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const body = await readJson(request);
+    const confirmation = cleanText(body.confirmation, 20).toUpperCase();
+    if (!['EXCLUIR', 'DELETE'].includes(confirmation)) {
+      return json(400, { error: 'Digite a frase de confirmacao exatamente como solicitado.' });
+    }
+    if (!(await verifyPassword(String(body.currentPassword || ''), current.password_hash))) {
+      return json(403, { error: 'A senha atual esta incorreta.' });
+    }
+
+    // Remove the private object first. If R2 fails, the relational data remains
+    // intact so the user can retry without leaving an unreachable personal file.
+    if (current.profile_pic_key) await env.PROFILE_IMAGES.delete(current.profile_pic_key);
+
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').bind(current.id),
+      env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(current.id),
+      env.DB.prepare('DELETE FROM users WHERE id = ?').bind(current.id)
+    ]);
+
+    return json(200, { message: 'Conta e dados controlados por ela excluidos permanentemente.' }, {
+      'Set-Cookie': sessionCookie('', request, 0)
+    });
+  }
+
   const pictureMatch = /^\/api\/profile-picture\/(\d+)$/.exec(pathname);
   if (pictureMatch && method === 'GET') {
     const current = await authenticatedUser(request, env);

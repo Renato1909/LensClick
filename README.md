@@ -23,7 +23,7 @@ npm test
 npm run check
 ```
 
-Os 42 testes cobrem cadastro, hash de senha, sessao, recuperacao de senha, gerenciamento da conta, troca autenticada de e-mail e senha, foto no R2, contato, newsletter, protecao de origem e scripts das paginas.
+Os 44 testes cobrem cadastro, hash de senha, sessao, recuperacao de senha, gerenciamento e exclusao da conta, troca autenticada de e-mail e senha, foto no R2, contato, newsletter, protecao de origem e scripts das paginas.
 
 O GitHub Actions executa essas verificacoes automaticamente em todo Pull Request direcionado a `main` e em cada atualizacao da branch principal. O fluxo de contribuicao da equipe esta documentado em `CONTRIBUTING.md`.
 
@@ -70,6 +70,7 @@ O antigo banco local em `data/lensclick.sqlite`, quando existente, foi preservad
 - Cadastro e login reais.
 - Recuperacao de senha ativa com token unico de 30 minutos e envio transacional pela Brevo.
 - Central autenticada para editar dados, trocar a senha e gerenciar a imagem privada do perfil.
+- Exclusao definitiva da conta e dos dados controlados por ela, protegida por senha e confirmacao textual.
 - Mensagens de contato persistidas.
 - Inscricoes de newsletter persistidas.
 - Traducao em portugues e ingles.
