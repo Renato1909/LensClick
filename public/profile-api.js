@@ -26,6 +26,15 @@
   const currentPasswordInput = document.getElementById('currentPassword');
   const newPasswordInput = document.getElementById('newPassword');
   const confirmPasswordInput = document.getElementById('confirmPassword');
+  const deleteAccountButton = document.getElementById('deleteAccountButton');
+  const deleteAccountDialog = document.getElementById('deleteAccountDialog');
+  const deleteAccountForm = document.getElementById('deleteAccountForm');
+  const deleteCurrentPassword = document.getElementById('deleteCurrentPassword');
+  const deleteConfirmation = document.getElementById('deleteConfirmation');
+  const deleteConfirmationPhrase = document.getElementById('deleteConfirmationPhrase');
+  const deleteAccountMessage = document.getElementById('deleteAccountMsg');
+  const cancelDeleteAccount = document.getElementById('cancelDeleteAccount');
+  const confirmDeleteAccount = document.getElementById('confirmDeleteAccount');
 
   let profilePicture = '';
   let originalEmail = '';
@@ -78,7 +87,7 @@
   async function loadProfile() {
     profileForm.setAttribute('aria-busy', 'true');
     passwordForm.setAttribute('aria-busy', 'true');
-    UX.setBusy(saveButton, true, { pt: 'Carregando...', en: 'Loading...' });
+    saveButton.disabled = true;
     try {
       const { data } = await UX.apiFetch(
         '/api/auth/me',
@@ -92,7 +101,7 @@
     } finally {
       profileForm.removeAttribute('aria-busy');
       passwordForm.removeAttribute('aria-busy');
-      UX.setBusy(saveButton, false);
+      saveButton.disabled = false;
     }
   }
 
@@ -211,6 +220,61 @@
     } finally {
       UX.setBusy(removePhotoButton, false);
       UX.setBusy(confirmRemovePhoto, false);
+    }
+  });
+
+  function expectedDeletionPhrase() {
+    return UX.isEnglish() ? 'DELETE' : 'EXCLUIR';
+  }
+
+  function validateDeletionConfirmation() {
+    const phrase = expectedDeletionPhrase();
+    deleteConfirmationPhrase.textContent = phrase;
+    deleteConfirmation.placeholder = phrase;
+    const matches = deleteConfirmation.value.trim().toUpperCase() === phrase;
+    confirmDeleteAccount.disabled = !matches || deleteCurrentPassword.value.length < 8;
+    deleteConfirmation.setCustomValidity(
+      deleteConfirmation.value && !matches
+        ? UX.textByLanguage('Digite EXCLUIR exatamente como indicado.', 'Type DELETE exactly as shown.')
+        : ''
+    );
+  }
+
+  deleteAccountButton.addEventListener('click', () => {
+    deleteAccountForm.reset();
+    UX.showMessage(deleteAccountMessage, '');
+    validateDeletionConfirmation();
+    deleteAccountDialog.showModal();
+    deleteCurrentPassword.focus();
+  });
+
+  deleteConfirmation.addEventListener('input', validateDeletionConfirmation);
+  deleteCurrentPassword.addEventListener('input', validateDeletionConfirmation);
+  document.addEventListener('translations.updated', validateDeletionConfirmation);
+  cancelDeleteAccount.addEventListener('click', () => deleteAccountDialog.close('cancel'));
+
+  deleteAccountForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    validateDeletionConfirmation();
+    if (!deleteAccountForm.reportValidity() || confirmDeleteAccount.disabled) return;
+    UX.setBusy(confirmDeleteAccount, true, { pt: 'Excluindo...', en: 'Deleting...' });
+    UX.showMessage(deleteAccountMessage, '');
+    try {
+      await UX.apiFetch('/api/account', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: deleteCurrentPassword.value,
+          confirmation: deleteConfirmation.value.trim()
+        })
+      }, UX.textByLanguage('Não foi possível excluir a conta.', 'Could not delete the account.'));
+      window.location.replace('login.html?accountDeleted=1');
+    } catch (error) {
+      if (error.status === 401) return redirectToLogin();
+      UX.showMessage(deleteAccountMessage, error.message, 'error');
+      if (error.status === 403) deleteCurrentPassword.focus();
+      UX.setBusy(confirmDeleteAccount, false);
+      validateDeletionConfirmation();
     }
   });
 

@@ -13,11 +13,17 @@ test('a central da conta oferece dados, segurança e remoção de foto', () => {
   assert.match(page, /id="profileForm"/);
   assert.match(page, /id="passwordForm"/);
   assert.match(page, /id="removePhotoDialog"/);
+  assert.match(page, /id="deleteAccountDialog"/);
+  assert.match(page, /id="deleteCurrentPassword"/);
+  assert.match(page, /id="deleteConfirmation"/);
   assert.match(page, /id="emailPasswordGroup" hidden/);
   assert.match(page, /autocomplete="current-password"/);
   assert.match(page, /autocomplete="new-password"/);
   assert.match(script, /\/api\/account\/password/);
   assert.match(script, /\/api\/account\/photo/);
+  assert.match(script, /method: 'DELETE'/);
+  assert.match(script, /expectedDeletionPhrase/);
+  assert.match(script, /login\.html\?accountDeleted=1/);
   assert.match(script, /currentPassword: emailCurrentPassword\.value/);
   assert.match(styles, /\.settings-grid/);
   assert.match(styles, /@media \(max-width: 620px\)/);
@@ -43,4 +49,20 @@ test('o Worker protege alterações sensíveis e revoga outras sessões', () => 
   assert.match(worker, /DELETE FROM password_reset_tokens WHERE user_id = \?/);
   assert.match(worker, /\/api\/account\/photo/);
   assert.match(worker, /PROFILE_IMAGES\.delete\(current\.profile_pic_key\)/);
+  assert.match(worker, /pathname === '\/api\/account' && method === 'DELETE'/);
+  assert.doesNotMatch(worker, /DELETE FROM contact_messages WHERE email = \? COLLATE NOCASE/);
+  assert.doesNotMatch(worker, /DELETE FROM newsletter_subscriptions WHERE email = \? COLLATE NOCASE/);
+  assert.match(worker, /DELETE FROM users WHERE id = \?/);
+});
+
+test('a politica explica retencao e exclusao em ambos os idiomas', () => {
+  const privacy = read('public/privacidade.html');
+  const translations = read('public/lang.js');
+
+  assert.match(privacy, /data-i18n="privacy\.sec7\.title"/);
+  assert.match(privacy, /data-i18n="privacy\.sec9\.p"/);
+  assert.match(translations, /'privacy\.sec7\.title': '7\. Retenção e Exclusão'/);
+  assert.match(translations, /'privacy\.sec7\.title': '7\. Retention and Deletion'/);
+  assert.match(translations, /identificadores irreversíveis e expiram automaticamente/);
+  assert.match(translations, /irreversible identifiers and expire automatically/);
 });

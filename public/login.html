@@ -269,6 +269,15 @@
       UX.showMessage(loginMsg, message, type);
     }
 
+    const accountWasDeleted = new URLSearchParams(window.location.search).get('accountDeleted') === '1';
+    function showDeletedAccountMessage() {
+      if (!accountWasDeleted) return;
+      showLoginMessage(UX.textByLanguage('Sua conta e os dados controlados por ela foram excluídos.', 'Your account and the data it controlled were deleted.'), 'success');
+    }
+    showDeletedAccountMessage();
+    document.addEventListener('translations.updated', showDeletedAccountMessage);
+    if (accountWasDeleted) window.history.replaceState({}, '', 'login.html');
+
     loginForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       const email = document.getElementById('loginEmail').value.trim();

@@ -270,6 +270,45 @@ body.profile-page {
 .back-link { display: inline-flex; align-items: center; gap: 9px; margin-top: 25px; color: #c8cbe0; text-decoration: none; font-size: 0.87rem; }
 .back-link:hover { color: #fff; }
 
+.danger-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 22px;
+  padding: 23px 26px;
+  border: 1px solid rgba(255, 105, 115, 0.24);
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(105, 31, 47, 0.18), rgba(32, 25, 46, 0.92));
+}
+.danger-zone-copy { display: flex; align-items: flex-start; gap: 15px; }
+.danger-zone-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  color: #ff999f;
+  border-radius: 12px;
+  background: rgba(231, 76, 88, 0.12);
+}
+.danger-zone-label,
+.dialog-eyebrow { margin: 0 0 4px !important; color: #ff9ba2 !important; font-size: 0.7rem !important; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.danger-zone h2 { margin: 0; font-size: 1.02rem; }
+.danger-zone-copy > div > p:last-child { max-width: 700px; margin: 6px 0 0; color: var(--account-muted); font-size: 0.8rem; line-height: 1.55; }
+.danger-outline-button {
+  min-height: 42px;
+  flex: 0 0 auto;
+  padding: 0 16px;
+  color: #ffb3b8;
+  border: 1px solid rgba(255, 113, 123, 0.42);
+  border-radius: 12px;
+  background: rgba(219, 62, 75, 0.08);
+  font: 600 0.84rem/1 Poppins, sans-serif;
+  cursor: pointer;
+}
+.danger-outline-button:hover { color: #fff; background: rgba(219, 62, 75, 0.18); }
+
 .confirmation-dialog {
   width: min(430px, calc(100% - 32px));
   padding: 0;
@@ -285,6 +324,15 @@ body.profile-page {
 .confirmation-dialog h2 { margin: 18px 0 8px; font-size: 1.2rem; }
 .confirmation-dialog p { margin: 0 0 24px; color: var(--account-muted); font-size: 0.87rem; line-height: 1.65; }
 .dialog-actions { justify-content: flex-end; }
+.account-delete-dialog { width: min(520px, calc(100% - 32px)); }
+.account-delete-dialog .dialog-eyebrow { margin-top: 17px !important; margin-bottom: 6px !important; }
+.account-delete-dialog h2 { margin-top: 0; }
+.deletion-list { margin: -8px 0 22px; padding: 15px 18px 15px 38px; color: #c7cada; border-radius: 12px; background: rgba(255, 255, 255, 0.035); }
+.deletion-list li { padding: 3px 0; font-size: 0.78rem; line-height: 1.5; }
+.account-delete-dialog .field + .field { margin-top: 15px; }
+.account-delete-dialog .feedback-message { margin: 16px 0 0; }
+.delete-confirmation-field strong { margin-left: 4px; color: #ff9da3; letter-spacing: 0.06em; }
+.account-delete-dialog .dialog-actions { margin-top: 22px; }
 
 .primary-button:hover,
 .secondary-button:hover,
@@ -312,6 +360,8 @@ button:disabled { cursor: wait; opacity: 0.68; transform: none !important; }
   .form-footer .primary-button { width: 100%; }
   .dialog-actions { align-items: stretch; flex-direction: column-reverse; }
   .dialog-actions button { width: 100%; }
+  .danger-zone { align-items: stretch; flex-direction: column; padding: 20px; }
+  .danger-outline-button { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

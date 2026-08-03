@@ -32,6 +32,7 @@ A aplicacao utiliza uma arquitetura serverless na Cloudflare:
 - Troca de senha com encerramento das outras sessoes.
 - Foto privada de perfil em JPG, PNG ou WebP, limitada a 450 KB.
 - Remocao permanente da foto no R2 pelo proprio usuario.
+- Exclusao definitiva da conta, sessoes, tokens e foto privada.
 - Mensagens de contato persistidas.
 - Inscricoes de newsletter persistidas e sem duplicacao por e-mail.
 - Protecao de origem, limite de tentativas e cabecalhos de seguranca.
@@ -42,7 +43,6 @@ A aplicacao utiliza uma arquitetura serverless na Cloudflare:
 
 - Painel administrativo.
 - Verificacao de e-mail.
-- Exclusao de conta pelo proprio usuario.
 - Agendamentos, pagamentos ou galerias de entrega.
 - Aplicativo Android nativo.
 - Dominio personalizado.
@@ -55,7 +55,7 @@ A aplicacao utiliza uma arquitetura serverless na Cloudflare:
 4. **Back-end:** um Cloudflare Worker recebe as requisicoes, valida entradas, autentica usuarios e acessa os servicos de dados.
 5. **Persistencia:** D1 guarda usuarios, sessoes, contatos, newsletter e limites contra abuso; R2 guarda apenas as fotos.
 6. **Seguranca:** senhas nunca sao armazenadas em texto puro; sessoes usam cookies HttpOnly; imagens exigem autenticacao.
-7. **Qualidade:** 42 testes verificam o fluxo principal, os scripts, a acessibilidade, a documentacao, a traducao e a integridade dos links.
+7. **Qualidade:** 44 testes verificam o fluxo principal, os scripts, a acessibilidade, a documentacao, a traducao e a integridade dos links.
 8. **Operacao:** o projeto e publicado pelo Wrangler e monitorado no painel da Cloudflare.
 
 ## 3. Arquitetura
@@ -166,6 +166,8 @@ Envia e-mail e senha para `/api/auth/login`. Quando o login funciona, o cookie d
 
 Ao abrir a pagina, `loadProfile` consulta `/api/auth/me`. Se a sessao nao existir, o navegador volta ao login. O usuario pode alterar nome, e-mail, telefone, papel, idade, genero e foto. A troca de e-mail exige a senha atual. A area de seguranca permite criar outra senha e encerra as sessoes abertas em outros dispositivos, preservando apenas a sessao usada na alteracao. A foto pode ser removida permanentemente do R2 por uma acao explicita com confirmacao.
 
+A zona de perigo permite excluir definitivamente a conta. O usuario precisa informar a senha atual e digitar `EXCLUIR` ou `DELETE`, conforme o idioma. O Worker remove primeiro a foto privada e, depois, executa uma transacao no D1 que elimina tokens de recuperacao, sessoes e usuario. Ao concluir, o cookie de sessao e expirado e a interface retorna ao login. Mensagens de contato e newsletter nao sao removidas por simples coincidencia de e-mail enquanto o cadastro nao possui verificacao de titularidade; esses registros independentes seguem o canal de privacidade.
+
 A imagem e validada duas vezes:
 
 - no navegador, para feedback imediato;
@@ -266,6 +268,7 @@ O Worker possui duas responsabilidades: atender `/api/*` e entregar os arquivos 
 | PUT | `/api/profile` | Cookie | Atualizar perfil e foto; senha atual se o e-mail mudar | 200, 400, 401, 403, 409, 413 |
 | PUT | `/api/account/password` | Cookie | Trocar senha e revogar outras sessoes | 200, 400, 401, 403, 409, 429 |
 | DELETE | `/api/account/photo` | Cookie | Remover foto do D1 e R2 | 200, 401 |
+| DELETE | `/api/account` | Cookie + senha | Excluir conta e dados vinculados | 200, 400, 401, 403, 429 |
 | GET | `/api/profile-picture/:id` | Cookie | Entregar a propria foto | 200, 304, 404 |
 | POST | `/api/contact` | Nao | Registrar mensagem | 201, 400, 429 |
 | POST | `/api/newsletter` | Nao | Registrar e-mail | 201, 400, 429 |
@@ -521,7 +524,7 @@ Portugues e o idioma de origem. Ingles e aplicado por chaves. A preferencia fica
 
 ## 12. Testes e qualidade
 
-O comando `npm test` executa 42 testes com `node --test`.
+O comando `npm test` executa 44 testes com `node --test`.
 
 ### 12.1 Cobertura funcional
 
@@ -534,6 +537,7 @@ O comando `npm test` executa 42 testes com `node --test`.
 - Troca de senha e revogacao das outras sessoes.
 - Upload, leitura privada, substituicao e remocao de foto no R2 simulado.
 - Recuperacao de senha com token de uso unico.
+- Exclusao integral sem afetar dados de outro usuario.
 - Contato e newsletter.
 - Logout e novo login.
 - Rejeicao de origem externa.
@@ -638,7 +642,7 @@ A privacidade tem prioridade sobre uma URL publica simples. A foto passa pela au
 ### Prioridade alta
 
 - Verificacao de e-mail.
-- Exclusao/exportacao de dados pelo usuario.
+- Exportacao de dados pelo usuario.
 - Painel administrativo protegido por papel real.
 - Revisao juridica da politica e dos termos.
 
@@ -715,7 +719,7 @@ O D1 e o R2 podem ser reaproveitados. O Worker precisara adicionar um contrato d
 
 ## 18. Checklist antes da apresentacao
 
-- Executar `npm test` e confirmar 42 testes aprovados.
+- Executar `npm test` e confirmar 44 testes aprovados.
 - Abrir a URL oficial em janela anonima.
 - Testar PT/EN, cadastro, login, perfil, foto e logout.
 - Preparar uma imagem abaixo de 450 KB.
