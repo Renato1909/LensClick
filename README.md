@@ -80,7 +80,7 @@ Os Termos de Uso e a Politica de Privacidade devem receber revisao institucional
 
 ## Ativacao da recuperacao de senha
 
-A funcionalidade usa o Resend para entregar e-mails transacionais. Antes de publica-la, verifique um dominio no provedor, configure `RESEND_API_KEY` e `PASSWORD_RESET_FROM` como segredos do Worker e aplique a migracao `0002_password_reset.sql` no D1 remoto. Os valores locais de exemplo estao em `.dev.vars.example`; segredos reais nunca devem entrar no Git.
+A funcionalidade usa a API transacional da Brevo. Antes de publica-la, confirme um remetente no provedor, configure `BREVO_API_KEY` e `BREVO_SENDER_EMAIL` como segredos do Worker e aplique a migracao `0002_password_reset.sql` no D1 remoto. `BREVO_SENDER_NAME` e opcional e usa `LensClick` por padrao. Os valores locais de exemplo estao em `.dev.vars.example`; segredos reais nunca devem entrar no Git.
 
 ## Documentacao tecnica
 

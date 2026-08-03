@@ -191,11 +191,14 @@ test('recuperacao troca a senha sem revelar contas e invalida sessoes', async (t
   const env = {
     DB,
     PROFILE_IMAGES: new MockR2(),
-    RESEND_API_KEY: 're_test_only',
-    PASSWORD_RESET_FROM: 'LensClick <conta@lensclick.test>',
-    RESEND_FETCH: async (_url, options) => {
+    BREVO_API_KEY: 'brevo_test_only',
+    BREVO_SENDER_EMAIL: 'conta@lensclick.test',
+    BREVO_SENDER_NAME: 'LensClick',
+    BREVO_FETCH: async (url, options) => {
+      assert.equal(url, 'https://api.brevo.com/v3/smtp/email');
+      assert.equal(options.headers['api-key'], 'brevo_test_only');
       sentEmails.push(JSON.parse(options.body));
-      return Response.json({ id: 'email-test' });
+      return Response.json({ messageId: 'email-test' });
     }
   };
   const origin = 'https://lensclick.test';
@@ -233,7 +236,9 @@ test('recuperacao troca a senha sem revelar contas e invalida sessoes', async (t
   assert.deepEqual(known.json, unknown.json);
   assert.equal(sentEmails.length, 1);
 
-  const resetLink = sentEmails[0].text.match(/https:\/\/\S+/)?.[0];
+  assert.deepEqual(sentEmails[0].sender, { name: 'LensClick', email: 'conta@lensclick.test' });
+  assert.equal(sentEmails[0].to[0].email, 'recuperar@example.com');
+  const resetLink = sentEmails[0].textContent.match(/https:\/\/\S+/)?.[0];
   assert.ok(resetLink);
   const token = new URL(resetLink).searchParams.get('token');
   assert.match(token, /^[A-Za-z0-9_-]{40,100}$/);

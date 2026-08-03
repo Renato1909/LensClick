@@ -196,7 +196,7 @@ async function isRateLimited(request, env, scope, limit, intervalMs) {
 }
 
 async function sendPasswordResetEmail(env, recipient, name, resetUrl, language = 'pt') {
-  if (!env.RESEND_API_KEY || !env.PASSWORD_RESET_FROM) {
+  if (!env.BREVO_API_KEY || !env.BREVO_SENDER_EMAIL) {
     throw new Error('Password reset email is not configured.');
   }
   const safeName = escapeHtml(name || '');
@@ -209,24 +209,27 @@ async function sendPasswordResetEmail(env, recipient, name, resetUrl, language =
   const html = english
     ? `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17182a"><h1 style="font-size:24px">Reset your password</h1><p>Hello${safeName ? `, ${safeName}` : ''}.</p><p>We received a request to change your LensClick account password.</p><p><a href="${safeUrl}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#6f4cff;color:#fff;text-decoration:none;font-weight:700">Create a new password</a></p><p>The link expires in 30 minutes and can be used only once.</p><p>If you did not request this change, ignore this email.</p></div>`
     : `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17182a"><h1 style="font-size:24px">Redefina sua senha</h1><p>Ola${safeName ? `, ${safeName}` : ''}.</p><p>Recebemos uma solicitacao para alterar a senha da sua conta LensClick.</p><p><a href="${safeUrl}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#6f4cff;color:#fff;text-decoration:none;font-weight:700">Criar nova senha</a></p><p>O link expira em 30 minutos e pode ser usado somente uma vez.</p><p>Se voce nao solicitou a alteracao, ignore este e-mail.</p></div>`;
-  const emailFetch = typeof env.RESEND_FETCH === 'function' ? env.RESEND_FETCH : fetch;
-  const response = await emailFetch('https://api.resend.com/emails', {
+  const emailFetch = typeof env.BREVO_FETCH === 'function' ? env.BREVO_FETCH : fetch;
+  const response = await emailFetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      Accept: 'application/json',
+      'api-key': env.BREVO_API_KEY,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      from: env.PASSWORD_RESET_FROM,
-      to: [recipient],
+      sender: {
+        name: env.BREVO_SENDER_NAME || 'LensClick',
+        email: env.BREVO_SENDER_EMAIL
+      },
+      to: [{ email: recipient, ...(name ? { name } : {}) }],
       subject,
-      text,
-      html
+      textContent: text,
+      htmlContent: html
     })
   });
   if (!response.ok) {
-    const details = await response.text().catch(() => '');
-    throw new Error(`Resend rejected password reset email (${response.status}): ${details.slice(0, 300)}`);
+    throw new Error(`Brevo rejected password reset email (${response.status}).`);
   }
 }
 
@@ -305,7 +308,7 @@ async function handleApi(request, env, url, context) {
   }
 
   if (pathname === '/api/auth/password-reset/request' && method === 'POST') {
-    if (!env.RESEND_API_KEY || !env.PASSWORD_RESET_FROM) {
+    if (!env.BREVO_API_KEY || !env.BREVO_SENDER_EMAIL) {
       return json(503, { error: 'A recuperacao de senha esta temporariamente indisponivel.' });
     }
     if (await isRateLimited(request, env, pathname, 5, 60 * 60 * 1000)) {

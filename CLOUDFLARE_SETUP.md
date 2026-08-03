@@ -52,19 +52,19 @@ O Wrangler deve informar a mesma URL oficial. Um dominio proprio podera ser cone
 
 ## 6. Ativar a recuperacao de senha
 
-Essa etapa deve ser executada somente depois que um dominio de remetente estiver verificado no Resend.
+Essa etapa deve ser executada somente depois que um remetente estiver verificado na Brevo.
 
 1. Crie uma chave de API exclusiva para a LensClick.
 2. Salve a chave como segredo do Worker:
 
 ```text
-npx wrangler secret put RESEND_API_KEY
+npx wrangler secret put BREVO_API_KEY
 ```
 
-3. Salve o remetente completo, por exemplo `LensClick <conta@seudominio.com>`:
+3. Salve apenas o endereco do remetente verificado na Brevo:
 
 ```text
-npx wrangler secret put PASSWORD_RESET_FROM
+npx wrangler secret put BREVO_SENDER_EMAIL
 ```
 
 4. Aplique a migracao remota e publique o codigo:
@@ -76,7 +76,7 @@ npm run check
 npx wrangler deploy
 ```
 
-Nunca coloque a chave do Resend em `wrangler.jsonc`, no GitHub ou em arquivos dentro de `public/`.
+O nome visivel usa `LensClick` por padrao. Se precisar altera-lo, configure opcionalmente `BREVO_SENDER_NAME`. Nunca coloque a chave da Brevo em `wrangler.jsonc`, no GitHub ou em arquivos dentro de `public/`.
 
 ## 7. Conferencia obrigatoria apos publicar
 

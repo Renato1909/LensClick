@@ -1,4 +1,5 @@
 # Copie para .dev.vars e substitua os valores apenas durante o desenvolvimento local.
 # Nunca envie .dev.vars ao controle de versao.
-RESEND_API_KEY="re_substitua_pela_chave_de_teste"
-PASSWORD_RESET_FROM="LensClick <conta@seudominio.com>"
+BREVO_API_KEY="substitua_pela_chave_de_teste"
+BREVO_SENDER_EMAIL="remetente-verificado@example.com"
+BREVO_SENDER_NAME="LensClick"
