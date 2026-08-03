@@ -50,7 +50,35 @@ npx wrangler deploy
 
 O Wrangler deve informar a mesma URL oficial. Um dominio proprio podera ser conectado futuramente.
 
-## 6. Conferencia obrigatoria apos publicar
+## 6. Ativar a recuperacao de senha
+
+Essa etapa deve ser executada somente depois que um remetente estiver verificado na Brevo.
+
+1. Crie uma chave de API exclusiva para a LensClick.
+2. Salve a chave como segredo do Worker:
+
+```text
+npx wrangler secret put BREVO_API_KEY
+```
+
+3. Salve apenas o endereco do remetente verificado na Brevo:
+
+```text
+npx wrangler secret put BREVO_SENDER_EMAIL
+```
+
+4. Aplique a migracao remota e publique o codigo:
+
+```text
+npm run db:migrate:remote
+npm test
+npm run check
+npx wrangler deploy
+```
+
+O nome visivel usa `LensClick` por padrao. Se precisar altera-lo, configure opcionalmente `BREVO_SENDER_NAME`. Nunca coloque a chave da Brevo em `wrangler.jsonc`, no GitHub ou em arquivos dentro de `public/`.
+
+## 7. Conferencia obrigatoria apos publicar
 
 - Criar uma conta de teste nova.
 - Confirmar login, logout e persistencia apos fechar o navegador.
@@ -58,6 +86,7 @@ O Wrangler deve informar a mesma URL oficial. Um dominio proprio podera ser cone
 - Enviar contato e newsletter.
 - Conferir as tabelas do D1 e o objeto privado no R2.
 - Conferir metricas, erros e consumo dos limites gratuitos.
+- Solicitar uma recuperacao, abrir o e-mail e confirmar que o link expira e nao pode ser reutilizado.
 
 ## Dados locais antigos
 

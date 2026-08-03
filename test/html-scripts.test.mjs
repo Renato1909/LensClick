@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const pages = ['index.html', 'cadastro.html', 'login.html', 'perfil.html', 'privacidade.html', 'termos.html'];
+const pages = ['index.html', 'cadastro.html', 'login.html', 'recuperar-senha.html', 'redefinir-senha.html', 'perfil.html', 'privacidade.html', 'termos.html'];
 
 for (const page of pages) {
   test(`${page} possui scripts inline sintaticamente válidos`, () => {
@@ -34,6 +34,8 @@ test('a camada visual da Fase 2 está vinculada às páginas principais', () => 
     'index.html': 'home-page',
     'cadastro.html': 'auth-page',
     'login.html': 'auth-page',
+    'recuperar-senha.html': 'auth-page',
+    'redefinir-senha.html': 'auth-page',
     'perfil.html': 'profile-page',
     'privacidade.html': 'legal-page',
     'termos.html': 'legal-page'
