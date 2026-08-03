@@ -23,7 +23,7 @@ npm test
 npm run check
 ```
 
-Os 39 testes cobrem cadastro, hash de senha, sessao, recuperacao de senha, perfil, foto no R2, contato, newsletter, logout, novo login, protecao de origem e scripts das paginas.
+Os 42 testes cobrem cadastro, hash de senha, sessao, recuperacao de senha, gerenciamento da conta, troca autenticada de e-mail e senha, foto no R2, contato, newsletter, protecao de origem e scripts das paginas.
 
 O GitHub Actions executa essas verificacoes automaticamente em todo Pull Request direcionado a `main` e em cada atualizacao da branch principal. O fluxo de contribuicao da equipe esta documentado em `CONTRIBUTING.md`.
 
@@ -68,8 +68,8 @@ O antigo banco local em `data/lensclick.sqlite`, quando existente, foi preservad
 
 - Landing page institucional.
 - Cadastro e login reais.
-- Recuperacao de senha com token unico de 30 minutos, pronta para ativacao apos configurar o remetente de e-mail.
-- Perfil autenticado com imagem privada.
+- Recuperacao de senha ativa com token unico de 30 minutos e envio transacional pela Brevo.
+- Central autenticada para editar dados, trocar a senha e gerenciar a imagem privada do perfil.
 - Mensagens de contato persistidas.
 - Inscricoes de newsletter persistidas.
 - Traducao em portugues e ingles.
@@ -80,7 +80,7 @@ Os Termos de Uso e a Politica de Privacidade devem receber revisao institucional
 
 ## Ativacao da recuperacao de senha
 
-A funcionalidade usa a API transacional da Brevo. Antes de publica-la, confirme um remetente no provedor, configure `BREVO_API_KEY` e `BREVO_SENDER_EMAIL` como segredos do Worker e aplique a migracao `0002_password_reset.sql` no D1 remoto. `BREVO_SENDER_NAME` e opcional e usa `LensClick` por padrao. Os valores locais de exemplo estao em `.dev.vars.example`; segredos reais nunca devem entrar no Git.
+A funcionalidade usa a API transacional da Brevo. O ambiente oficial possui remetente confirmado, os segredos `BREVO_API_KEY` e `BREVO_SENDER_EMAIL` configurados no Worker e a migracao `0002_password_reset.sql` aplicada ao D1 remoto. `BREVO_SENDER_NAME` e opcional e usa `LensClick` por padrao. Os valores locais de exemplo estao em `.dev.vars.example`; segredos reais nunca devem entrar no Git.
 
 ## Documentacao tecnica
 
