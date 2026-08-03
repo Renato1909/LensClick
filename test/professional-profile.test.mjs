@@ -64,3 +64,46 @@ test('a experiencia profissional e bilingue em edicao e visualizacao publica', (
     assert.equal(translations.split(`'${key}':`).length - 1, 2, key);
   }
 });
+
+test('o portfolio possui propriedade, limite e exclusao em cascata', () => {
+  const database = new DatabaseSync(':memory:');
+  database.exec(read('migrations/0001_initial.sql'));
+  database.exec(read('migrations/0002_password_reset.sql'));
+  database.exec(read('migrations/0003_professional_profiles.sql'));
+  database.exec(read('migrations/0004_portfolio_items.sql'));
+  const table = database.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'portfolio_items'").get();
+  assert.match(table.sql, /user_id INTEGER NOT NULL REFERENCES users\(id\) ON DELETE CASCADE/);
+  assert.match(table.sql, /object_key TEXT NOT NULL UNIQUE/);
+  assert.match(table.sql, /alt_text TEXT NOT NULL/);
+  assert.match(read('src/worker.mjs'), /MAX_PORTFOLIO_ITEMS = 12/);
+  database.close();
+});
+
+test('o portfolio autenticado permite envio, ordem, textos e exclusao', () => {
+  const page = read('public/perfil.html');
+  const script = read('public/profile-api.js');
+  const styles = read('public/account.css');
+  assert.match(page, /id="portfolioUploadForm"/);
+  assert.match(page, /id="portfolioAltText"[^>]*required/);
+  assert.match(page, /id="savePortfolioButton"/);
+  assert.match(script, /new FormData\(\)/);
+  assert.match(script, /\/api\/account\/portfolio/);
+  assert.match(script, /portfolioItems\[index - 1\]/);
+  assert.doesNotMatch(script, /innerHTML\s*=/);
+  assert.match(styles, /\.portfolio-list/);
+});
+
+test('a galeria publica so usa imagens autorizadas e textos seguros', () => {
+  const page = read('public/fotografo.html');
+  const script = read('public/photographer-profile.js');
+  const worker = read('src/worker.mjs');
+  assert.match(page, /id="portfolioSection" hidden/);
+  assert.match(script, /image\.alt = item\.altText/);
+  assert.match(script, /caption\.textContent = item\.caption/);
+  assert.doesNotMatch(script, /innerHTML\s*=/);
+  assert.match(worker, /p\.is_published = 1 AND u\.role = 'photographer'/);
+  assert.match(worker, /publicPortfolioImageMatch/);
+  assert.match(worker, /portfolioItem\(item, profile\.slug\)/);
+  assert.match(worker, /\/api\/photographers\/\$\{encodeURIComponent\(slug\)\}\/portfolio\/\$\{id\}/);
+  assert.match(worker, /portfolioObjects/);
+});

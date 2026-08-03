@@ -3,6 +3,8 @@ const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
 const MAX_BODY_BYTES = 700_000;
 const MAX_PROFILE_PICTURE_BYTES = 450_000;
+const MAX_PORTFOLIO_IMAGE_BYTES = 4_000_000;
+const MAX_PORTFOLIO_ITEMS = 12;
 const PROFESSIONAL_SPECIALTIES = new Set([
   'wedding', 'events', 'portrait', 'family', 'corporate',
   'product', 'fashion', 'newborn', 'nature', 'real-estate'
@@ -227,6 +229,57 @@ function professionalProfile(row, ownerView = false) {
       phone: row.show_phone ? row.public_phone || '' : ''
     }
   };
+}
+
+function portfolioItem(row, slug = '') {
+  const id = Number(row.id);
+  return {
+    id,
+    caption: row.caption || '',
+    altText: row.alt_text || '',
+    position: Number(row.position),
+    imageUrl: slug
+      ? `/api/photographers/${encodeURIComponent(slug)}/portfolio/${id}?v=${encodeURIComponent(row.updated_at || '')}`
+      : `/api/account/portfolio/${id}/image?v=${encodeURIComponent(row.updated_at || '')}`
+  };
+}
+
+async function portfolioUpload(request) {
+  const contentType = String(request.headers.get('Content-Type') || '').toLowerCase();
+  if (!contentType.startsWith('multipart/form-data')) {
+    throw Object.assign(new Error('Envie a imagem como formulario.'), { status: 415 });
+  }
+  const declaredSize = Number(request.headers.get('Content-Length') || 0);
+  if (declaredSize > MAX_PORTFOLIO_IMAGE_BYTES + 100_000) {
+    throw Object.assign(new Error('A imagem deve ter no maximo 4 MB.'), { status: 413 });
+  }
+  const form = await request.formData();
+  const file = form.get('image');
+  const altText = cleanText(form.get('altText'), 160);
+  const caption = cleanText(form.get('caption'), 240);
+  if (!(file instanceof File) || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    throw Object.assign(new Error('Escolha uma imagem JPG, PNG ou WebP.'), { status: 400 });
+  }
+  if (file.size < 1 || file.size > MAX_PORTFOLIO_IMAGE_BYTES) {
+    throw Object.assign(new Error('A imagem deve ter no maximo 4 MB.'), { status: 413 });
+  }
+  if (altText.length < 3) {
+    throw Object.assign(new Error('Descreva a imagem para acessibilidade.'), { status: 400 });
+  }
+  const extension = file.type === 'image/jpeg' ? 'jpg' : file.type.split('/')[1];
+  return { bytes: await file.arrayBuffer(), contentType: file.type, extension, altText, caption };
+}
+
+async function storedImageResponse(object, request, cacheControl) {
+  if (!object) return json(404, { error: 'Imagem nao encontrada.' });
+  const headers = new Headers(responseHeaders({ 'Cache-Control': cacheControl }));
+  if (typeof object.writeHttpMetadata === 'function') object.writeHttpMetadata(headers);
+  if (!headers.has('Content-Type')) headers.set('Content-Type', object.httpMetadata?.contentType || 'application/octet-stream');
+  if (object.httpEtag) headers.set('ETag', object.httpEtag);
+  if (object.httpEtag && request.headers.get('If-None-Match') === object.httpEtag) {
+    return new Response(null, { status: 304, headers });
+  }
+  return new Response(object.body, { headers });
 }
 
 async function authenticatedUser(request, env) {
@@ -469,15 +522,23 @@ async function handleApi(request, env, url, context) {
     `).bind(publicPhotographerPhotoMatch[1]).first();
     if (!profile?.profile_pic_key) return json(404, { error: 'Imagem nao encontrada.' });
     const object = await env.PROFILE_IMAGES.get(profile.profile_pic_key);
-    if (!object) return json(404, { error: 'Imagem nao encontrada.' });
-    const headers = new Headers(responseHeaders({ 'Cache-Control': 'public, max-age=300, must-revalidate' }));
-    if (typeof object.writeHttpMetadata === 'function') object.writeHttpMetadata(headers);
-    if (!headers.has('Content-Type')) headers.set('Content-Type', object.httpMetadata?.contentType || 'application/octet-stream');
-    if (object.httpEtag) headers.set('ETag', object.httpEtag);
-    if (object.httpEtag && request.headers.get('If-None-Match') === object.httpEtag) {
-      return new Response(null, { status: 304, headers });
-    }
-    return new Response(object.body, { headers });
+    return storedImageResponse(object, request, 'public, max-age=300, must-revalidate');
+  }
+
+  const publicPortfolioImageMatch = /^\/api\/photographers\/([a-z0-9-]{3,80})\/portfolio\/(\d+)$/.exec(pathname);
+  if (publicPortfolioImageMatch && method === 'GET') {
+    const item = await env.DB.prepare(`
+      SELECT i.object_key FROM portfolio_items i
+      JOIN professional_profiles p ON p.user_id = i.user_id
+      JOIN users u ON u.id = i.user_id
+      WHERE p.slug = ? AND i.id = ? AND p.is_published = 1 AND u.role = 'photographer'
+    `).bind(publicPortfolioImageMatch[1], Number(publicPortfolioImageMatch[2])).first();
+    if (!item) return json(404, { error: 'Imagem nao encontrada.' });
+    return storedImageResponse(
+      await env.PROFILE_IMAGES.get(item.object_key),
+      request,
+      'public, max-age=300, must-revalidate'
+    );
   }
 
   const publicPhotographerMatch = /^\/api\/photographers\/([a-z0-9-]{3,80})$/.exec(pathname);
@@ -488,9 +549,107 @@ async function handleApi(request, env, url, context) {
       JOIN users u ON u.id = p.user_id
       WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
     `).bind(publicPhotographerMatch[1]).first();
-    return profile
-      ? json(200, { profile: professionalProfile(profile) }, { 'Cache-Control': 'public, max-age=60' })
-      : json(404, { error: 'Perfil profissional nao encontrado.' });
+    if (!profile) return json(404, { error: 'Perfil profissional nao encontrado.' });
+    const portfolio = await env.DB.prepare(`
+      SELECT id, caption, alt_text, position, updated_at FROM portfolio_items
+      WHERE user_id = ? ORDER BY position, id
+    `).bind(profile.user_id).all();
+    return json(200, {
+      profile: { ...professionalProfile(profile), portfolio: portfolio.results.map((item) => portfolioItem(item, profile.slug)) }
+    }, { 'Cache-Control': 'public, max-age=60' });
+  }
+
+  if (pathname === '/api/account/portfolio' && method === 'GET') {
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const portfolio = await env.DB.prepare(`
+      SELECT id, caption, alt_text, position, updated_at FROM portfolio_items
+      WHERE user_id = ? ORDER BY position, id
+    `).bind(current.id).all();
+    return json(200, { portfolio: portfolio.results.map((item) => portfolioItem(item)) });
+  }
+
+  if (pathname === '/api/account/portfolio' && method === 'POST') {
+    if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000)) {
+      return json(429, { error: 'Muitos envios. Aguarde antes de tentar novamente.' });
+    }
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    if (current.role !== 'photographer') return json(403, { error: 'Somente perfis de fotografo podem criar portfolio.' });
+    const count = Number(await env.DB.prepare('SELECT COUNT(*) AS total FROM portfolio_items WHERE user_id = ?').bind(current.id).first('total'));
+    if (count >= MAX_PORTFOLIO_ITEMS) return json(409, { error: 'Seu portfolio ja possui o limite de 12 imagens.' });
+    const upload = await portfolioUpload(request);
+    const objectKey = `portfolio/${current.id}/${crypto.randomUUID()}.${upload.extension}`;
+    await env.PROFILE_IMAGES.put(objectKey, upload.bytes, { httpMetadata: { contentType: upload.contentType } });
+    try {
+      const result = await env.DB.prepare(`
+        INSERT INTO portfolio_items (user_id, object_key, caption, alt_text, position)
+        VALUES (?, ?, ?, ?, ?)
+      `).bind(current.id, objectKey, upload.caption, upload.altText, count).run();
+      const item = await env.DB.prepare(`
+        SELECT id, caption, alt_text, position, updated_at FROM portfolio_items WHERE id = ? AND user_id = ?
+      `).bind(Number(result.meta.last_row_id), current.id).first();
+      return json(201, { item: portfolioItem(item), message: 'Imagem adicionada ao portfolio.' });
+    } catch (error) {
+      await env.PROFILE_IMAGES.delete(objectKey);
+      throw error;
+    }
+  }
+
+  if (pathname === '/api/account/portfolio' && method === 'PUT') {
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const body = await readJson(request);
+    if (!Array.isArray(body.items) || body.items.length > MAX_PORTFOLIO_ITEMS) {
+      return json(400, { error: 'Organizacao do portfolio invalida.' });
+    }
+    const ids = body.items.map((item) => Number(item.id));
+    if (ids.some((id) => !Number.isInteger(id) || id < 1) || new Set(ids).size !== ids.length) {
+      return json(400, { error: 'Organizacao do portfolio invalida.' });
+    }
+    if (ids.length) {
+      const owned = await env.DB.prepare(`
+        SELECT id FROM portfolio_items WHERE user_id = ? AND id IN (${ids.map(() => '?').join(',')})
+      `).bind(current.id, ...ids).all();
+      if (owned.results.length !== ids.length) return json(403, { error: 'Item de portfolio nao autorizado.' });
+    }
+    const statements = body.items.map((item, position) => {
+      const altText = cleanText(item.altText, 160);
+      if (altText.length < 3) throw Object.assign(new Error('Descreva todas as imagens para acessibilidade.'), { status: 400 });
+      return env.DB.prepare(`
+        UPDATE portfolio_items SET caption = ?, alt_text = ?, position = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND user_id = ?
+      `).bind(cleanText(item.caption, 240), altText, position, Number(item.id), current.id);
+    });
+    if (statements.length) await env.DB.batch(statements);
+    const portfolio = await env.DB.prepare(`
+      SELECT id, caption, alt_text, position, updated_at FROM portfolio_items
+      WHERE user_id = ? ORDER BY position, id
+    `).bind(current.id).all();
+    return json(200, { portfolio: portfolio.results.map((item) => portfolioItem(item)), message: 'Portfolio atualizado.' });
+  }
+
+  const ownerPortfolioImageMatch = /^\/api\/account\/portfolio\/(\d+)\/image$/.exec(pathname);
+  if (ownerPortfolioImageMatch && method === 'GET') {
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const item = await env.DB.prepare('SELECT object_key FROM portfolio_items WHERE id = ? AND user_id = ?')
+      .bind(Number(ownerPortfolioImageMatch[1]), current.id).first();
+    if (!item) return json(404, { error: 'Imagem nao encontrada.' });
+    return storedImageResponse(await env.PROFILE_IMAGES.get(item.object_key), request, 'private, max-age=300, must-revalidate');
+  }
+
+  const ownerPortfolioMatch = /^\/api\/account\/portfolio\/(\d+)$/.exec(pathname);
+  if (ownerPortfolioMatch && method === 'DELETE') {
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const itemId = Number(ownerPortfolioMatch[1]);
+    const item = await env.DB.prepare('SELECT object_key FROM portfolio_items WHERE id = ? AND user_id = ?')
+      .bind(itemId, current.id).first();
+    if (!item) return json(404, { error: 'Imagem nao encontrada.' });
+    await env.PROFILE_IMAGES.delete(item.object_key);
+    await env.DB.prepare('DELETE FROM portfolio_items WHERE id = ? AND user_id = ?').bind(itemId, current.id).run();
+    return json(200, { message: 'Imagem removida permanentemente.' });
   }
 
   if (pathname === '/api/account/professional-profile' && method === 'GET') {
@@ -697,9 +856,11 @@ async function handleApi(request, env, url, context) {
       return json(403, { error: 'A senha atual esta incorreta.' });
     }
 
-    // Remove the private object first. If R2 fails, the relational data remains
-    // intact so the user can retry without leaving an unreachable personal file.
-    if (current.profile_pic_key) await env.PROFILE_IMAGES.delete(current.profile_pic_key);
+    // Remove private objects first. If R2 fails, relational ownership remains
+    // intact so the user can retry instead of leaving personal files behind.
+    const portfolioObjects = await env.DB.prepare('SELECT object_key FROM portfolio_items WHERE user_id = ?').bind(current.id).all();
+    const ownedObjectKeys = [current.profile_pic_key, ...portfolioObjects.results.map((item) => item.object_key)].filter(Boolean);
+    if (ownedObjectKeys.length) await env.PROFILE_IMAGES.delete(ownedObjectKeys);
 
     await env.DB.batch([
       env.DB.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').bind(current.id),
@@ -719,15 +880,7 @@ async function handleApi(request, env, url, context) {
       return json(404, { error: 'Imagem nao encontrada.' });
     }
     const object = await env.PROFILE_IMAGES.get(current.profile_pic_key);
-    if (!object) return json(404, { error: 'Imagem nao encontrada.' });
-    const headers = new Headers(responseHeaders({ 'Cache-Control': 'private, max-age=300, must-revalidate' }));
-    if (typeof object.writeHttpMetadata === 'function') object.writeHttpMetadata(headers);
-    if (!headers.has('Content-Type')) headers.set('Content-Type', object.httpMetadata?.contentType || 'application/octet-stream');
-    if (object.httpEtag) headers.set('ETag', object.httpEtag);
-    if (object.httpEtag && request.headers.get('If-None-Match') === object.httpEtag) {
-      return new Response(null, { status: 304, headers });
-    }
-    return new Response(object.body, { headers });
+    return storedImageResponse(object, request, 'private, max-age=300, must-revalidate');
   }
 
   if (pathname === '/api/contact' && method === 'POST') {
