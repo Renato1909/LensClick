@@ -160,7 +160,7 @@ async function authenticatedUser(request, env) {
   const token = parseCookies(request)[SESSION_COOKIE];
   if (!token) return null;
   return env.DB.prepare(`
-    SELECT u.* FROM sessions s
+    SELECT u.*, s.token_hash AS authenticated_session_hash FROM sessions s
     JOIN users u ON u.id = s.user_id
     WHERE s.token_hash = ? AND s.expires_at > ?
   `).bind(await sha256(token), Date.now()).first();
@@ -400,6 +400,10 @@ async function handleApi(request, env, url, context) {
     if (name.length < 2 || !isValidEmail(email) || phone.length < 8 || (age !== null && (!Number.isInteger(age) || age < 0 || age > 120))) {
       return json(400, { error: 'Revise os dados informados.' });
     }
+    const emailChanged = email !== normalizeEmail(current.email);
+    if (emailChanged && !(await verifyPassword(String(body.currentPassword || ''), current.password_hash))) {
+      return json(403, { error: 'Informe sua senha atual para alterar o e-mail.' });
+    }
     const emailOwner = await env.DB.prepare('SELECT id FROM users WHERE email = ? AND id <> ?').bind(email, current.id).first();
     if (emailOwner) return json(409, { error: 'Este e-mail ja pertence a outra conta.' });
 
@@ -417,20 +421,76 @@ async function handleApi(request, env, url, context) {
     }
 
     try {
-      const user = await env.DB.prepare(`
+      const statements = [env.DB.prepare(`
         UPDATE users
         SET name = ?, email = ?, phone = ?, role = ?, age = ?, gender = ?, profile_pic_key = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-        RETURNING *
-      `).bind(name, email, phone, role, age, gender, nextPictureKey, current.id).first();
-      if (current.profile_pic_key && current.profile_pic_key !== nextPictureKey) {
-        await env.PROFILE_IMAGES.delete(current.profile_pic_key);
+      `).bind(name, email, phone, role, age, gender, nextPictureKey, current.id)];
+      if (emailChanged) {
+        statements.push(
+          env.DB.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?')
+            .bind(current.id, current.authenticated_session_hash),
+          env.DB.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').bind(current.id)
+        );
       }
-      return json(200, { user: publicUser(user) });
+      await env.DB.batch(statements);
     } catch (error) {
       if (newPictureKey) await env.PROFILE_IMAGES.delete(newPictureKey);
+      if (String(error?.message).toUpperCase().includes('UNIQUE')) {
+        return json(409, { error: 'Este e-mail ja pertence a outra conta.' });
+      }
       throw error;
     }
+    if (current.profile_pic_key && current.profile_pic_key !== nextPictureKey) {
+      try {
+        await env.PROFILE_IMAGES.delete(current.profile_pic_key);
+      } catch (error) {
+        console.error('LensClick stale profile picture cleanup error:', error);
+      }
+    }
+    const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(current.id).first();
+    return json(200, { user: publicUser(user) });
+  }
+
+  if (pathname === '/api/account/password' && method === 'PUT') {
+    if (await isRateLimited(request, env, pathname, 8, 15 * 60 * 1000)) {
+      return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });
+    }
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const body = await readJson(request);
+    const currentPassword = String(body.currentPassword || '');
+    const newPassword = String(body.newPassword || '');
+    if (!(await verifyPassword(currentPassword, current.password_hash))) {
+      return json(403, { error: 'A senha atual esta incorreta.' });
+    }
+    if (!isValidPassword(newPassword)) {
+      return json(400, { error: 'A nova senha deve ter ao menos 8 caracteres, uma letra e um numero.' });
+    }
+    if (await verifyPassword(newPassword, current.password_hash)) {
+      return json(409, { error: 'A nova senha precisa ser diferente da senha atual.' });
+    }
+    await env.DB.batch([
+      env.DB.prepare('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+        .bind(await hashPassword(newPassword), current.id),
+      env.DB.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?')
+        .bind(current.id, current.authenticated_session_hash),
+      env.DB.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').bind(current.id)
+    ]);
+    return json(200, { message: 'Senha alterada com sucesso. As outras sessoes foram encerradas.' });
+  }
+
+  if (pathname === '/api/account/photo' && method === 'DELETE') {
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    if (current.profile_pic_key) await env.PROFILE_IMAGES.delete(current.profile_pic_key);
+    const user = await env.DB.prepare(`
+      UPDATE users
+      SET profile_pic_key = NULL, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+      RETURNING *
+    `).bind(current.id).first();
+    return json(200, { user: publicUser(user), message: 'Foto removida com sucesso.' });
   }
 
   const pictureMatch = /^\/api\/profile-picture\/(\d+)$/.exec(pathname);

@@ -127,9 +127,23 @@ test('Worker usa D1 e R2 no fluxo completo de autenticacao', async (t) => {
   assert.equal('password_hash' in me.json.user, false);
 
   const onePixelPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+  const unconfirmedEmailChange = await request('/api/profile', {
+    method: 'PUT',
+    body: { ...me.json.user, email: 'novo@example.com', currentPassword: 'SenhaErrada1' }
+  });
+  assert.equal(unconfirmedEmailChange.response.status, 403);
+
   const profile = await request('/api/profile', {
     method: 'PUT',
-    body: { ...me.json.user, email: 'novo@example.com', age: 22, gender: 'other', role: 'client', profilePic: onePixelPng }
+    body: {
+      ...me.json.user,
+      email: 'novo@example.com',
+      age: 22,
+      gender: 'other',
+      role: 'client',
+      profilePic: onePixelPng,
+      currentPassword: 'Segura123'
+    }
   });
   assert.equal(profile.response.status, 200);
   assert.match(profile.json.user.profilePic, /^\/api\/profile-picture\/\d+/);
@@ -138,6 +152,54 @@ test('Worker usa D1 e R2 no fluxo completo de autenticacao', async (t) => {
   const picture = await request(profile.json.user.profilePic);
   assert.equal(picture.response.status, 200);
   assert.equal(picture.response.headers.get('content-type'), 'image/png');
+
+  const removedPhoto = await request('/api/account/photo', { method: 'DELETE', body: {} });
+  assert.equal(removedPhoto.response.status, 200);
+  assert.equal(removedPhoto.json.user.profilePic, '');
+  assert.equal(PROFILE_IMAGES.objects.size, 0);
+
+  const currentCookie = cookie;
+  const otherLoginResponse = await worker.fetch(new Request(origin + '/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: origin },
+    body: JSON.stringify({ email: 'novo@example.com', password: 'Segura123' })
+  }), env);
+  assert.equal(otherLoginResponse.status, 200);
+  const otherCookie = otherLoginResponse.headers.get('set-cookie').split(';')[0];
+
+  const wrongCurrentPassword = await request('/api/account/password', {
+    method: 'PUT',
+    body: { currentPassword: 'SenhaErrada1', newPassword: 'SenhaNova2' }
+  });
+  assert.equal(wrongCurrentPassword.response.status, 403);
+
+  const reusedPassword = await request('/api/account/password', {
+    method: 'PUT',
+    body: { currentPassword: 'Segura123', newPassword: 'Segura123' }
+  });
+  assert.equal(reusedPassword.response.status, 409);
+
+  const changedPassword = await request('/api/account/password', {
+    method: 'PUT',
+    body: { currentPassword: 'Segura123', newPassword: 'SenhaNova2' }
+  });
+  assert.equal(changedPassword.response.status, 200);
+
+  const currentSessionStillWorks = await request('/api/auth/me');
+  assert.equal(currentSessionStillWorks.response.status, 200);
+  assert.equal(cookie, currentCookie);
+
+  const otherSessionWasClosed = await worker.fetch(new Request(origin + '/api/auth/me', {
+    headers: { Cookie: otherCookie }
+  }), env);
+  assert.equal(otherSessionWasClosed.status, 401);
+
+  const oldPassword = await request('/api/auth/login', {
+    method: 'POST',
+    body: { email: 'novo@example.com', password: 'Segura123' },
+    withCookie: false
+  });
+  assert.equal(oldPassword.response.status, 401);
 
   const contact = await request('/api/contact', {
     method: 'POST',
@@ -158,7 +220,7 @@ test('Worker usa D1 e R2 no fluxo completo de autenticacao', async (t) => {
 
   const login = await request('/api/auth/login', {
     method: 'POST',
-    body: { email: 'novo@example.com', password: 'Segura123' },
+    body: { email: 'novo@example.com', password: 'SenhaNova2' },
     withCookie: false
   });
   assert.equal(login.response.status, 200);
@@ -183,6 +245,13 @@ test('Worker rejeita mutacoes de outra origem e senhas invalidas', async (t) => 
     body: payload
   }), env);
   assert.equal(weakPassword.status, 400);
+
+  const anonymousPhotoRemoval = await worker.fetch(new Request('https://lensclick.test/api/account/photo', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', Origin: 'https://lensclick.test' },
+    body: '{}'
+  }), env);
+  assert.equal(anonymousPhotoRemoval.status, 401);
 });
 
 test('recuperacao troca a senha sem revelar contas e invalida sessoes', async (t) => {

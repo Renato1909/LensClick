@@ -27,8 +27,11 @@ A aplicacao utiliza uma arquitetura serverless na Cloudflare:
 - Carrossel, portfolio filtravel, modais, FAQ e formularios.
 - Cadastro com senha protegida por hash.
 - Login, sessao persistente e logout.
-- Perfil autenticado com edicao de dados.
+- Recuperacao de senha com token temporario e envio pela Brevo.
+- Central autenticada com edicao de dados e confirmacao da senha para trocar o e-mail.
+- Troca de senha com encerramento das outras sessoes.
 - Foto privada de perfil em JPG, PNG ou WebP, limitada a 450 KB.
+- Remocao permanente da foto no R2 pelo proprio usuario.
 - Mensagens de contato persistidas.
 - Inscricoes de newsletter persistidas e sem duplicacao por e-mail.
 - Protecao de origem, limite de tentativas e cabecalhos de seguranca.
@@ -38,7 +41,6 @@ A aplicacao utiliza uma arquitetura serverless na Cloudflare:
 ### 1.2 O que ainda nao existe
 
 - Painel administrativo.
-- Recuperacao ou redefinicao de senha.
 - Verificacao de e-mail.
 - Exclusao de conta pelo proprio usuario.
 - Agendamentos, pagamentos ou galerias de entrega.
@@ -53,7 +55,7 @@ A aplicacao utiliza uma arquitetura serverless na Cloudflare:
 4. **Back-end:** um Cloudflare Worker recebe as requisicoes, valida entradas, autentica usuarios e acessa os servicos de dados.
 5. **Persistencia:** D1 guarda usuarios, sessoes, contatos, newsletter e limites contra abuso; R2 guarda apenas as fotos.
 6. **Seguranca:** senhas nunca sao armazenadas em texto puro; sessoes usam cookies HttpOnly; imagens exigem autenticacao.
-7. **Qualidade:** 35 testes verificam o fluxo principal, os scripts, a acessibilidade, a documentacao, a traducao e a integridade dos links.
+7. **Qualidade:** 42 testes verificam o fluxo principal, os scripts, a acessibilidade, a documentacao, a traducao e a integridade dos links.
 8. **Operacao:** o projeto e publicado pelo Wrangler e monitorado no painel da Cloudflare.
 
 ## 3. Arquitetura
@@ -105,14 +107,18 @@ LensClick/
 |   |-- login.html             # Autenticacao
 |   |-- perfil.html            # Area autenticada
 |   |-- perfil_temp.html       # Redirecionamento legado seguro
+|   |-- recuperar-senha.html   # Solicitacao de recuperacao
+|   |-- redefinir-senha.html   # Confirmacao da nova senha
 |   |-- privacidade.html       # Politica de privacidade
 |   |-- termos.html            # Termos de uso
 |   |-- lang.js                # Dicionario PT/EN e animacao
 |   |-- ux.js                  # Comportamentos compartilhados
 |   |-- profile-api.js         # Integracao da tela de perfil
+|   |-- account.css            # Layout da central da conta
 |   `-- refinements.css        # Design System e refinamentos
 |-- src/worker.mjs             # Back-end e entrega de assets
 |-- migrations/0001_initial.sql# Esquema executavel do D1
+|-- migrations/0002_password_reset.sql # Tokens de recuperacao
 |-- db/schema.ts               # Referencia da versao do esquema
 |-- scripts/http-smoke.mjs     # Teste HTTP ponta a ponta
 |-- test/                      # Suite automatizada
@@ -158,7 +164,7 @@ Envia e-mail e senha para `/api/auth/login`. Quando o login funciona, o cookie d
 
 ### 5.4 Perfil - `public/perfil.html` e `public/profile-api.js`
 
-Ao abrir a pagina, `loadProfile` consulta `/api/auth/me`. Se a sessao nao existir, o navegador volta ao login. O usuario pode alterar nome, e-mail, telefone, papel, idade, genero e foto.
+Ao abrir a pagina, `loadProfile` consulta `/api/auth/me`. Se a sessao nao existir, o navegador volta ao login. O usuario pode alterar nome, e-mail, telefone, papel, idade, genero e foto. A troca de e-mail exige a senha atual. A area de seguranca permite criar outra senha e encerra as sessoes abertas em outros dispositivos, preservando apenas a sessao usada na alteracao. A foto pode ser removida permanentemente do R2 por uma acao explicita com confirmacao.
 
 A imagem e validada duas vezes:
 
@@ -253,9 +259,13 @@ O Worker possui duas responsabilidades: atender `/api/*` e entregar os arquivos 
 |---|---|---|---|---|
 | POST | `/api/auth/register` | Nao | Criar usuario e sessao | 201, 400, 409, 429 |
 | POST | `/api/auth/login` | Nao | Validar credenciais | 200, 401, 429 |
+| POST | `/api/auth/password-reset/request` | Nao | Solicitar link de recuperacao | 202, 400, 429, 503 |
+| POST | `/api/auth/password-reset/confirm` | Nao | Definir senha com token unico | 200, 400, 429 |
 | POST | `/api/auth/logout` | Cookie | Encerrar sessao | 200 |
 | GET | `/api/auth/me` | Cookie | Obter usuario atual | 200, 401 |
-| PUT | `/api/profile` | Cookie | Atualizar perfil e foto | 200, 400, 401, 409, 413 |
+| PUT | `/api/profile` | Cookie | Atualizar perfil e foto; senha atual se o e-mail mudar | 200, 400, 401, 403, 409, 413 |
+| PUT | `/api/account/password` | Cookie | Trocar senha e revogar outras sessoes | 200, 400, 401, 403, 409, 429 |
+| DELETE | `/api/account/photo` | Cookie | Remover foto do D1 e R2 | 200, 401 |
 | GET | `/api/profile-picture/:id` | Cookie | Entregar a propria foto | 200, 304, 404 |
 | POST | `/api/contact` | Nao | Registrar mensagem | 201, 400, 429 |
 | POST | `/api/newsletter` | Nao | Registrar e-mail | 201, 400, 429 |
@@ -267,7 +277,7 @@ O Worker possui duas responsabilidades: atender `/api/*` e entregar os arquivos 
 - `304`: imagem nao mudou e pode usar cache.
 - `400`: dados invalidos.
 - `401`: autenticacao ausente ou credencial incorreta.
-- `403`: origem nao autorizada.
+- `403`: origem nao autorizada ou senha atual incorreta em operacao sensivel.
 - `404`: endpoint, sessao visual ou imagem nao encontrados.
 - `409`: conflito de e-mail.
 - `413`: corpo ou foto acima do limite.
@@ -477,7 +487,6 @@ sequenceDiagram
 
 - Nao existe segundo fator de autenticacao.
 - Nao existe verificacao de e-mail.
-- Nao existe recuperacao de senha.
 - O rate limit e simples e armazenado no D1.
 - Termos e politica precisam de revisao institucional antes de uso comercial.
 - Papeis `client` e `photographer` sao dados de perfil; ainda nao autorizam areas diferentes.
@@ -512,7 +521,7 @@ Portugues e o idioma de origem. Ingles e aplicado por chaves. A preferencia fica
 
 ## 12. Testes e qualidade
 
-O comando `npm test` executa 35 testes com `node --test`.
+O comando `npm test` executa 42 testes com `node --test`.
 
 ### 12.1 Cobertura funcional
 
@@ -521,7 +530,10 @@ O comando `npm test` executa 35 testes com `node --test`.
 - Cookie seguro e sessao.
 - Consulta do usuario atual.
 - Edicao de perfil.
-- Upload, leitura privada e substituicao de foto no R2 simulado.
+- Confirmacao da senha atual para troca de e-mail.
+- Troca de senha e revogacao das outras sessoes.
+- Upload, leitura privada, substituicao e remocao de foto no R2 simulado.
+- Recuperacao de senha com token de uso unico.
 - Contato e newsletter.
 - Logout e novo login.
 - Rejeicao de origem externa.
@@ -625,7 +637,6 @@ A privacidade tem prioridade sobre uma URL publica simples. A foto passa pela au
 
 ### Prioridade alta
 
-- Recuperacao de senha com token de uso unico e expiracao.
 - Verificacao de e-mail.
 - Exclusao/exportacao de dados pelo usuario.
 - Painel administrativo protegido por papel real.
@@ -704,7 +715,7 @@ O D1 e o R2 podem ser reaproveitados. O Worker precisara adicionar um contrato d
 
 ## 18. Checklist antes da apresentacao
 
-- Executar `npm test` e confirmar 35 testes aprovados.
+- Executar `npm test` e confirmar 42 testes aprovados.
 - Abrir a URL oficial em janela anonima.
 - Testar PT/EN, cadastro, login, perfil, foto e logout.
 - Preparar uma imagem abaixo de 450 KB.

@@ -41,6 +41,7 @@
     if (!button) return;
     if (busy) {
       if (!button.dataset.idleLabel) button.dataset.idleLabel = button.textContent;
+      if (!button.dataset.idleHtml) button.dataset.idleHtml = button.innerHTML;
       button.disabled = true;
       button.classList.add('is-loading');
       button.setAttribute('aria-busy', 'true');
@@ -50,8 +51,10 @@
     button.disabled = false;
     button.classList.remove('is-loading');
     button.removeAttribute('aria-busy');
-    if (button.dataset.idleLabel) button.textContent = button.dataset.idleLabel;
+    if (button.dataset.idleHtml) button.innerHTML = button.dataset.idleHtml;
+    else if (button.dataset.idleLabel) button.textContent = button.dataset.idleLabel;
     delete button.dataset.idleLabel;
+    delete button.dataset.idleHtml;
   }
 
   function showMessage(element, message, type = 'info') {
