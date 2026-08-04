@@ -373,6 +373,19 @@
       'privacy.sec8.p': 'Esta política pode ser atualizada periodicamente. Recomendamos que você revise esta página regularmente.',
       'privacy.sec9.title': '9. Contato',
       'privacy.sec9.p': 'Para dúvidas sobre privacidade, entre em contato pelo e-mail <a href="mailto:lensclick.fotografias@gmail.com">lensclick.fotografias@gmail.com</a>.'
+      ,
+      // Search page
+      'search.title': 'Buscar fotógrafos | LensClick',
+      'search.heading': 'Encontre um fotógrafo',
+      'search.lead': 'Filtre por cidade, especialidade e disponibilidade.',
+      'search.filters.city': 'Cidade',
+      'search.filters.state': 'Estado (UF)',
+      'search.filters.specialty': 'Especialidade',
+      'search.filters.availability': 'Disponibilidade',
+      'search.filters.search': 'Buscar',
+      'search.noResults': 'Nenhum fotógrafo encontrado.',
+      'search.pagePrev': 'Anterior',
+      'search.pageNext': 'Próxima'
     },
     en: {
       'footer': '© {year} Lens Click. All rights reserved',
@@ -398,6 +411,18 @@
   'terms.sec6.p': 'These terms may be updated at any time. We recommend that you review them periodically.',
   'terms.sec7.title': '7. Contact',
   'terms.sec7.p': 'For questions about the terms, contact us at <a href="mailto:lensclick.fotografias@gmail.com">lensclick.fotografias@gmail.com</a>.',
+    // Search page
+    'search.title': 'Search photographers | Lens Click',
+    'search.heading': 'Find a photographer',
+    'search.lead': 'Filter by city, specialty and availability.',
+    'search.filters.city': 'City',
+    'search.filters.state': 'State (UF)',
+    'search.filters.specialty': 'Specialty',
+    'search.filters.availability': 'Availability',
+    'search.filters.search': 'Search',
+    'search.noResults': 'No photographers found.',
+    'search.pagePrev': 'Previous',
+    'search.pageNext': 'Next',
   'terms.footer': '© {year} Lens Click. All rights reserved | <a href="privacidade.html">Privacy Policy</a> | <a href="termos.html">Terms of Use</a>',
   'privacy.p1': 'Lens Click values the privacy of its clients and visitors. This Privacy Policy explains how we collect, use, protect, and share your personal information when using our site and services.',
   'privacy.sec1.title': '1. Information Collected',
