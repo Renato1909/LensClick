@@ -492,9 +492,6 @@
     .btn-outline:hover{
       background:rgba(255,255,255,.08); transform: translateY(-2px);
     }
-    .btn-search{ background: rgba(255,255,255,0.06); border: 1px solid rgba(157,98,255,0.14); color: #fff; }
-    .btn-search i{ margin-right:10px }
-    .btn-search:hover{ background: rgba(255,255,255,0.12); transform: translateY(-2px); }
 
     /* ---------- Páginas de Login e Cadastro ---------- */
     .auth-section {
@@ -1126,7 +1123,10 @@
             <div class="cta-row">
               <a class="btn btn-primary" href="#portfolio" data-i18n="hero.cta.view">VER NOSSO TRABALHO</a>
               <a class="btn btn-outline" href="#contato" data-i18n="hero.cta.contact">FALAR COM A EQUIPE</a>
-              <a class="btn btn-search" href="busca.html" data-i18n="hero.cta.search"><i class="fas fa-search" aria-hidden="true"></i><span>Buscar fotógrafos</span></a>
+              <a class="btn btn-outline" href="busca.html" aria-label="Buscar fotógrafos">
+                <i class="fas fa-magnifying-glass" aria-hidden="true" style="margin-right:10px"></i>
+                <span data-i18n="hero.cta.search">Buscar fotógrafos</span>
+              </a>
             </div>
           </div>
         </div>

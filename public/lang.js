@@ -47,7 +47,6 @@
       'hero.cta.view': 'VER NOSSO TRABALHO',
       'hero.cta.contact': 'FALAR COM A EQUIPE',
       'hero.cta.search': 'Buscar fotógrafos',
-      'hero.cta.search': 'Search photographers',
   // Additional hero slides
   'hero.slide2.title': 'IMAGENS COM <span class="gradient-text">IDENTIDADE</span>',
   'hero.slide2.lead': 'Cada sessão é pensada para combinar com você, com o lugar e com o momento.',
@@ -391,6 +390,7 @@
       'search.pageNext': 'Próxima'
     },
     en: {
+        'hero.cta.search': 'Search photographers',
       'footer': '© {year} Lens Click. All rights reserved',
       'privacy': 'Privacy Policy', 
       'terms': 'Terms of Use',
