@@ -17,7 +17,14 @@
     <a class="public-brand" href="index.html" aria-label="LensClick — página inicial"><span>Lens</span><strong>Click</strong></a>
     <div class="public-actions">
       <button class="public-language" id="langToggle" type="button" aria-label="Trocar idioma">PT</button>
-      <a class="public-login" href="login.html" data-i18n="photographer.login">Entrar</a>
+      <a class="public-login" id="publicLogin" href="login.html" data-i18n="photographer.login">Entrar</a>
+      <a class="public-user" id="publicProfile" href="perfil.html" hidden aria-label="Abrir perfil" data-a11y-pt="Abrir perfil" data-a11y-en="Open profile">
+        <span class="public-user-avatar">
+          <img id="publicProfilePic" alt="" hidden>
+          <span id="publicProfileInitial" aria-hidden="true">LC</span>
+        </span>
+        <span class="public-user-name" id="publicProfileName" hidden></span>
+      </a>
     </div>
   </header>
 
@@ -32,11 +39,13 @@
       <form id="searchForm" class="search-form">
         <div class="field">
           <label for="filterCity" data-i18n="search.filters.city">Cidade</label>
-          <input id="filterCity" type="text" placeholder="São Paulo" />
+          <input id="filterCity" type="text" placeholder="São Paulo" autocomplete="address-level2" />
         </div>
         <div class="field">
           <label for="filterState" data-i18n="search.filters.state">Estado (UF)</label>
-          <input id="filterState" type="text" maxlength="2" placeholder="SP" />
+          <select id="filterState" autocomplete="address-level1">
+            <option value="">Todos os estados</option>
+          </select>
         </div>
         <div class="field">
           <label for="filterSpecialty" data-i18n="search.filters.specialty">Especialidade</label>
@@ -88,6 +97,8 @@
 
   <script src="lang.js"></script>
   <script src="ux.js"></script>
+  <script src="br-locations.js"></script>
+  <script src="public-shell.js"></script>
   <script src="search.js"></script>
 </body>
 </html>

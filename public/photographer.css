@@ -14,7 +14,11 @@ body.photographer-page { min-height: 100vh; margin: 0; color: var(--public-text)
 .public-brand { color: #fff; font-size: 1.5rem; font-weight: 800; letter-spacing: -.05em; text-decoration: none; }
 .public-brand strong { color: var(--public-purple); }
 .public-actions { display: flex; align-items: center; gap: 10px; }
-.public-language, .public-login { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 0 13px; color: #fff; border: 1px solid var(--public-border); border-radius: 11px; background: rgba(255,255,255,.04); font: 600 .8rem/1 Poppins, sans-serif; text-decoration: none; cursor: pointer; }
+.public-language, .public-login, .public-user { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 0 13px; color: #fff; border: 1px solid var(--public-border); border-radius: 11px; background: rgba(255,255,255,.04); font: 600 .8rem/1 Poppins, sans-serif; text-decoration: none; cursor: pointer; gap: 8px; }
+.public-user { padding: 0 8px 0 4px; background: linear-gradient(135deg, var(--public-purple), #647ef4, var(--public-blue)); border-color: transparent; }
+.public-user-avatar { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; overflow: hidden; background: rgba(0,0,0,.28); color: #fff; font-size: .72rem; font-weight: 700; }
+.public-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.public-user-name { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .public-language .flag-svg { margin-right: 5px; }
 .public-shell { width: min(1080px, calc(100% - 40px)); min-height: calc(100vh - 160px); margin: 0 auto; padding: 62px 0 52px; }
 .profile-loading, .profile-error { min-height: 55vh; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; }
