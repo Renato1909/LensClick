@@ -1,8 +1,8 @@
 (function () {
   const UX = window.LensClickUX;
   const form = document.getElementById('searchForm');
-  const cityInput = document.getElementById('filterCity');
   const stateInput = document.getElementById('filterState');
+  const cityInput = document.getElementById('filterCity');
   const specialtyInput = document.getElementById('filterSpecialty');
   const availabilityInput = document.getElementById('filterAvailability');
   const resultsList = document.getElementById('resultsList');
@@ -65,7 +65,7 @@
     try {
       const params = new URLSearchParams();
       if (cityInput.value.trim()) params.set('city', cityInput.value.trim());
-      if (stateInput.value.trim()) params.set('state', stateInput.value.trim().toUpperCase());
+      if (stateInput.value.trim()) params.set('state', String(stateInput.value).trim().toUpperCase());
       if (specialtyInput.value) params.set('specialty', specialtyInput.value);
       if (availabilityInput.value) params.set('availability', availabilityInput.value);
       params.set('page', String(page));
