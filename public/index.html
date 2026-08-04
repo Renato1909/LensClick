@@ -170,19 +170,31 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 10px 14px;
+      padding: 9px 16px;
       border-radius: 999px;
       border: 1px solid rgba(255,255,255,.16);
-      background: rgba(255,255,255,.06);
-      box-shadow: 0 10px 24px rgba(0,0,0,.14);
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      color: #0a0b14;
+      font-weight: 600;
+      box-shadow: 0 8px 22px rgba(125, 112, 255, .28);
       opacity: 1;
+      white-space: nowrap;
     }
     nav a.nav-search::after {
       display: none;
     }
+    nav a.nav-search i {
+      font-size: 0.95em;
+    }
     nav a.nav-search:hover {
-      background: rgba(255,255,255,.11);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(125, 112, 255, .4);
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      opacity: 1;
+    }
+    nav a.nav-search:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 3px;
     }
 
     .menu-btn{display:none; border:1px solid rgba(255,255,255,.15); background:transparent; color:#fff; padding:8px 10px; border-radius:10px; transition: var(--transition);}
@@ -210,6 +222,14 @@
       #langToggle { transform: translateX(-10px); }
       /* if parent inline margin exists, ensure button shift takes effect */
       #langToggle { margin-left: 0 !important; }
+    }
+
+    /* Smallest screens: tighten header gaps so the search pill fits */
+    @media (max-width: 480px) {
+      .nav { gap: 8px; }
+      .brand span { font-size: 1rem; }
+      .user-profile { gap: 6px; }
+      .user-avatar { width: 32px; height: 32px; }
     }
 
     /* Botões de login/cadastro no header */
@@ -267,17 +287,23 @@
     }
 
     /* Responsividade dos botões de login/cadastro */
+    @media (max-width:1024px){
+      nav ul{gap:14px}
+      nav a.nav-search span{display:none}
+      nav a.nav-search{padding:9px 12px; gap:0}
+      nav a.nav-search i{margin:0}
+    }
     @media (max-width:880px){
       nav ul{display:none}
       nav ul.open{
-        display: flex; 
-        position: fixed; 
-        top: 66px; 
-        left: 0; 
-        right: 0; 
-        flex-direction: column; 
-        gap: 0; 
-        background: rgba(10,12,22,.98); 
+        display: flex;
+        position: fixed;
+        top: 66px;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        gap: 0;
+        background: rgba(10,12,22,.98);
         border-bottom: 1px solid rgba(255,255,255,.06);
         backdrop-filter: blur(10px);
         padding: 10px 0 0 0;
@@ -285,7 +311,9 @@
         z-index: 100;
       }
       nav ul.open li{border-top:1px solid rgba(255,255,255,.05)}
-      nav ul.open a{display:block; padding:16px 20px; transition: var(--transition);}
+      nav ul.open a{display:flex; padding:16px 20px; transition: var(--transition); align-items:center; gap:10px;}
+      nav ul.open a.nav-search{justify-content:flex-start}
+      nav ul.open a.nav-search span{display:inline}
       nav ul.open a:hover {padding-left: 25px; background: rgba(255,255,255,0.05);}
       .menu-btn{display:inline-grid; place-items:center}
       .section-indicator {
