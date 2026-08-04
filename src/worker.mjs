@@ -513,6 +513,69 @@ async function handleApi(request, env, url, context) {
     return user ? json(200, { user: publicUser(user) }) : json(401, { error: 'Sessao nao encontrada.' });
   }
 
+  if (pathname === '/api/photographers' && method === 'GET') {
+    const url = new URL(request.url);
+    const city = cleanText(url.searchParams.get('city'), 80);
+    const state = cleanText(url.searchParams.get('state'), 2).toUpperCase();
+    const specialty = cleanText(url.searchParams.get('specialty'), 30);
+    const availability = url.searchParams.get('availability');
+    const page = Math.max(1, Number(url.searchParams.get('page')) || 1);
+    const pageSize = Math.min(50, Math.max(1, Number(url.searchParams.get('pageSize')) || 12));
+
+    const validAvailabilities = ['available', 'limited', 'unavailable'];
+    const whereClauses = ['p.is_published = 1', 'u.role = \'photographer\''];
+    const params = [];
+
+    if (state && /^[A-Z]{2}$/.test(state)) {
+      whereClauses.push('p.state = ?');
+      params.push(state);
+    }
+    if (city) {
+      whereClauses.push('p.city LIKE ?');
+      params.push(`%${city}%`);
+    }
+    if (specialty && PROFESSIONAL_SPECIALTIES.has(specialty)) {
+      whereClauses.push('p.specialties LIKE ?');
+      params.push(`%"${specialty}"%`);
+    }
+    if (availability && validAvailabilities.includes(availability)) {
+      whereClauses.push('p.availability = ?');
+      params.push(availability);
+    }
+
+    const whereSql = whereClauses.join(' AND ');
+    const offset = (page - 1) * pageSize;
+
+    const totalResult = await env.DB.prepare(`
+      SELECT COUNT(*) AS total
+      FROM professional_profiles p
+      JOIN users u ON u.id = p.user_id
+      WHERE ${whereSql}
+    `).bind(...params).first();
+    const total = Number(totalResult?.total || 0);
+
+    const profiles = await env.DB.prepare(`
+      SELECT p.*, u.name, u.profile_pic_key, u.updated_at AS user_updated_at
+      FROM professional_profiles p
+      JOIN users u ON u.id = p.user_id
+      WHERE ${whereSql}
+      ORDER BY p.updated_at DESC
+      LIMIT ? OFFSET ?
+    `).bind(...params, pageSize, offset).all();
+
+    const photographers = (profiles.results || []).map((row) => professionalProfile(row));
+
+    return json(200, {
+      photographers,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize)
+      }
+    }, { 'Cache-Control': 'public, max-age=60' });
+  }
+
   const publicPhotographerPhotoMatch = /^\/api\/photographers\/([a-z0-9-]{3,80})\/photo$/.exec(pathname);
   if (publicPhotographerPhotoMatch && method === 'GET') {
     const profile = await env.DB.prepare(`
