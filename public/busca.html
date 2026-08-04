@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Encontre fotógrafos por cidade, especialidade e disponibilidade.">
+  <title data-i18n="search.title">Buscar fotógrafos | LensClick</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="refinements.css">
+  <link rel="stylesheet" href="photographer.css">
+</head>
+<body class="search-page">
+  <header class="public-topbar">
+    <a class="public-brand" href="index.html" aria-label="LensClick — página inicial"><span>Lens</span><strong>Click</strong></a>
+    <div class="public-actions">
+      <button class="public-language" id="langToggle" type="button" aria-label="Trocar idioma">PT</button>
+      <a class="public-login" href="login.html" data-i18n="photographer.login">Entrar</a>
+    </div>
+  </header>
+
+  <main id="main-content" class="public-shell" tabindex="-1">
+    <section class="search-hero" aria-labelledby="searchTitle">
+      <h1 id="searchTitle" data-i18n="search.heading">Encontre um fotógrafo</h1>
+      <p data-i18n="search.lead">Filtre por cidade, especialidade e disponibilidade.</p>
+    </section>
+
+    <section class="search-controls" aria-labelledby="filtersTitle">
+      <h2 id="filtersTitle" class="visually-hidden">Filtros</h2>
+      <form id="searchForm" class="search-form">
+        <div class="field">
+          <label for="filterCity" data-i18n="search.filters.city">Cidade</label>
+          <input id="filterCity" type="text" placeholder="São Paulo" />
+        </div>
+        <div class="field">
+          <label for="filterState" data-i18n="search.filters.state">Estado (UF)</label>
+          <input id="filterState" type="text" maxlength="2" placeholder="SP" />
+        </div>
+        <div class="field">
+          <label for="filterSpecialty" data-i18n="search.filters.specialty">Especialidade</label>
+          <select id="filterSpecialty">
+            <option value="">Todas</option>
+            <option value="wedding" data-i18n="specialty.wedding">Casamentos</option>
+            <option value="events" data-i18n="specialty.events">Eventos</option>
+            <option value="portrait" data-i18n="specialty.portrait">Retratos</option>
+            <option value="family" data-i18n="specialty.family">Família</option>
+            <option value="corporate" data-i18n="specialty.corporate">Corporativo</option>
+            <option value="product" data-i18n="specialty.product">Produtos</option>
+            <option value="fashion" data-i18n="specialty.fashion">Moda</option>
+            <option value="newborn" data-i18n="specialty.newborn">Newborn</option>
+            <option value="nature" data-i18n="specialty.nature">Natureza</option>
+            <option value="real-estate" data-i18n="specialty.realEstate">Imóveis</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="filterAvailability" data-i18n="search.filters.availability">Disponibilidade</label>
+          <select id="filterAvailability">
+            <option value="">Todas</option>
+            <option value="available" data-i18n="availability.available">Agenda aberta</option>
+            <option value="limited" data-i18n="availability.limited">Poucas datas disponíveis</option>
+            <option value="unavailable" data-i18n="availability.unavailable">Agenda temporariamente fechada</option>
+          </select>
+        </div>
+        <div class="form-footer">
+          <button id="searchButton" class="primary-button" type="submit" data-i18n="search.filters.search">Buscar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="search-results" aria-labelledby="resultsTitle">
+      <h2 id="resultsTitle" class="visually-hidden">Resultados</h2>
+      <div id="resultsList" class="photographer-grid" aria-live="polite"></div>
+      <p id="resultsEmpty" class="field-note" hidden data-i18n="search.noResults">Nenhum fotógrafo encontrado.</p>
+      <div class="pagination" id="pagination" hidden>
+        <button id="prevPage" class="text-button" data-i18n="search.pagePrev">Anterior</button>
+        <span id="pageInfo"></span>
+        <button id="nextPage" class="text-button" data-i18n="search.pageNext">Próxima</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="public-footer">
+    <a href="index.html" data-i18n="photographer.back">Voltar à LensClick</a>
+    <p data-i18n="footer">© {year} Lens Click. Todos os direitos reservados</p>
+  </footer>
+
+  <script src="lang.js"></script>
+  <script src="ux.js"></script>
+  <script src="search.js"></script>
+</body>
+</html>
