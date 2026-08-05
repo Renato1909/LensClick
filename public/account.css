@@ -1,12 +1,12 @@
 :root {
-  --account-bg: #121326;
-  --account-panel: rgba(27, 29, 52, 0.94);
-  --account-panel-soft: rgba(255, 255, 255, 0.035);
-  --account-border: rgba(255, 255, 255, 0.09);
-  --account-text: #f7f7ff;
-  --account-muted: #bfc3d9;
-  --account-purple: #9a5cff;
-  --account-blue: #62aefc;
+  --account-bg: #0c0b0a;
+  --account-panel: rgba(22, 20, 18, 0.94);
+  --account-panel-soft: rgba(255, 255, 255, 0.03);
+  --account-border: rgba(255, 255, 255, 0.08);
+  --account-text: #f6f1ea;
+  --account-muted: #c6bbaf;
+  --account-purple: #e8dfd4;
+  --account-blue: #9f8d7e;
   --account-danger: #ff727b;
 }
 
@@ -29,8 +29,8 @@ body.profile-page {
   margin: 0;
   color: var(--account-text);
   background:
-    radial-gradient(circle at 8% 0%, rgba(117, 70, 223, 0.34), transparent 30rem),
-    radial-gradient(circle at 92% 20%, rgba(59, 125, 220, 0.18), transparent 26rem),
+    radial-gradient(circle at 8% 0%, rgba(232, 223, 212, 0.1), transparent 30rem),
+    radial-gradient(circle at 92% 20%, rgba(159, 141, 126, 0.1), transparent 26rem),
     var(--account-bg);
   font-family: Poppins, Arial, sans-serif;
 }
@@ -72,10 +72,7 @@ body.profile-page {
 .primary-button,
 .secondary-button,
 .danger-button {
-  min-height: 42px;
-  border-radius: 12px;
   border: 0;
-  font: 600 0.9rem/1 Poppins, sans-serif;
   cursor: pointer;
   transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
@@ -84,7 +81,7 @@ body.profile-page {
   min-width: 66px;
   padding: 0 12px;
   border: 1px solid var(--account-border);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
   color: #fff;
 }
 
@@ -101,7 +98,7 @@ body.profile-page {
 }
 
 .quiet-button:hover,
-.text-button:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+.text-button:hover { color: #fff; background: rgba(255, 255, 255, 0.04); }
 
 .account-shell {
   width: min(1080px, calc(100% - 40px));
@@ -112,7 +109,7 @@ body.profile-page {
 .account-intro { max-width: 680px; margin-bottom: 30px; }
 .account-eyebrow {
   margin: 0 0 10px;
-  color: #bd91ff !important;
+  color: #d7cbc0 !important;
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.16em;
@@ -136,8 +133,8 @@ body.profile-page {
 .identity-card,
 .settings-card {
   border: 1px solid var(--account-border);
-  background: linear-gradient(145deg, rgba(31, 32, 58, 0.96), rgba(22, 24, 44, 0.96));
-  box-shadow: 0 24px 65px rgba(4, 5, 18, 0.24);
+  background: linear-gradient(145deg, rgba(25, 23, 21, 0.96), rgba(18, 16, 15, 0.96));
+  box-shadow: 0 20px 52px rgba(0, 0, 0, 0.18);
 }
 
 .identity-card {
@@ -157,10 +154,10 @@ body.profile-page {
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 3px solid rgba(169, 104, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 50%;
-  background: linear-gradient(145deg, #59329d, #2d4f98);
-  box-shadow: 0 12px 30px rgba(11, 10, 35, 0.4);
+  background: linear-gradient(145deg, #4a423b, #24201d);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
 }
 
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -181,14 +178,14 @@ body.profile-page {
 
 .secondary-button {
   color: #f3efff;
-  border: 1px solid rgba(170, 119, 255, 0.35);
-  background: rgba(139, 85, 229, 0.11);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .primary-button {
-  color: #fff;
-  background: linear-gradient(135deg, var(--account-purple), #697ff5 58%, var(--account-blue));
-  box-shadow: 0 10px 24px rgba(109, 73, 225, 0.23);
+  color: var(--lc-btn-ink);
+  background: var(--lc-btn-gradient);
+  box-shadow: var(--lc-shadow-brand);
 }
 
 .danger-button { color: #fff; background: #c94f5b; }
@@ -211,10 +208,10 @@ body.profile-page {
   flex: 0 0 42px;
   display: grid;
   place-items: center;
-  color: #cbaaff;
-  border: 1px solid rgba(163, 91, 255, 0.2);
+  color: #d9cdc0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  background: rgba(142, 83, 236, 0.11);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
@@ -233,7 +230,7 @@ body.profile-page {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   outline: 0;
-  background: rgba(10, 12, 25, 0.42);
+  background: rgba(255, 255, 255, 0.03);
   font: 500 0.92rem/1.4 Poppins, sans-serif;
 }
 .field textarea { min-height: 150px; padding-top: 13px; resize: vertical; line-height: 1.65; }
@@ -241,7 +238,7 @@ body.profile-page {
 .field select option { color: #111; background: #fff; }
 .field input:focus,
 .field select:focus,
-.field textarea:focus { border-color: #a86cff; box-shadow: 0 0 0 3px rgba(154, 92, 255, 0.13); }
+.field textarea:focus { border-color: #e8dfd4; box-shadow: 0 0 0 4px rgba(232, 223, 212, 0.12); }
 .field-note { margin: 7px 0 0 !important; color: #979cb7 !important; font-size: 0.74rem !important; line-height: 1.5; }
 
 .sensitive-field {
@@ -250,8 +247,8 @@ body.profile-page {
   border-radius: 14px;
   background: rgba(255, 183, 76, 0.055);
 }
-.sensitive-heading { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 13px; color: #f3ce92; }
-.sensitive-heading p { margin: 0; color: #d9c9ac; font-size: 0.78rem; line-height: 1.55; }
+.sensitive-heading { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 13px; color: #ead8be; }
+.sensitive-heading p { margin: 0; color: #d0c2b3; font-size: 0.78rem; line-height: 1.55; }
 
 .form-footer { display: flex; align-items: center; justify-content: flex-end; gap: 16px; margin-top: 24px; }
 .form-footer .feedback-message { flex: 1; margin: 0; }
@@ -410,8 +407,6 @@ body.profile-page {
 .primary-button:hover,
 .secondary-button:hover,
 .danger-button:hover { transform: translateY(-1px); }
-button:disabled { cursor: wait; opacity: 0.68; transform: none !important; }
-
 @media (max-width: 820px) {
   .settings-grid { grid-template-columns: 1fr; }
   .specialty-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }

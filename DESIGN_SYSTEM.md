@@ -4,9 +4,9 @@ Este documento registra as decisões visuais compartilhadas do projeto. A regra 
 
 ## Princípios
 
-- Moderno e discreto: contraste claro, superfícies escuras e detalhes em roxo e azul.
+- Moderno e discreto: contraste claro, superfícies escuras, off-white e acento terroso.
 - Consistente: componentes equivalentes devem ter a mesma altura, raio, espaçamento e movimento.
-- Humano: textos diretos e animações curtas, sem excesso de brilho ou deslocamento.
+- Humano: textos diretos, animações curtas e sem excesso de brilho, gradiente ou deslocamento.
 - Acessível: foco visível, estados que não dependem somente de cor e suporte a movimento reduzido.
 - Responsivo: medidas fluidas somente quando o conteúdo realmente precisa se adaptar.
 
@@ -76,4 +76,6 @@ A escala usa `--lc-space-1`, `--lc-space-2`, `--lc-space-3`, `--lc-space-4`, `--
 ## Compatibilidade
 
 Os nomes antigos, como `--accent-1`, `--text`, `--radius` e `--shadow`, permanecem como aliases temporários. Código novo deve usar tokens iniciados por `--lc-`. A remoção dos aliases só deve acontecer após os estilos legados das páginas serem migrados.
+
+Direção visual atual: carvão, off-white, cinza quente e um único acento suave para chamar atenção sem aparência neon.
 

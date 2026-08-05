@@ -4,10 +4,10 @@ body.auth-page {
   display: grid;
   place-items: center;
   background:
-    radial-gradient(circle at 12% 10%, rgba(124, 75, 255, .34), transparent 34rem),
-    radial-gradient(circle at 88% 85%, rgba(63, 169, 255, .2), transparent 30rem),
-    #121425;
-  color: #f6f7ff;
+    radial-gradient(circle at 12% 10%, rgba(232, 223, 212, .12), transparent 34rem),
+    radial-gradient(circle at 88% 85%, rgba(159, 141, 126, .12), transparent 30rem),
+    #0c0b0a;
+  color: #f6f1ea;
   font-family: Poppins, Arial, sans-serif;
 }
 
@@ -20,9 +20,8 @@ body.auth-page {
   padding: clamp(26px, 6vw, 42px);
   border: 1px solid rgba(255, 255, 255, .1);
   border-radius: 24px;
-  background: rgba(24, 26, 42, .92);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, .38);
-  backdrop-filter: blur(18px);
+  background: rgba(20, 18, 17, .94);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
 }
 
 .recovery-logo {
@@ -32,8 +31,8 @@ body.auth-page {
   display: grid;
   place-items: center;
   border-radius: 17px;
-  background: linear-gradient(135deg, #a35bff, #5bb3ff);
-  box-shadow: 0 12px 30px rgba(125, 112, 255, .3);
+  background: linear-gradient(135deg, #e8dfd4, #9f8d7e);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .22);
   font-size: 24px;
 }
 
@@ -46,7 +45,7 @@ body.auth-page {
 .recovery-card > p,
 .recovery-header p {
   margin: 0 0 28px;
-  color: #c9cce0;
+  color: #c6bbaf;
   line-height: 1.65;
 }
 
@@ -58,7 +57,7 @@ body.auth-page {
 .recovery-form label {
   display: block;
   margin-bottom: 8px;
-  color: #e6e8f7;
+  color: #f1ece4;
   font-weight: 600;
 }
 
@@ -66,43 +65,43 @@ body.auth-page {
   box-sizing: border-box;
   width: 100%;
   padding: 14px 15px;
-  border: 1px solid rgba(255, 255, 255, .16);
+  border: 1px solid rgba(255, 255, 255, .1);
   border-radius: 13px;
   outline: 0;
-  background: rgba(255, 255, 255, .06);
-  color: #fff;
+  background: rgba(255, 255, 255, .035);
+  color: #f6f1ea;
   font: inherit;
   transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
 }
 
 .recovery-form input:focus {
-  border-color: #8d70ff;
-  background: rgba(255, 255, 255, .09);
-  box-shadow: 0 0 0 4px rgba(141, 112, 255, .16);
+  border-color: #e8dfd4;
+  background: rgba(255, 255, 255, .05);
+  box-shadow: 0 0 0 4px rgba(232, 223, 212, .12);
 }
 
 .recovery-form .form-hint {
   margin: 8px 0 0;
-  color: #aeb3ce;
+  color: #b8aa9d;
   font-size: .86rem;
   line-height: 1.5;
 }
 
 .recovery-submit {
-  min-height: 52px;
+  min-height: var(--lc-btn-height);
   border: 0;
-  border-radius: 14px;
-  background: linear-gradient(100deg, #9657ff, #59aaff);
-  color: #fff;
+  border-radius: var(--lc-radius-md);
+  background: var(--lc-btn-gradient);
+  color: var(--lc-btn-ink);
   cursor: pointer;
   font: 700 1rem Poppins, Arial, sans-serif;
-  box-shadow: 0 13px 32px rgba(89, 116, 255, .25);
+  box-shadow: var(--lc-shadow-brand);
   transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease;
 }
 
 .recovery-submit:not(:disabled):hover {
   transform: translateY(-2px);
-  box-shadow: 0 17px 36px rgba(89, 116, 255, .34);
+  box-shadow: 0 17px 36px rgba(0, 0, 0, .24);
 }
 
 .recovery-submit:disabled {
@@ -116,7 +115,7 @@ body.auth-page {
 }
 
 .recovery-link {
-  color: #75bdff;
+  color: #e8dfd4;
   font-weight: 600;
   text-decoration: none;
 }
@@ -131,7 +130,7 @@ body.auth-page {
   padding: 9px 12px;
   border: 1px solid rgba(255, 255, 255, .18);
   border-radius: 999px;
-  background: rgba(18, 20, 37, .78);
+  background: rgba(18, 16, 15, .78);
   color: #fff;
   cursor: pointer;
   font: 700 .82rem Poppins, Arial, sans-serif;
@@ -147,7 +146,7 @@ body.auth-page {
 
 .recovery-message[data-type="success"] { background: rgba(63, 185, 128, .13); color: #8ce3b6; }
 .recovery-message[data-type="error"] { background: rgba(255, 92, 112, .13); color: #ff9aaa; }
-.recovery-message[data-type="info"] { background: rgba(91, 179, 255, .13); color: #9fd2ff; }
+.recovery-message[data-type="info"] { background: rgba(232, 223, 212, .1); color: #e8dfd4; }
 
 @media (prefers-reduced-motion: reduce) {
   .recovery-submit,
