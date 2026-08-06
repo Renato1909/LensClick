@@ -29,7 +29,7 @@
 
   function initLocationControls() {
     const ufSelect = document.getElementById('filterState');
-    const citySelect = document.getElementById('filterCity');
+    let citySelect = document.getElementById('filterCity');
     if (!ufSelect || !citySelect) return;
 
     const data = window.BrazilLocations;
