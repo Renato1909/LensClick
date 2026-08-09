@@ -58,7 +58,7 @@ A aplicacao utiliza uma arquitetura serverless na Cloudflare:
 4. **Back-end:** um Cloudflare Worker recebe as requisicoes, valida entradas, autentica usuarios e acessa os servicos de dados.
 5. **Persistencia:** D1 guarda usuarios, sessoes, contatos, newsletter e limites contra abuso; R2 guarda fotos de perfil e portfolio.
 6. **Seguranca:** senhas nunca sao armazenadas em texto puro; sessoes usam cookies HttpOnly; imagens exigem autenticacao.
-7. **Qualidade:** 54 testes verificam o fluxo principal, os scripts, a acessibilidade, a documentacao, a traducao e a integridade dos links.
+7. **Qualidade:** a suite automatizada de testes verifica o fluxo principal, os scripts, a acessibilidade, a documentacao, a traducao e a integridade dos links.
 8. **Operacao:** o projeto e publicado pelo Wrangler e monitorado no painel da Cloudflare.
 
 ## 3. Arquitetura
@@ -601,7 +601,7 @@ Portugues e o idioma de origem. Ingles e aplicado por chaves. A preferencia fica
 
 ## 12. Testes e qualidade
 
-O comando `npm test` executa 54 testes com `node --test`.
+O comando `npm test` executa a suite automatizada com `node --test`; execute-o para consultar o total atual.
 
 ### 12.1 Cobertura funcional
 
@@ -801,7 +801,7 @@ O D1 e o R2 podem ser reaproveitados. O Worker precisara adicionar um contrato d
 
 ## 18. Checklist antes da apresentacao
 
-- Executar `npm test` e confirmar 54 testes aprovados.
+- Executar `npm test` e confirmar que toda a suite automatizada foi aprovada.
 - Abrir a URL oficial em janela anonima.
 - Testar PT/EN, cadastro, login, perfil, pagina publica do fotografo, foto e logout.
 - Preparar uma imagem abaixo de 450 KB.

@@ -23,7 +23,7 @@ npm test
 npm run check
 ```
 
-Os 54 testes cobrem cadastro, hash de senha, sessao, recuperacao de senha, gerenciamento e exclusao da conta, perfil profissional publico, controles de privacidade, foto no R2, portfolio profissional, contato, newsletter, protecao de origem e scripts das paginas.
+A suite automatizada de testes cobre cadastro, hash de senha, sessao, recuperacao de senha, gerenciamento e exclusao da conta, perfil profissional publico, controles de privacidade, foto no R2, portfolio profissional, contato, newsletter, protecao de origem e scripts das paginas. Execute `npm test` para consultar o total atual.
 
 O GitHub Actions executa essas verificacoes automaticamente em todo Pull Request direcionado a `main` e em cada atualizacao da branch principal. O fluxo de contribuicao da equipe esta documentado em `CONTRIBUTING.md`.
 
