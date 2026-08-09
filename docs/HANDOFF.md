@@ -2,7 +2,7 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** estado do repositório em `main` HEAD `f3bcb1d`.
+> **Data de referência:** estado do repositório em `main` HEAD `2beb80a`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
 > **Escopo:** apenas documentação. Nenhum código foi alterado, nenhum commit ou push foi feito.
 
@@ -10,8 +10,8 @@
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `f3bcb1d` — "chore: adiciona 10 agentes do Copilot (#17)".
-- **Working tree:** limpa, exceto por `docs/CONTEXTO_PROJETO.md` (não rastreado — ainda não foi commitado).
+- **Branch:** `main` → commit `2beb80a` — "docs: add permanent project context (#18)".
+- **Working tree:** somente `docs/HANDOFF.md` modificado e não adicionado ao staging, como parte desta atualização operacional; nenhum código foi alterado.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
   - Status checks obrigatórios: "Testes e validação" (CI GitHub Actions "Qualidade").
@@ -63,29 +63,14 @@
 
 ---
 
-## 2. Branches pendentes
+## 2. Branches atuais
 
-### Branches locais (7 além de `main`)
+- **Branches locais:** somente `main`.
+- **Branches remotas:** somente `origin/main` (além do ponteiro simbólico `origin/HEAD -> origin/main`).
+- **Branches sem upstream:** nenhuma.
+- **Trabalho pendente em branches:** nenhum.
 
-Todos os branches locais são **snapshots pré-squash de PRs já mergeados**. Nenhum contém trabalho novo não incorporado a `main`.
-
-| Branch | Commit | Remote | Estado | PR correspondente |
-|---|---|---|---|---|
-| `agent/recuperacao-de-senha` | `3ce5031` | `origin/...: gone` | **Órfão** (remoto deletado) | #2 (mergeado) |
-| `agent/gerenciamento-da-conta` | `3ec22de` | `origin/...: gone` | **Órfão** (remoto deletado) | #3 (mergeado) |
-| `agent/exclusao-definitiva-da-conta` | `2c2f521` | ativo | Obsoleto | #4 (mergeado) |
-| `agent/perfil-profissional-publico` | `68752ae` | ativo | Obsoleto | #5 (mergeado) |
-| `agent/portfolio-fotografo` | `d9207af` | ativo | Obsoleto | #6 (mergeado) |
-| `agent/configura-fluxo-github` | `02e6878` | ativo | Obsoleto | fluxo CI/CD (mergeado) |
-| `chore/agentes-copilot` | `c89e9ae` | ativo | Obsoleto | #17 (mergeado) |
-
-### Branches remotos (além de `main`)
-
-- `origin/docs/roadmap-tecnico-baseline` — já mergeado como PR #16 (`fc45330`). Pode ser deletado no remoto.
-
-### Risco dos branches órfãos
-
-Os branches `agent/recuperacao-de-senha` e `agent/gerenciamento-da-conta` têm o remoto deletado. Se os branches locais forem removidos sem verificação, **os commits pré-squash podem ser perdidos permanentemente**. Antes de deletar, confirmar que o conteúdo já está refletido em `main` (o que é o caso — PRs #2 e #3 foram squash-mergeados).
+A limpeza controlada foi concluída após comparar a árvore de cada branch obsoleta com o commit squash correspondente em `main`. As duas branches locais que estavam órfãs também apresentaram conteúdo idêntico aos PRs #2 e #3 já incorporados; nenhum trabalho exclusivo foi removido.
 
 ---
 
@@ -126,10 +111,11 @@ Não há funcionalidades em andamento ativo em branches locais. Todo o trabalho 
 
 ## 4. PRs relevantes
 
-Todos os PRs (#2 a #17) já foram **mergeados** em `main`. Histórico (squash, fast-forward):
+Todos os PRs relevantes de #1 a #18 listados abaixo já foram **mergeados** em `main`. Histórico (squash, fast-forward):
 
 | PR | Commit | Descrição |
 |---|---|---|
+| #1 | `9cafefd` | Configura qualidade e fluxo de Pull Requests |
 | #2 | `f11180d` | Implementa recuperação segura de senha |
 | #3 | `78f94d1` | Adiciona gerenciamento seguro da conta |
 | #4 | `d319841` | Adiciona exclusão definitiva e segura da conta |
@@ -145,8 +131,9 @@ Todos os PRs (#2 a #17) já foram **mergeados** em `main`. Histórico (squash, f
 | #14 | `4721d1d` | fix: corrigir erro Assignment to constant no public-shell |
 | #16 | `fc45330` | docs: finalize technical roadmap baseline |
 | #17 | `f3bcb1d` | chore: adiciona 10 agentes do Copilot |
+| #18 | `2beb80a` | docs: add permanent project context |
 
-> Nota: PR #15 não aparece no log — possivelmente pulado ou renumerado. PRs #1 e #15 não constam no histórico recente.
+> Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
 ### Documentos de PR em `tmp/`
 
@@ -164,6 +151,7 @@ Todos os PRs (#2 a #17) já foram **mergeados** em `main`. Histórico (squash, f
 - **Squash merge** — commits de PR são squashed em um único commit no histórico. Por isso os branches locais ficam obsoletos após o merge.
 - **Agentes Copilot** — o PR #17 adicionou 10 agentes em `.github/agents/` (Arquiteto, Backend, Frontend, Banco de Dados, DevOps, QA, Segurança, SEO/Performance, Marketing, Revisor de Código). O repositório possui **11 agentes no total**: o Designer já havia sido adicionado anteriormente pelo PR #13.
 - **Roadmap técnico baseline** documentado (PR #16) — `docs/ROADMAP_EVOLUCAO.md` com Fases 1 a N.
+- **Contexto permanente versionado** (PR #18) — `docs/AI_CONTEXT.md`, `docs/CONTEXTO_PROJETO.md`, `docs/HANDOFF.md` e `docs/DECISOES_TECNICAS.md` foram incorporados à `main`.
 - **Design System** formalizado em `DESIGN_SYSTEM.md` e tokens `--lc-*` em `public/refinements.css`.
 - **i18n centralizado** em `public/lang.js` — toda string de UI passa por `window.i18n`.
 - **R2 privado** — imagens de perfil e portfólio não são públicas; servidas via Worker.
@@ -177,40 +165,30 @@ Todos os PRs (#2 a #17) já foram **mergeados** em `main`. Histórico (squash, f
 ### Críticos
 
 1. **`db/schema.ts` desatualizado** — `schemaVersion = 2`, lista apenas 6 tabelas (faltam `professional_profiles` e `portfolio_items`). O D1 real tem 8 tabelas (schema version 4). Qualquer código que confie em `schema.ts` para validação/migração está inconsistente.
-2. **Branches órfãos** — `agent/recuperacao-de-senha` e `agent/gerenciamento-da-conta` perderam o remoto. Deletar sem verificação pode perder commits pré-squash.
-3. **Sem 2FA / verificação de e-mail** — contas podem ser criadas com e-mail não verificado; risco de abuso e account takeover.
-4. **Rate limiting simples em D1** — `rate_limits` é uma tabela D1, não o rate limiting nativo Cloudflare. Sob carga, consome quota de D1 e não escala como edge.
-5. **Roles não autorizam áreas** — não há autorização por papel; qualquer usuário autenticado acessa as mesmas rotas.
+2. **Sem 2FA / verificação de e-mail** — contas podem ser criadas com e-mail não verificado; risco de abuso e account takeover.
+3. **Rate limiting simples em D1** — `rate_limits` é uma tabela D1, não o rate limiting nativo Cloudflare. Sob carga, consome quota de D1 e não escala como edge.
+4. **Roles não autorizam áreas** — não há autorização por papel; qualquer usuário autenticado acessa as mesmas rotas.
 
 ### Técnicos
 
-6. **Hotspots de conflito** — `src/worker.mjs` (926 linhas, 21 rotas em cadeia if/regex) e `public/lang.js` (933 linhas) são tocados por praticamente toda feature. Alto risco de conflito de merge.
-7. **Sem observabilidade** — sem logs estruturados; difícil diagnosticar incidentes em produção.
-8. **Sem health check** — sem endpoint `/api/health` ou verificação de D1/R2.
-9. **SEO incompleto** — sem `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD. Impacta indexação e compartilhamento social.
-10. **Sem cache** — `caches.default` não utilizado; toda requisição pode bater no D1/R2.
+5. **Hotspots de conflito** — `src/worker.mjs` (926 linhas, 21 rotas em cadeia if/regex) e `public/lang.js` (933 linhas) são tocados por praticamente toda feature. Alto risco de conflito de merge.
+6. **Sem observabilidade** — sem logs estruturados; difícil diagnosticar incidentes em produção.
+7. **Sem health check** — sem endpoint `/api/health` ou verificação de D1/R2.
+8. **SEO incompleto** — sem `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD. Impacta indexação e compartilhamento social.
+9. **Sem cache** — `caches.default` não utilizado; toda requisição pode bater no D1/R2.
 
 ### Legais / Processo
 
-11. **Termos e política precisam de revisão legal** — `public/termos.html` e `public/privacidade.html` são rascunhos.
-12. **`docs/CONTEXTO_PROJETO.md` não commitado** — está como não rastreado; precisa ser adicionado ao versionamento.
+10. **Termos e política precisam de revisão legal** — `public/termos.html` e `public/privacidade.html` são rascunhos.
 
 ---
 
 ## 7. Tarefas prioritárias
 
-Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` (P0–P4) e `docs/ROADMAP_EVOLUCAO.md` (Fase 1). Como os PRs #2–#6 já foram mergeados, as prioridades originais P2–P4 (consolidar conta, perfil, portfólio) estão **concluídas**. As prioridades reais agora são:
-
-### P0 — Limpeza de branches (rápido, baixo risco)
-- Deletar os 5 branches locais obsoletos com remoto ativo: `agent/exclusao-definitiva-da-conta`, `agent/perfil-profissional-publico`, `agent/portfolio-fotografo`, `agent/configura-fluxo-github`, `chore/agentes-copilot`.
-- Deletar `origin/docs/roadmap-tecnico-baseline` (já mergeado).
-- Para os 2 branches órfãos (`agent/recuperacao-de-senha`, `agent/gerenciamento-da-conta`): confirmar que o conteúdo está em `main` (está) e então deletar os branches locais.
+Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`. A limpeza de branches foi concluída e os documentos permanentes de contexto foram versionados pelo PR #18. As prioridades pendentes agora são:
 
 ### P1 — Atualizar `db/schema.ts` (rápido, médio risco)
 - Atualizar `schemaVersion` para 4 e adicionar `professional_profiles` e `portfolio_items` em `tables`. Manter sincronizado com as migrações 0003 e 0004.
-
-### P2 — Commitar `docs/CONTEXTO_PROJETO.md` (rápido, baixo risco)
-- Adicionar ao versionamento para servir de onboarding permanente.
 
 ### P3 — Fase 1 do Roadmap (médio prazo, médio risco)
 - **1.1 Observabilidade** — logs estruturados no Worker.
@@ -233,19 +211,17 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` (P0–P4) e `docs/ROADMAP_EV
 ## 8. Ordem recomendada de execução
 
 ```
-1. [P0] Limpar branches obsoletos e órfãos          ← 30 min, baixo risco
-2. [P1] Atualizar db/schema.ts (schemaVersion=4)    ← 15 min, médio risco
-3. [P2] Commitar docs/CONTEXTO_PROJETO.md           ← 5 min, baixo risco
-4. [P3.1] Observabilidade: logs estruturados        ← 1-2 dias, médio risco
-5. [P3.2] Health check /api/health + índices D1     ← 0,5 dia, baixo risco
-6. [P3.3] Testes por rota (21 rotas)                ← 2-3 dias, baixo risco
-7. [P3.4] Rate limiting nativo Cloudflare           ← 1 dia, médio risco
-8. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← 1-2 dias, baixo risco
-9. [P5] Segurança: verificação e-mail, 2FA, roles   ← 3-5 dias, alto risco
+1. [P1] Atualizar db/schema.ts (schemaVersion=4)    ← 15 min, médio risco
+2. [P3.1] Observabilidade: logs estruturados        ← 1-2 dias, médio risco
+3. [P3.2] Health check /api/health + índices D1     ← 0,5 dia, baixo risco
+4. [P3.3] Testes por rota (21 rotas)                ← 2-3 dias, baixo risco
+5. [P3.4] Rate limiting nativo Cloudflare           ← 1 dia, médio risco
+6. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← 1-2 dias, baixo risco
+7. [P5] Segurança: verificação e-mail, 2FA, roles   ← 3-5 dias, alto risco
 ```
 
 **Justificativa da ordem:**
-- P0–P2 são débitos de higiene que travam trabalho futuro (branches confusos, schema inconsistente, doc não versionada). Resolvem rápido e reduzem ruído.
+- A limpeza de branches e o versionamento dos documentos de contexto estão concluídos; atualizar `db/schema.ts` é o próximo débito de higiene pendente.
 - P3 segue a ordem do roadmap: observabilidade primeiro (sem ela, difícil medir impacto das mudanças), depois health check (base para monitorar), depois testes (rede de segurança), por fim rate limiting (mudança de arquitetura).
 - P4 (SEO) é independente e pode rodar em paralelo com P3 se houver mais de uma pessoa.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
@@ -295,4 +271,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** estado de `main` em `f3bcb1d`.
+**Última atualização deste handoff:** estado de `main` em `2beb80a`, após o merge do PR #18 e a limpeza controlada de branches obsoletas.
