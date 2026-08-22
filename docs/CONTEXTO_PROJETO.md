@@ -247,7 +247,7 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 ### Prioridade média
 
 - Domínio personalizado.
-- Observabilidade estruturada e alertas.
+- Alertas e SLOs sobre a observabilidade estruturada.
 - Cache adicional para reduzir leituras R2.
 - Separação progressiva dos scripts inline da página inicial.
 - Testes de interface em navegador e dispositivos reais.

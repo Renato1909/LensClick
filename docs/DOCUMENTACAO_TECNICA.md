@@ -685,6 +685,10 @@ A equipe deve acompanhar:
 - mensagens e cadastros somente por consultas que excluam hashes;
 - consumo faturavel e alertas de orcamento.
 
+O Worker emite um evento estruturado `http.request.completed` por requisicao, com `request_id`, metodo, rota normalizada, status, outcome e duracao. O mesmo identificador e devolvido no header `X-Request-ID`, permitindo correlacionar uma resposta com seu registro sem expor dados pessoais.
+
+O contrato completo dos eventos, a politica de campos proibidos, as consultas recomendadas, as evidencias da validacao remota e o procedimento de rollback estao em `docs/OBSERVABILIDADE.md`.
+
 ### 13.4 Consulta segura de usuarios
 
 ```sql
@@ -731,7 +735,7 @@ A privacidade tem prioridade sobre uma URL publica simples. A foto privada passa
 ### Prioridade media
 
 - Dominio personalizado.
-- Observabilidade estruturada e alertas.
+- Alertas e SLOs sobre a observabilidade estruturada.
 - Cache adicional para reduzir leituras R2.
 - Separacao progressiva dos scripts inline da pagina inicial.
 - Testes de interface em navegador e dispositivos reais.
