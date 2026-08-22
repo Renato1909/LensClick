@@ -4,14 +4,14 @@
 >
 > **Data de referência:** 22 de agosto de 2026, com `main` em `e143d23`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Trabalho em curso:** iniciativa 1.1 em `feature/structured-observability`, validada local e remotamente e em preparação para Pull Request.
+> **Trabalho em curso:** iniciativa 1.1 em `feature/structured-observability`, validada local e remotamente e em revisão no PR #22.
 
 ---
 
 ## 1. Situação atual da main
 
 - **Branch base:** `main` → commit `e143d23` — "docs: update test documentation" (#21).
-- **Branch de trabalho:** `feature/structured-observability`, contendo somente implementação, testes, configuração e documentação da iniciativa 1.1.
+- **Branch de trabalho:** `feature/structured-observability`, PR #22, contendo somente implementação, testes, configuração e documentação da iniciativa 1.1.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
   - Status checks obrigatórios: "Testes e validação" (CI GitHub Actions "Qualidade").
@@ -189,7 +189,7 @@ Todos os PRs relevantes de #1 a #21 listados abaixo já foram **mergeados** em `
 Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`. A limpeza de branches foi concluída e os documentos permanentes de contexto foram versionados pelo PR #18. As prioridades pendentes agora são:
 
 ### P3 — Fase 1 do Roadmap (médio prazo, médio risco)
-- **1.1 Observabilidade** — implementação e validações concluídas; pendente apenas de integração do PR e publicação definitiva controlada.
+- **1.1 Observabilidade** — implementação e validações concluídas; PR #22 pendente de integração e publicação definitiva controlada.
 - **1.2 Suite de testes por rota** — cobertura de cada uma das 21 rotas.
 - **1.3 Rate limiting nativo Cloudflare** — substituir `rate_limits` D1 por solução edge.
 - **1.4 Índices e health check D1** — revisar índices, criar `/api/health`.
@@ -269,4 +269,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 22 de agosto de 2026, com `main` em `e143d23` e a iniciativa 1.1 validada em preparação para Pull Request.
+**Última atualização deste handoff:** 22 de agosto de 2026, com `main` em `e143d23` e a iniciativa 1.1 validada no PR #22.
