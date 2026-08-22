@@ -324,9 +324,22 @@ async function consumeRateLimit(env, key, limit, intervalMs) {
   return Number(record?.request_count || 0) > limit;
 }
 
-async function isRateLimited(request, env, scope, limit, intervalMs) {
+async function consumeEdgeRateLimit(limiter, key) {
+  if (!limiter || typeof limiter.limit !== 'function') return false;
+  try {
+    const result = await limiter.limit({ key: await sha256(key) });
+    return result?.success === false;
+  } catch {
+    // The existing D1 policy remains the authoritative fallback during migration.
+    return false;
+  }
+}
+
+async function isRateLimited(request, env, scope, limit, intervalMs, edgeLimiter) {
   const ip = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For')?.split(',')[0].trim() || 'local';
-  return consumeRateLimit(env, `${scope}\0${ip}`, limit, intervalMs);
+  const key = `lensclick\0${scope}\0${ip}`;
+  if (await consumeEdgeRateLimit(edgeLimiter, key)) return true;
+  return consumeRateLimit(env, key, limit, intervalMs);
 }
 
 async function sendPasswordResetEmail(env, recipient, name, resetUrl, language = 'pt') {
@@ -396,7 +409,7 @@ async function handleApi(request, env, url, context, requestContext) {
   }
 
   if (pathname === '/api/auth/register' && method === 'POST') {
-    if (await isRateLimited(request, env, pathname, 8, 15 * 60 * 1000)) {
+    if (await isRateLimited(request, env, pathname, 8, 15 * 60 * 1000, env.AUTH_RATE_LIMITER)) {
       return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });
     }
     const body = await readJson(request);
@@ -428,7 +441,7 @@ async function handleApi(request, env, url, context, requestContext) {
   }
 
   if (pathname === '/api/auth/login' && method === 'POST') {
-    if (await isRateLimited(request, env, pathname, 10, 15 * 60 * 1000)) {
+    if (await isRateLimited(request, env, pathname, 10, 15 * 60 * 1000, env.AUTH_RATE_LIMITER)) {
       return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });
     }
     const body = await readJson(request);
@@ -445,7 +458,7 @@ async function handleApi(request, env, url, context, requestContext) {
     if (!env.BREVO_API_KEY || !env.BREVO_SENDER_EMAIL) {
       return json(503, { error: 'A recuperacao de senha esta temporariamente indisponivel.' });
     }
-    if (await isRateLimited(request, env, pathname, 5, 60 * 60 * 1000)) {
+    if (await isRateLimited(request, env, pathname, 5, 60 * 60 * 1000, env.SENSITIVE_RATE_LIMITER)) {
       return json(429, { error: 'Muitas solicitacoes. Aguarde antes de tentar novamente.' });
     }
     const body = await readJson(request);
@@ -480,7 +493,7 @@ async function handleApi(request, env, url, context, requestContext) {
   }
 
   if (pathname === '/api/auth/password-reset/confirm' && method === 'POST') {
-    if (await isRateLimited(request, env, pathname, 10, 15 * 60 * 1000)) {
+    if (await isRateLimited(request, env, pathname, 10, 15 * 60 * 1000, env.AUTH_RATE_LIMITER)) {
       return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });
     }
     const body = await readJson(request);
@@ -641,7 +654,7 @@ async function handleApi(request, env, url, context, requestContext) {
   }
 
   if (pathname === '/api/account/portfolio' && method === 'POST') {
-    if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000)) {
+    if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
       return json(429, { error: 'Muitos envios. Aguarde antes de tentar novamente.' });
     }
     const current = await authenticatedUser(request, env);
@@ -738,7 +751,7 @@ async function handleApi(request, env, url, context, requestContext) {
   }
 
   if (pathname === '/api/account/professional-profile' && method === 'PUT') {
-    if (await isRateLimited(request, env, pathname, 30, 60 * 60 * 1000)) {
+    if (await isRateLimited(request, env, pathname, 30, 60 * 60 * 1000, env.ACCOUNT_RATE_LIMITER)) {
       return json(429, { error: 'Muitas alteracoes. Aguarde antes de tentar novamente.' });
     }
     const current = await authenticatedUser(request, env);
@@ -873,7 +886,7 @@ async function handleApi(request, env, url, context, requestContext) {
   }
 
   if (pathname === '/api/account/password' && method === 'PUT') {
-    if (await isRateLimited(request, env, pathname, 8, 15 * 60 * 1000)) {
+    if (await isRateLimited(request, env, pathname, 8, 15 * 60 * 1000, env.AUTH_RATE_LIMITER)) {
       return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });
     }
     const current = await authenticatedUser(request, env);
@@ -913,7 +926,7 @@ async function handleApi(request, env, url, context, requestContext) {
   }
 
   if (pathname === '/api/account' && method === 'DELETE') {
-    if (await isRateLimited(request, env, pathname, 5, 60 * 60 * 1000)) {
+    if (await isRateLimited(request, env, pathname, 5, 60 * 60 * 1000, env.SENSITIVE_RATE_LIMITER)) {
       return json(429, { error: 'Muitas tentativas. Aguarde antes de tentar novamente.' });
     }
     const current = await authenticatedUser(request, env);
@@ -955,7 +968,7 @@ async function handleApi(request, env, url, context, requestContext) {
   }
 
   if (pathname === '/api/contact' && method === 'POST') {
-    if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000)) {
+    if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
       return json(429, { error: 'Limite de mensagens atingido. Tente mais tarde.' });
     }
     const body = await readJson(request);
@@ -976,7 +989,7 @@ async function handleApi(request, env, url, context, requestContext) {
   }
 
   if (pathname === '/api/newsletter' && method === 'POST') {
-    if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000)) {
+    if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
       return json(429, { error: 'Limite de inscricoes atingido. Tente mais tarde.' });
     }
     const body = await readJson(request);
