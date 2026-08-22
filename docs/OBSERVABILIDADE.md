@@ -95,9 +95,9 @@ A amostra prova o funcionamento da agregação, mas não representa a performanc
 
 ## 7. Produção e rollback
 
-Após a validação, o deployment `95869e43-5f1b-4ad0-8776-56a559f1f65b` manteve a versão estável `3d10ad69-e0e6-48f5-ae51-a796b5ad52c4` em 100%. A candidata não permaneceu no deployment atual.
+Após o merge do PR #22, o deployment `4d1468b0-726d-4de6-a997-75fafd45a9e9` promoveu a versão validada `596a920a-b1fd-4992-b9e3-678dcc0ec25c` para 100% do tráfego. Os smoke tests de `/`, `/api/auth/me` e `/api/unknown` passaram, e cada request produziu exatamente um evento persistido com rota, status e `request_id` corretos.
 
-O merge não publica automaticamente o Worker. A implantação definitiva exige PR aprovado, CI verde e confirmação operacional.
+A versão anterior `3d10ad69-e0e6-48f5-ae51-a796b5ad52c4` permanece identificada como rollback imediato.
 
 Em uma regressão futura:
 
