@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
 import worker from '../src/worker.mjs';
 import {
   buildOperationalErrorEvent,
@@ -13,89 +12,7 @@ import {
   normalizeRoute,
   responseWithRequestId
 } from '../src/observability.mjs';
-
-class MockD1Statement {
-  constructor(database, sql) {
-    this.statement = database.prepare(sql);
-    this.values = [];
-  }
-
-  bind(...values) {
-    this.values = values;
-    return this;
-  }
-
-  first(column) {
-    const row = this.statement.get(...this.values) ?? null;
-    return column && row ? row[column] : row;
-  }
-
-  run() {
-    const result = this.statement.run(...this.values);
-    return { success: true, meta: { changes: result.changes, last_row_id: Number(result.lastInsertRowid) } };
-  }
-
-  all() {
-    return { success: true, results: this.statement.all(...this.values) };
-  }
-}
-
-class MockD1 {
-  constructor() {
-    this.database = new DatabaseSync(':memory:');
-    for (const migration of [
-      '0001_initial.sql',
-      '0002_password_reset.sql',
-      '0003_professional_profiles.sql',
-      '0004_portfolio_items.sql'
-    ]) {
-      this.database.exec(readFileSync(resolve('migrations', migration), 'utf8'));
-    }
-  }
-
-  prepare(sql) {
-    return new MockD1Statement(this.database, sql);
-  }
-
-  batch(statements) {
-    this.database.exec('BEGIN');
-    try {
-      const results = statements.map((statement) => statement.run());
-      this.database.exec('COMMIT');
-      return results;
-    } catch (error) {
-      this.database.exec('ROLLBACK');
-      throw error;
-    }
-  }
-
-  close() {
-    this.database.close();
-  }
-}
-
-class MockR2 {
-  constructor() {
-    this.objects = new Map();
-    this.failDeleteKey = '';
-  }
-
-  async put(key, value, options = {}) {
-    this.objects.set(key, { body: new Uint8Array(value), httpMetadata: options.httpMetadata || {} });
-  }
-
-  async get(key) {
-    return this.objects.get(key) || null;
-  }
-
-  async delete(key) {
-    const keys = Array.isArray(key) ? key : [key];
-    if (this.failDeleteKey && keys.includes(this.failDeleteKey)) {
-      throw new Error('R2_STACK_SECRET_CANARY');
-    }
-    for (const item of keys) this.objects.delete(item);
-  }
-}
+import { MockD1, MockR2 } from '../test-support/worker-fixture.mjs';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const REQUEST_FIELDS = [
