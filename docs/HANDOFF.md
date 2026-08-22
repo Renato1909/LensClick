@@ -2,16 +2,16 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 22 de agosto de 2026, com `main` em `e143d23`.
+> **Data de referência:** 22 de agosto de 2026, com `main` em `ba2a8d8`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Trabalho em curso:** iniciativa 1.1 em `feature/structured-observability`, validada local e remotamente e em revisão no PR #22.
+> **Estado da iniciativa 1.1:** integrada pelo PR #22; publicação definitiva do Worker ainda não realizada.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch base:** `main` → commit `e143d23` — "docs: update test documentation" (#21).
-- **Branch de trabalho:** `feature/structured-observability`, PR #22, contendo somente implementação, testes, configuração e documentação da iniciativa 1.1.
+- **Branch:** `main` → commit `ba2a8d8` — "feat: add structured observability" (#22).
+- **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
   - Status checks obrigatórios: "Testes e validação" (CI GitHub Actions "Qualidade").
@@ -134,6 +134,7 @@ Todos os PRs relevantes de #1 a #21 listados abaixo já foram **mergeados** em `
 | #19 | `44efde5` | docs: update project handoff |
 | #20 | `3db387b` | fix: sync schema catalog with migrations |
 | #21 | `e143d23` | docs: update test documentation |
+| #22 | `ba2a8d8` | feat: add structured observability |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -189,7 +190,7 @@ Todos os PRs relevantes de #1 a #21 listados abaixo já foram **mergeados** em `
 Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`. A limpeza de branches foi concluída e os documentos permanentes de contexto foram versionados pelo PR #18. As prioridades pendentes agora são:
 
 ### P3 — Fase 1 do Roadmap (médio prazo, médio risco)
-- **1.1 Observabilidade** — implementação e validações concluídas; PR #22 pendente de integração e publicação definitiva controlada.
+- **1.1 Observabilidade** — integrada pelo PR #22; pendente somente de publicação definitiva controlada e smoke pós-deploy.
 - **1.2 Suite de testes por rota** — cobertura de cada uma das 21 rotas.
 - **1.3 Rate limiting nativo Cloudflare** — substituir `rate_limits` D1 por solução edge.
 - **1.4 Índices e health check D1** — revisar índices, criar `/api/health`.
@@ -209,7 +210,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [P3.1] Integrar e publicar observabilidade       ← entrega atual
+1. [P3.1] Publicar e validar observabilidade        ← entrega atual
 2. [P3.2] Testes por rota (21 rotas)                ← 2-3 dias, baixo risco
 3. [P3.3] Rate limiting nativo Cloudflare           ← 1 dia, médio risco
 4. [P3.4] Health check /api/health + índices D1     ← 0,5 dia, baixo risco
@@ -269,4 +270,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 22 de agosto de 2026, com `main` em `e143d23` e a iniciativa 1.1 validada no PR #22.
+**Última atualização deste handoff:** 22 de agosto de 2026, com `main` em `ba2a8d8` após o merge do PR #22; publicação controlada pendente.
