@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 22 de agosto de 2026, com `main` em `84cea0c`.
+> **Data de referência:** 22 de agosto de 2026, com `main` em `0aad905`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado da iniciativa 1.1:** integrada pelo PR #22 e publicada com smoke test e logs pós-deploy aprovados.
+> **Estado da Fase 1:** iniciativas 1.1 e 1.2 concluídas; a próxima prioridade é a iniciativa 1.3.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `84cea0c` — "docs: finalize observability handoff" (#23).
+- **Branch:** `main` → commit `0aad905` — "test: complete API route contracts" (#28).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -76,7 +76,7 @@ A limpeza controlada foi concluída após comparar a árvore de cada branch obso
 
 ## 3. Funcionalidades em desenvolvimento
 
-A iniciativa 1.1 está em andamento na branch `feature/structured-observability`; as funcionalidades de produto abaixo já estão em `main` e em produção:
+Não há iniciativa em desenvolvimento em uma branch ativa. A observabilidade estruturada (1.1) está publicada e validada em produção; a suíte de contratos por rota (1.2) está integrada em `main`. As funcionalidades de produto abaixo já estão em `main` e em produção:
 
 ### Funcionalidades entregues
 
@@ -104,13 +104,13 @@ A iniciativa 1.1 está em andamento na branch `feature/structured-observability`
 - Sem cache via `caches.default`.
 - Sem 2FA / verificação de e-mail.
 - Sem rate limiting nativo Cloudflare (atualmente D1 simples em `rate_limits`).
-- Sem cobertura de testes por rota (testes existentes são por fase/feature, não por rota).
+- A suíte de contratos cobre os 21 padrões de rota e os 24 contratos HTTP catalogados; testes ponta a ponta com serviços reais permanecem fora do escopo atual.
 
 ---
 
 ## 4. PRs relevantes
 
-Todos os PRs relevantes de #1 a #21 listados abaixo já foram **mergeados** em `main`. Histórico (squash, fast-forward):
+Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squash, fast-forward):
 
 | PR | Commit | Descrição |
 |---|---|---|
@@ -136,6 +136,11 @@ Todos os PRs relevantes de #1 a #21 listados abaixo já foram **mergeados** em `
 | #21 | `e143d23` | docs: update test documentation |
 | #22 | `ba2a8d8` | feat: add structured observability |
 | #23 | `84cea0c` | docs: finalize observability handoff |
+| #24 | `051c6be` | docs: record observability deployment |
+| #25 | `26f9124` | test: add authentication route contracts |
+| #26 | `af8674f` | test: add account route contracts |
+| #27 | `6720d61` | test: add portfolio and public route contracts |
+| #28 | `0aad905` | test: complete API route contracts |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -161,6 +166,7 @@ Todos os PRs relevantes de #1 a #21 listados abaixo já foram **mergeados** em `
 - **R2 privado** — imagens de perfil e portfólio não são públicas; servidas via Worker.
 - **Brevo** como provedor de e-mail transacional (recuperação de senha).
 - **Migrações imutáveis** — regra estabelecida: nunca editar migração publicada.
+- **Contratos por rota** — a iniciativa 1.2 consolidou infraestrutura compartilhada de testes e cobriu os 21 padrões de rota e 24 contratos HTTP catalogados, sem alterar código de produção.
 
 ---
 
@@ -192,7 +198,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 
 ### P3 — Fase 1 do Roadmap (médio prazo, médio risco)
 - **1.1 Observabilidade** — concluída: integrada pelo PR #22, publicada e validada em produção.
-- **1.2 Suite de testes por rota** — cobertura de cada uma das 21 rotas.
+- **1.2 Suíte de testes por rota** — concluída pelos PRs #25–#28: 21 padrões de rota e 24 contratos HTTP cobertos; 116 testes aprovados no snapshot de integração.
 - **1.3 Rate limiting nativo Cloudflare** — substituir `rate_limits` D1 por solução edge.
 - **1.4 Índices e health check D1** — revisar índices, criar `/api/health`.
 
@@ -211,16 +217,16 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [P3.2] Testes por rota (21 rotas)                ← 2-3 dias, baixo risco
-2. [P3.3] Rate limiting nativo Cloudflare           ← 1 dia, médio risco
-3. [P3.4] Health check /api/health + índices D1     ← 0,5 dia, baixo risco
-4. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← 1-2 dias, baixo risco
-5. [P5] Segurança: verificação e-mail, 2FA, roles   ← 3-5 dias, alto risco
+1. [P3.3] Rate limiting nativo Cloudflare           ← 1 dia, médio risco
+2. [P3.4] Health check /api/health + índices D1     ← 0,5 dia, baixo risco
+3. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← 1-2 dias, baixo risco
+4. [P5] Segurança: verificação e-mail, 2FA, roles   ← 3-5 dias, alto risco
 ```
 
 **Justificativa da ordem:**
 - O catálogo `db/schema.ts` já foi sincronizado pelo PR #20 e a observabilidade foi validada antes da integração.
-- A próxima iniciativa de desenvolvimento é a 1.2, que amplia a cobertura de regressão por rota antes das mudanças de rate limiting e health check.
+- A iniciativa 1.2 criou a cobertura de regressão necessária antes das mudanças de rate limiting e health check.
+- A próxima iniciativa de desenvolvimento é a 1.3, que deve substituir gradualmente o controle simples em D1 por uma solução edge, com rollback documentado.
 - P4 (SEO) é independente e pode rodar em paralelo com P3 se houver mais de uma pessoa.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
@@ -270,4 +276,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 22 de agosto de 2026, com `main` em `84cea0c`; iniciativa 1.1 publicada no deployment `4d1468b0-726d-4de6-a997-75fafd45a9e9` e validada em produção.
+**Última atualização deste handoff:** 22 de agosto de 2026, com `main` em `0aad905`; iniciativa 1.1 publicada no deployment `4d1468b0-726d-4de6-a997-75fafd45a9e9` e validada em produção; iniciativa 1.2 integrada pelos PRs #25–#28, com os 21 padrões de rota e 24 contratos HTTP catalogados cobertos.
