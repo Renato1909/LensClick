@@ -1,3 +1,11 @@
+import {
+  completeRequest,
+  createRequestContext,
+  errorCategoryForStatus,
+  reportOperationalError,
+  responseWithRequestId
+} from './observability.mjs';
+
 const SESSION_COOKIE = 'lensclick_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
@@ -380,7 +388,7 @@ function decodeProfilePicture(dataUrl) {
   };
 }
 
-async function handleApi(request, env, url, context) {
+async function handleApi(request, env, url, context, requestContext) {
   const { pathname } = url;
   const method = request.method.toUpperCase();
   if (!['GET', 'HEAD'].includes(method) && !requestOriginIsAllowed(request)) {
@@ -462,8 +470,8 @@ async function handleApi(request, env, url, context) {
 
     const resetUrl = new URL('/redefinir-senha.html', request.url);
     resetUrl.searchParams.set('token', token);
-    const delivery = sendPasswordResetEmail(env, user.email, user.name, resetUrl.toString(), language).catch(async (error) => {
-      console.error('LensClick password reset delivery error:', error);
+    const delivery = sendPasswordResetEmail(env, user.email, user.name, resetUrl.toString(), language).catch(async () => {
+      reportOperationalError(requestContext, 'email.password_reset.delivery_failed', 'email_delivery_error');
       await env.DB.prepare('DELETE FROM password_reset_tokens WHERE token_hash = ?').bind(await sha256(token)).run();
     });
     if (context?.waitUntil) context.waitUntil(delivery);
@@ -856,8 +864,8 @@ async function handleApi(request, env, url, context) {
     if (current.profile_pic_key && current.profile_pic_key !== nextPictureKey) {
       try {
         await env.PROFILE_IMAGES.delete(current.profile_pic_key);
-      } catch (error) {
-        console.error('LensClick stale profile picture cleanup error:', error);
+      } catch {
+        reportOperationalError(requestContext, 'storage.profile_picture.cleanup_failed', 'storage_error');
       }
     }
     const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(current.id).first();
@@ -984,9 +992,9 @@ async function handleApi(request, env, url, context) {
   return json(404, { error: 'Endpoint nao encontrado.' });
 }
 
-async function handleRequest(request, env, context) {
+async function handleRequest(request, env, context, requestContext) {
   const url = new URL(request.url);
-  if (url.pathname.startsWith('/api/')) return handleApi(request, env, url, context);
+  if (url.pathname.startsWith('/api/')) return handleApi(request, env, url, context, requestContext);
   const assetResponse = await env.ASSETS.fetch(request);
   const headers = new Headers(assetResponse.headers);
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
@@ -996,12 +1004,20 @@ async function handleRequest(request, env, context) {
 
 export default {
   async fetch(request, env, context) {
+    const requestContext = createRequestContext(request, {
+      sink: typeof env?.OBSERVABILITY_LOG_SINK === 'function' ? env.OBSERVABILITY_LOG_SINK : undefined
+    });
+    let response;
+    let errorCategory;
     try {
-      return await handleRequest(request, env, context);
+      response = await handleRequest(request, env, context, requestContext);
     } catch (error) {
-      console.error('LensClick Worker error:', error);
       const status = Number(error?.status) || 500;
-      return json(status, { error: status < 500 ? error.message : 'Nao foi possivel concluir a operacao.' });
+      errorCategory = errorCategoryForStatus(status);
+      response = json(status, { error: status < 500 ? error.message : 'Nao foi possivel concluir a operacao.' });
     }
+    const instrumentedResponse = responseWithRequestId(response, requestContext.requestId);
+    completeRequest(requestContext, instrumentedResponse.status, { errorCategory });
+    return instrumentedResponse;
   }
 };

@@ -2,16 +2,16 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** estado do repositório em `main` HEAD `2beb80a`.
+> **Data de referência:** 22 de agosto de 2026, com `main` em `e143d23`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Escopo:** apenas documentação. Nenhum código foi alterado, nenhum commit ou push foi feito.
+> **Trabalho em curso:** iniciativa 1.1 em `feature/structured-observability`, validada local e remotamente e em preparação para Pull Request.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `2beb80a` — "docs: add permanent project context (#18)".
-- **Working tree:** somente `docs/HANDOFF.md` modificado e não adicionado ao staging, como parte desta atualização operacional; nenhum código foi alterado.
+- **Branch base:** `main` → commit `e143d23` — "docs: update test documentation" (#21).
+- **Branch de trabalho:** `feature/structured-observability`, contendo somente implementação, testes, configuração e documentação da iniciativa 1.1.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
   - Status checks obrigatórios: "Testes e validação" (CI GitHub Actions "Qualidade").
@@ -38,7 +38,7 @@
 | i18n | `public/lang.js` (`window.i18n`) — PT/EN |
 | UX | `public/ux.js` (`window.LensClickUX`) |
 | Design tokens | `public/refinements.css` (prefixo `--lc-*`) |
-| Testes | Node.js test runner (`node --test`) — 55 testes, 14 arquivos |
+| Testes | Node.js test runner (`node --test`) — execute `npm test` para consultar o total atual |
 | Node | >=22.13.0 |
 | Wrangler | ^4.0.0 (única devDep) |
 
@@ -76,7 +76,7 @@ A limpeza controlada foi concluída após comparar a árvore de cada branch obso
 
 ## 3. Funcionalidades em desenvolvimento
 
-Não há funcionalidades em andamento ativo em branches locais. Todo o trabalho já está em `main`. As funcionalidades abaixo **já estão em produção**:
+A iniciativa 1.1 está em andamento na branch `feature/structured-observability`; as funcionalidades de produto abaixo já estão em `main` e em produção:
 
 ### Funcionalidades entregues
 
@@ -104,14 +104,13 @@ Não há funcionalidades em andamento ativo em branches locais. Todo o trabalho 
 - Sem cache via `caches.default`.
 - Sem 2FA / verificação de e-mail.
 - Sem rate limiting nativo Cloudflare (atualmente D1 simples em `rate_limits`).
-- Sem logs estruturados / observabilidade.
 - Sem cobertura de testes por rota (testes existentes são por fase/feature, não por rota).
 
 ---
 
 ## 4. PRs relevantes
 
-Todos os PRs relevantes de #1 a #18 listados abaixo já foram **mergeados** em `main`. Histórico (squash, fast-forward):
+Todos os PRs relevantes de #1 a #21 listados abaixo já foram **mergeados** em `main`. Histórico (squash, fast-forward):
 
 | PR | Commit | Descrição |
 |---|---|---|
@@ -132,6 +131,9 @@ Todos os PRs relevantes de #1 a #18 listados abaixo já foram **mergeados** em `
 | #16 | `fc45330` | docs: finalize technical roadmap baseline |
 | #17 | `f3bcb1d` | chore: adiciona 10 agentes do Copilot |
 | #18 | `2beb80a` | docs: add permanent project context |
+| #19 | `44efde5` | docs: update project handoff |
+| #20 | `3db387b` | fix: sync schema catalog with migrations |
+| #21 | `e143d23` | docs: update test documentation |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -164,22 +166,21 @@ Todos os PRs relevantes de #1 a #18 listados abaixo já foram **mergeados** em `
 
 ### Críticos
 
-1. **`db/schema.ts` desatualizado** — `schemaVersion = 2`, lista apenas 6 tabelas (faltam `professional_profiles` e `portfolio_items`). O D1 real tem 8 tabelas (schema version 4). Qualquer código que confie em `schema.ts` para validação/migração está inconsistente.
-2. **Sem 2FA / verificação de e-mail** — contas podem ser criadas com e-mail não verificado; risco de abuso e account takeover.
-3. **Rate limiting simples em D1** — `rate_limits` é uma tabela D1, não o rate limiting nativo Cloudflare. Sob carga, consome quota de D1 e não escala como edge.
-4. **Roles não autorizam áreas** — não há autorização por papel; qualquer usuário autenticado acessa as mesmas rotas.
+1. **Sem 2FA / verificação de e-mail** — contas podem ser criadas com e-mail não verificado; risco de abuso e account takeover.
+2. **Rate limiting simples em D1** — `rate_limits` é uma tabela D1, não o rate limiting nativo Cloudflare. Sob carga, consome quota de D1 e não escala como edge.
+3. **Roles não autorizam áreas** — não há autorização por papel; qualquer usuário autenticado acessa as mesmas rotas.
 
 ### Técnicos
 
-5. **Hotspots de conflito** — `src/worker.mjs` (926 linhas, 21 rotas em cadeia if/regex) e `public/lang.js` (933 linhas) são tocados por praticamente toda feature. Alto risco de conflito de merge.
-6. **Sem observabilidade** — sem logs estruturados; difícil diagnosticar incidentes em produção.
-7. **Sem health check** — sem endpoint `/api/health` ou verificação de D1/R2.
-8. **SEO incompleto** — sem `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD. Impacta indexação e compartilhamento social.
-9. **Sem cache** — `caches.default` não utilizado; toda requisição pode bater no D1/R2.
+4. **Hotspots de conflito** — `src/worker.mjs` e `public/lang.js` são tocados por praticamente toda feature. Alto risco de conflito de merge.
+5. **Sem alertas e SLOs** — os logs estruturados existem, mas a detecção proativa pertence à Fase 4.
+6. **Sem health check** — sem endpoint `/api/health` ou verificação de D1/R2.
+7. **SEO incompleto** — sem `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD. Impacta indexação e compartilhamento social.
+8. **Sem cache** — `caches.default` não utilizado; toda requisição pode bater no D1/R2.
 
 ### Legais / Processo
 
-10. **Termos e política precisam de revisão legal** — `public/termos.html` e `public/privacidade.html` são rascunhos.
+9. **Termos e política precisam de revisão legal** — `public/termos.html` e `public/privacidade.html` são rascunhos.
 
 ---
 
@@ -187,11 +188,8 @@ Todos os PRs relevantes de #1 a #18 listados abaixo já foram **mergeados** em `
 
 Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`. A limpeza de branches foi concluída e os documentos permanentes de contexto foram versionados pelo PR #18. As prioridades pendentes agora são:
 
-### P1 — Atualizar `db/schema.ts` (rápido, médio risco)
-- Atualizar `schemaVersion` para 4 e adicionar `professional_profiles` e `portfolio_items` em `tables`. Manter sincronizado com as migrações 0003 e 0004.
-
 ### P3 — Fase 1 do Roadmap (médio prazo, médio risco)
-- **1.1 Observabilidade** — logs estruturados no Worker.
+- **1.1 Observabilidade** — implementação e validações concluídas; pendente apenas de integração do PR e publicação definitiva controlada.
 - **1.2 Suite de testes por rota** — cobertura de cada uma das 21 rotas.
 - **1.3 Rate limiting nativo Cloudflare** — substituir `rate_limits` D1 por solução edge.
 - **1.4 Índices e health check D1** — revisar índices, criar `/api/health`.
@@ -211,18 +209,17 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [P1] Atualizar db/schema.ts (schemaVersion=4)    ← 15 min, médio risco
-2. [P3.1] Observabilidade: logs estruturados        ← 1-2 dias, médio risco
-3. [P3.2] Health check /api/health + índices D1     ← 0,5 dia, baixo risco
-4. [P3.3] Testes por rota (21 rotas)                ← 2-3 dias, baixo risco
-5. [P3.4] Rate limiting nativo Cloudflare           ← 1 dia, médio risco
-6. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← 1-2 dias, baixo risco
-7. [P5] Segurança: verificação e-mail, 2FA, roles   ← 3-5 dias, alto risco
+1. [P3.1] Integrar e publicar observabilidade       ← entrega atual
+2. [P3.2] Testes por rota (21 rotas)                ← 2-3 dias, baixo risco
+3. [P3.3] Rate limiting nativo Cloudflare           ← 1 dia, médio risco
+4. [P3.4] Health check /api/health + índices D1     ← 0,5 dia, baixo risco
+5. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← 1-2 dias, baixo risco
+6. [P5] Segurança: verificação e-mail, 2FA, roles   ← 3-5 dias, alto risco
 ```
 
 **Justificativa da ordem:**
-- A limpeza de branches e o versionamento dos documentos de contexto estão concluídos; atualizar `db/schema.ts` é o próximo débito de higiene pendente.
-- P3 segue a ordem do roadmap: observabilidade primeiro (sem ela, difícil medir impacto das mudanças), depois health check (base para monitorar), depois testes (rede de segurança), por fim rate limiting (mudança de arquitetura).
+- O catálogo `db/schema.ts` já foi sincronizado pelo PR #20 e a observabilidade foi validada antes da integração.
+- A próxima iniciativa de desenvolvimento é a 1.2, que amplia a cobertura de regressão por rota antes das mudanças de rate limiting e health check.
 - P4 (SEO) é independente e pode rodar em paralelo com P3 se houver mais de uma pessoa.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
@@ -251,13 +248,14 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 
 ### Hotspots de conflito
 
-- `src/worker.mjs` (926 linhas) — toda feature de backend toca este arquivo. Trabalhar em branches curtos e merge rápido para reduzir conflitos.
-- `public/lang.js` (933 linhas) — toda feature de UI adiciona chaves de i18n aqui. Mesma recomendação.
+- `src/worker.mjs` — toda feature de backend toca este arquivo. Trabalhar em branches curtos e merge rápido para reduzir conflitos.
+- `public/lang.js` — toda feature de UI adiciona chaves de i18n aqui. Mesma recomendação.
 
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
 - `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 1 em andamento).
+- `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/DOCUMENTACAO_TECNICA.md` — documentação técnica detalhada.
 - `DESIGN_SYSTEM.md` — guia de design e tokens.
 - `CONTRIBUTING.md` — fluxo de contribuição.
@@ -271,4 +269,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** estado de `main` em `2beb80a`, após o merge do PR #18 e a limpeza controlada de branches obsoletas.
+**Última atualização deste handoff:** 22 de agosto de 2026, com `main` em `e143d23` e a iniciativa 1.1 validada em preparação para Pull Request.

@@ -2,7 +2,7 @@
 
 > **Premissa**: evoluir sem quebrar. Cada iniciativa e aditiva e reversivel. Nenhuma recomenda reescrita completa - o monolito atual e simples, testavel e adequado ao estadio do produto.
 >
-> **Arquitetura atual**: Worker unico Cloudflare (`src/worker.mjs`, 926 linhas, 21 rotas em cadeia de `if pathname ===`/regex) - D1 `lensclick-db` (8 tabelas: `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`) - R2 `lensclick-profile-images` - Frontend HTML/JS/CSS vanilla (23 arquivos em `public/`) - 14 arquivos de teste - Rate limiting via D1 - Sessoes por cookie (PBKDF2-SHA256, 100k iteracoes) - CSP rigorosa - Lazy loading nativo ja presente em `photographer-profile.js` (sem `srcset`/variantes) - Sem `sitemap.xml`, `robots.txt`, `/api/health`, `caches.default`, OG/JSON-LD/meta description dinamica.
+> **Arquitetura atual**: Worker unico Cloudflare (`src/worker.mjs`, 21 rotas em cadeia de `if pathname ===`/regex) - D1 `lensclick-db` (8 tabelas: `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`) - R2 `lensclick-profile-images` - Frontend HTML/JS/CSS vanilla (23 arquivos em `public/`) - suite automatizada de testes - Rate limiting via D1 - Sessoes por cookie (PBKDF2-SHA256, 100k iteracoes) - CSP rigorosa - Lazy loading nativo ja presente em `photographer-profile.js` (sem `srcset`/variantes) - Sem `sitemap.xml`, `robots.txt`, `/api/health`, `caches.default`, OG/JSON-LD/meta description dinamica.
 >
 > **Agentes disponiveis**: Arquiteto de Software, Engenheiro Frontend, Engenheiro Backend, Engenheiro de Banco de Dados, Engenheiro DevOps, Engenheiro de QA, Designer, Especialista em Seguranca, Especialista em SEO e Performance, Especialista em Marketing para Fotografia, Revisor de Codigo.
 
@@ -14,12 +14,14 @@
 
 ### 1.1 Observabilidade e logs estruturados
 
+> **Estado:** implementação concluída e validada em ambiente remoto controlado. O contrato, as evidências, as consultas e o procedimento de rollback estão em `docs/OBSERVABILIDADE.md`.
+
 1. **Nome da iniciativa**: Observabilidade da edge - logs estruturados e metricas de requisicao.
 2. **Objetivo**: Tornar todo erro e latencia visiveis em producao, sem depender de `console.error` textual.
-3. **Problema resolvido**: Hoje o `catch` global loga `console.error('LensClick Worker error:', error)` - texto nao estruturado, sem correlacao por requisicao, sem metricas de p95/latencia por rota. Debug em producao e reativo e cego.
+3. **Problema resolvido**: O `catch` global usava `console.error` textual, sem correlacao por requisicao nem metricas de p95/latencia por rota. O modulo estruturado e o `X-Request-ID` eliminam esse diagnostico reativo e cego.
 4. **Impacto esperado**: Reducao do MTTR (tempo de diagnostico) de horas para minutos; capacidade de detectar degradacao antes de usuarios reportarem; base para alertas.
-5. **Complexidade**: Media - integrar `wrangler.toml` com Cloudflare Analytics Engine ou Logpush; adicionar `requestId` por header e propagar; estruturar logs como JSON.
-6. **Riscos**: Custo de Logpush em volumes altos; necessidade de sanitizar logs (nao logar tokens/PII). Mitigacao: amostragem e allowlist de campos.
+5. **Complexidade**: Media - modulo isolado de observabilidade, integracao global no Worker, `X-Request-ID` e Workers Logs nativos.
+6. **Riscos**: Volume de eventos e exposicao indevida de tokens/PII. Mitigacao: amostragem configuravel, rotas normalizadas e allowlist fechada de campos.
 7. **Dependencias**: Nenhuma - pode ser feita isoladamente no `worker.mjs`.
 8. **Agentes envolvidos**: Engenheiro DevOps, Engenheiro Backend, Especialista em Seguranca (revisao de sanitizacao).
 9. **Ordem recomendada**: **1a** - e a base que habilita medir o impacto de tudo o que vem depois.
