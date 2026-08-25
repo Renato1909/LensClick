@@ -70,6 +70,27 @@ Consultas recomendadas:
 3. acompanhar erros e respostas `429` nos Workers Logs;
 4. manter as duas camadas até existir evidência de produção suficiente para uma segunda etapa.
 
+### Evidência de produção
+
+O escudo foi publicado em 22 de agosto de 2026, no deployment
+`1fc5d64a-4bbb-4f17-8426-d865fdf1647c`, com a versão
+`5cfdce8a-5f22-4579-8fb3-ddb294bf68a7` atendendo 100% do tráfego.
+
+Após aproximadamente 58 horas, a janela entre
+`2026-08-22T14:37:29.802Z` e `2026-08-25T01:01:29.606Z` apresentou:
+
+- 23 eventos estruturados `http.request.completed`;
+- 12 respostas classificadas como sucesso e 11 como erro do cliente;
+- nenhuma resposta `429`;
+- nenhum erro `5xx`;
+- p95 global de 501 ms e máximo observado de 538 ms.
+
+O volume ainda é pequeno e não serve como referência de SLO, mas é suficiente
+para a validação inicial de regressão: não houve falso positivo do escudo nem
+falha de servidor. Uma checagem funcional adicional confirmou a página inicial
+com `200`, a busca pública com `200` e `/api/auth/me` sem sessão com o `401`
+esperado. Não foi necessário rollback.
+
 ### Rollback
 
 Reimplantar a versão anterior do Worker restaura imediatamente o comportamento somente-D1. Como nenhuma migration é modificada e a tabela permanece ativa, o rollback não exige operação no banco nem recuperação de dados.

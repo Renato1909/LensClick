@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 22 de agosto de 2026, com `main` em `0aad905`.
+> **Data de referência:** 24 de agosto de 2026, com `main` em `3f95de2`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado da Fase 1:** iniciativas 1.1 e 1.2 concluídas; a próxima prioridade é a iniciativa 1.3.
+> **Estado da Fase 1:** iniciativas 1.1, 1.2 e 1.3 concluídas; a próxima prioridade é a iniciativa 1.4.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `0aad905` — "test: complete API route contracts" (#28).
+- **Branch:** `main` → commit `3f95de2` — "feat: add native rate limit shield" (#30).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -76,7 +76,7 @@ A limpeza controlada foi concluída após comparar a árvore de cada branch obso
 
 ## 3. Funcionalidades em desenvolvimento
 
-Não há iniciativa em desenvolvimento em uma branch ativa. A observabilidade estruturada (1.1) está publicada e validada em produção; a suíte de contratos por rota (1.2) está integrada em `main`. As funcionalidades de produto abaixo já estão em `main` e em produção:
+Não há iniciativa em desenvolvimento em uma branch ativa. A observabilidade estruturada (1.1), a suíte de contratos por rota (1.2) e o escudo nativo de rate limiting (1.3) estão integrados e validados em produção. As funcionalidades de produto abaixo já estão em `main` e em produção:
 
 ### Funcionalidades entregues
 
@@ -103,7 +103,7 @@ Não há iniciativa em desenvolvimento em uma branch ativa. A observabilidade es
 - Sem Open Graph / JSON-LD (SEO social e dados estruturados).
 - Sem cache via `caches.default`.
 - Sem 2FA / verificação de e-mail.
-- Sem rate limiting nativo Cloudflare (atualmente D1 simples em `rate_limits`).
+- O rate limiting permanece deliberadamente híbrido: escudo de rajada nativo na edge e políticas longas autoritativas no D1.
 - A suíte de contratos cobre os 21 padrões de rota e os 24 contratos HTTP catalogados; testes ponta a ponta com serviços reais permanecem fora do escopo atual.
 
 ---
@@ -141,6 +141,8 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #26 | `af8674f` | test: add account route contracts |
 | #27 | `6720d61` | test: add portfolio and public route contracts |
 | #28 | `0aad905` | test: complete API route contracts |
+| #29 | `11d11aa` | docs: finalize route contract handoff |
+| #30 | `3f95de2` | feat: add native rate limit shield |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -167,6 +169,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 - **Brevo** como provedor de e-mail transacional (recuperação de senha).
 - **Migrações imutáveis** — regra estabelecida: nunca editar migração publicada.
 - **Contratos por rota** — a iniciativa 1.2 consolidou infraestrutura compartilhada de testes e cobriu os 21 padrões de rota e 24 contratos HTTP catalogados, sem alterar código de produção.
+- **Rate limiting híbrido** — a iniciativa 1.3 adicionou quatro bindings nativos de 60 segundos como escudo de rajada e preservou as políticas longas no D1 como camada autoritativa e fallback.
 
 ---
 
@@ -175,7 +178,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 ### Críticos
 
 1. **Sem 2FA / verificação de e-mail** — contas podem ser criadas com e-mail não verificado; risco de abuso e account takeover.
-2. **Rate limiting simples em D1** — `rate_limits` é uma tabela D1, não o rate limiting nativo Cloudflare. Sob carga, consome quota de D1 e não escala como edge.
+2. **Políticas longas ainda usam D1** — o escudo nativo protege rajadas, mas as janelas de 15 minutos e 1 hora continuam em `rate_limits`. A arquitetura é intencional e segura, porém ainda consome D1 nas rotas protegidas.
 3. **Roles não autorizam áreas** — não há autorização por papel; qualquer usuário autenticado acessa as mesmas rotas.
 
 ### Técnicos
@@ -199,8 +202,8 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### P3 — Fase 1 do Roadmap (médio prazo, médio risco)
 - **1.1 Observabilidade** — concluída: integrada pelo PR #22, publicada e validada em produção.
 - **1.2 Suíte de testes por rota** — concluída pelos PRs #25–#28: 21 padrões de rota e 24 contratos HTTP cobertos; 116 testes aprovados no snapshot de integração.
-- **1.3 Rate limiting nativo Cloudflare** — substituir `rate_limits` D1 por solução edge.
-- **1.4 Índices e health check D1** — revisar índices, criar `/api/health`.
+- **1.3 Rate limiting nativo Cloudflare** — concluída pelo PR #30 e validada em produção após aproximadamente 58 horas: 0 respostas `429` inesperadas, 0 erros `5xx` e nenhum rollback.
+- **1.4 Índices e health check D1** — próxima iniciativa: revisar índices justificados pelas consultas reais e criar `/api/health`.
 
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD.
@@ -217,16 +220,15 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [P3.3] Rate limiting nativo Cloudflare           ← 1 dia, médio risco
-2. [P3.4] Health check /api/health + índices D1     ← 0,5 dia, baixo risco
-3. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← 1-2 dias, baixo risco
-4. [P5] Segurança: verificação e-mail, 2FA, roles   ← 3-5 dias, alto risco
+1. [P3.4] Health check /api/health + índices D1     ← 0,5 dia, baixo risco
+2. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← 1-2 dias, baixo risco
+3. [P5] Segurança: verificação e-mail, 2FA, roles   ← 3-5 dias, alto risco
 ```
 
 **Justificativa da ordem:**
 - O catálogo `db/schema.ts` já foi sincronizado pelo PR #20 e a observabilidade foi validada antes da integração.
 - A iniciativa 1.2 criou a cobertura de regressão necessária antes das mudanças de rate limiting e health check.
-- A próxima iniciativa de desenvolvimento é a 1.3, que deve substituir gradualmente o controle simples em D1 por uma solução edge, com rollback documentado.
+- A iniciativa 1.3 foi concluída com uma arquitetura híbrida e rollback documentado; a próxima iniciativa de desenvolvimento é a 1.4.
 - P4 (SEO) é independente e pode rodar em paralelo com P3 se houver mais de uma pessoa.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
@@ -263,6 +265,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
 - `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 1 em andamento).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
+- `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/DOCUMENTACAO_TECNICA.md` — documentação técnica detalhada.
 - `DESIGN_SYSTEM.md` — guia de design e tokens.
 - `CONTRIBUTING.md` — fluxo de contribuição.
@@ -276,4 +279,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 22 de agosto de 2026, com `main` em `0aad905`; iniciativa 1.1 publicada no deployment `4d1468b0-726d-4de6-a997-75fafd45a9e9` e validada em produção; iniciativa 1.2 integrada pelos PRs #25–#28, com os 21 padrões de rota e 24 contratos HTTP catalogados cobertos.
+**Última atualização deste handoff:** 24 de agosto de 2026, com `main` em `3f95de2`; iniciativas 1.1 e 1.2 concluídas; iniciativa 1.3 integrada pelo PR #30, publicada no deployment `1fc5d64a-4bbb-4f17-8426-d865fdf1647c` e validada em produção após aproximadamente 58 horas, sem respostas `429` inesperadas, erros `5xx` ou rollback.
