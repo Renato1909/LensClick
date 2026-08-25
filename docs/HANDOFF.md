@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 25 de agosto de 2026, com `main` em `de4c2d0`.
+> **Data de referência:** 25 de agosto de 2026, com `main` em `8b44417`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado da Fase 1:** iniciativas 1.1–1.4 e o marco de transição concluídos; a próxima prioridade é a iniciativa 2.1.
+> **Estado do roadmap:** Fase 1, marco de transição e iniciativa 2.1 concluídos; a próxima prioridade é a iniciativa 2.2.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `de4c2d0` — "refactor: extract request router" (#34).
+- **Branch:** `main` → commit `8b44417` — "feat: add guided photographer onboarding" (#36).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -84,6 +84,7 @@ Não há iniciativa em desenvolvimento em uma branch ativa. As quatro iniciativa
 - **Cadastro e login** — autenticação com PBKDF2, sessões em D1.
 - **Recuperação de senha** — fluxo via Brevo com tokens de uso único (`password_reset_tokens`).
 - **Central da conta** (`public/perfil.html`) — edição de perfil, troca de senha, exclusão definitiva.
+- **Onboarding profissional guiado** (`public/perfil.html`) — fluxo em etapas, validação contextual e retomada do rascunho persistido no D1.
 - **Upload de foto de perfil** — armazenamento em R2 (bucket privado).
 - **Exclusão definitiva da conta** — com confirmação e limpeza de dados.
 - **Perfil profissional público** (`public/fotografo.html`) — `professional_profiles`.
@@ -147,6 +148,8 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #32 | `f94413e` | feat: add D1 health check and search indexes |
 | #33 | `57b0e8c` | docs: close D1 health initiative |
 | #34 | `de4c2d0` | refactor: extract request router |
+| #35 | `52dbeb7` | docs: close router transition |
+| #36 | `8b44417` | feat: add guided photographer onboarding |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -217,9 +220,14 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Validado com 128 testes, smoke local completo, CI e smoke de produção.
 - Versão `c989bdad-ea2a-4b33-8088-f16ae355928b` servindo 100% do tráfego; zero `5xx`, zero erro operacional e nenhum rollback no smoke inicial.
 
-### Fase 2.1 — próxima ação
-- Planejar e implementar o onboarding guiado do fotógrafo em PRs de escopo controlado.
-- Preservar salvamento parcial, acessibilidade, PT/EN e o comportamento das APIs existentes.
+### Fase 2.1 — concluída
+- Integrada pelo PR #36 com wizard acessível e bilíngue, validação por etapa e retomada do rascunho persistido pela API existente no D1.
+- Validada com 129 testes, build do Wrangler, CI, revisão visual local e smoke de produção.
+- Versão `8df9581d-5dc9-40b2-80c3-76b52e12865e` servindo 100% do tráfego; zero `5xx`, zero exceção operacional e nenhum rollback no smoke inicial.
+
+### Fase 2.2 — próxima ação
+- Planejar e implementar filtros avançados e ordenação na busca em PRs de escopo controlado.
+- Preservar paginação, privacidade dos perfis não publicados, índices existentes e contratos HTTP atuais.
 
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD.
@@ -236,10 +244,11 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Fase 2.1] Onboarding guiado do fotógrafo       ← próxima evolução de produto
-2. [Fase 2.2] Busca com filtros e ordenação         ← após o onboarding
-3. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← 1-2 dias, baixo risco
-4. [P5] Segurança: verificação e-mail, 2FA, roles   ← 3-5 dias, alto risco
+1. [Fase 2.2] Busca com filtros e ordenação         ← próxima evolução de produto
+2. [Fase 2.3] Galeria com markup responsivo         ← após a busca
+3. [Fase 2.4] Internacionalização por catálogos     ← conforme prioridade internacional
+4. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← após as melhorias centrais de experiência
+5. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
 ```
 
 **Justificativa da ordem:**
@@ -247,7 +256,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - A iniciativa 1.2 criou a cobertura de regressão necessária antes das mudanças de rate limiting e health check.
 - A iniciativa 1.3 foi concluída com uma arquitetura híbrida e rollback documentado.
 - A iniciativa 1.4 foi concluída com migration remota, health check e smoke test de produção; a Fase 1 está encerrada.
-- O marco estrutural do roteador foi concluído e validado em produção; a Fase 2 pode começar.
+- O marco estrutural do roteador e a iniciativa 2.1 foram concluídos e validados em produção; a Fase 2 segue pela busca avançada da iniciativa 2.2.
 - P4 (SEO) é independente e pode ocorrer depois do marco de transição.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
@@ -282,7 +291,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 1 e marco de transição concluídos; Fase 2.1 é o próximo passo).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 1, marco de transição e Fase 2.1 concluídos; Fase 2.2 é o próximo passo).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
@@ -299,4 +308,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 25 de agosto de 2026, com `main` em `de4c2d0`; Fase 1 e marco de transição concluídos. O PR #34 extraiu o roteador declarativo, e a versão `c989bdad-ea2a-4b33-8088-f16ae355928b` foi validada em produção com seis leituras de smoke, zero `5xx`, zero erro operacional e nenhum rollback.
+**Última atualização deste handoff:** 25 de agosto de 2026, com `main` em `8b44417`; Fase 1, marco de transição e iniciativa 2.1 concluídos. O PR #36 adicionou o onboarding guiado do fotógrafo, e a versão `8df9581d-5dc9-40b2-80c3-76b52e12865e` foi validada em produção com leituras de baixo impacto, zero `5xx`, zero exceção operacional e nenhum rollback.

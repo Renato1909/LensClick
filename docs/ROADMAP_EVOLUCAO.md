@@ -71,7 +71,7 @@
 
 Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada uma unica vez, habilitada por 1.2 (cobertura de testes E2E por endpoint), que prepara o terreno para a modularizacao por dominio (4.2).
 
-> **Status:** concluido pelo PR #34 e validado em producao em 25 de agosto de 2026. A proxima iniciativa e 2.1.
+> **Status:** concluido pelo PR #34 e validado em producao em 25 de agosto de 2026. A iniciativa 2.1 tambem foi concluida; a proxima iniciativa e 2.2.
 
 - **Objetivo**: Extrair o roteador de `worker.mjs` para `src/router.mjs` antes de iniciar a Fase 2.
 - **O que executa**: **Etapa A (roteador)** - extrair `handleRequest`/`handleApi` para `src/router.mjs` como `Map` de handlers (ou estrutura equivalente); preservar comportamento; sem mudanca de logica de negocio.
@@ -88,12 +88,14 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 2.1 Onboarding guiado do fotografo
 
+> **Status:** concluido pelo PR #36 e validado em producao em 25 de agosto de 2026. O wizard acessivel e bilingue salva os dados do rascunho pela API existente no D1; o `sessionStorage` guarda somente a etapa atual. A versao `8df9581d-5dc9-40b2-80c3-76b52e12865e` serve 100% do trafego, sem rollback no smoke inicial.
+
 1. **Nome da iniciativa**: Wizard de criacao de perfil profissional em etapas.
 2. **Objetivo**: Reduzir abandono no fluxo `cadastro -> perfil -> portfolio -> publicar`.
-3. **Problema resolvido**: Hoje o fotografo preenche um formulario unico extenso em `perfil.html` sem indicador de progresso, sem validacao inline e sem salvar rascunho. Perfis incompletos nao sao publicados (`is_published = 0`) e o fotografo nao sabe o que falta.
+3. **Problema resolvido**: Antes, o fotografo preenchia um formulario unico extenso em `perfil.html`, sem indicador de progresso nem validacao contextual. O fluxo guiado agora esclarece o que falta e preserva perfis incompletos como rascunho (`is_published = 0`).
 4. **Impacto esperado**: Aumento da taxa de perfis publicados; melhor qualidade de dados (menos campos vazios); melhor primeira impressao para clientes.
-5. **Complexidade**: Media - frontend vanilla, sem framework; dividir `perfil.html` em etapas com estado em `sessionStorage`; backend ja suporta PUT parcial.
-6. **Riscos**: Estado em `sessionStorage` pode confundir se o usuario troca de aba. Mitigacao: salvar rascunho no D1 (coluna `draft_data` ou tabela `profile_drafts`).
+5. **Implementacao entregue**: Frontend vanilla dividido em etapas, sem framework; dados parciais persistidos pela API existente no D1 e numero da etapa mantido em `sessionStorage`.
+6. **Risco residual**: A etapa atual e especifica da aba, mas nenhum dado profissional depende do `sessionStorage`; ao retomar, o wizard reconcilia a navegacao com o rascunho carregado do D1.
 7. **Dependencias**: 1.2 (testes) para garantir que o PUT parcial continua funcionando.
 8. **Agentes envolvidos**: Engenheiro Frontend (implementacao), Designer (interface/hierarquia visual), Especialista em Marketing para Fotografia (copy/jornada/proposta de valor), Engenheiro de QA.
 9. **Ordem recomendada**: **5a** - apos a fundacao, e o maior ganho de conversao.
