@@ -34,14 +34,16 @@ Detalhes de visão e escopo: `docs/CONTEXTO_PROJETO.md`.
 
 ```mermaid
 flowchart LR
-    B[Navegador] -->|HTTP| W[Cloudflare Worker<br/>src/worker.mjs]
-    W -->|SQL preparado| D[(D1<br/>lensclick-db)]
-    W -->|autorização| R[(R2<br/>lensclick-profile-images)]
-    W -->|assets| A[public/]
-    W -->|e-mail transacional| E[Brevo]
+    B[Navegador] -->|HTTP| W[Entrypoint do Worker<br/>src/worker.mjs]
+    W --> RT[Roteador<br/>src/router.mjs]
+    RT --> H[Handlers da API<br/>src/worker.mjs]
+    H -->|SQL preparado| D[(D1<br/>lensclick-db)]
+    H -->|autorização| R[(R2<br/>lensclick-profile-images)]
+    RT -->|assets| A[public/]
+    H -->|e-mail transacional| E[Brevo]
 ```
 
-- **Worker único** (`src/worker.mjs`) roteia `/api/*` e entrega arquivos de `public/` via binding `ASSETS`.
+- **Worker único** (`src/worker.mjs`) executa os handlers; `src/router.mjs` centraliza o catálogo e o despacho de `/api/*`, além da separação para os assets de `public/`.
 - `run_worker_first` força o Worker a interceptar `/api/*`, `/` e `/*.html`.
 - Backend e frontend compartilham o **mesmo domínio** (sem CORS entre origens).
 - Configuração de bindings: `wrangler.jsonc`.
@@ -79,6 +81,7 @@ A fonte primária depende do tipo de pergunta:
 | `wrangler.jsonc` | Bindings e configuração do Worker | Baixa |
 | `migrations/*.sql` | Esquema real do D1 (fonte executável) | Imutável após aplicada |
 | `src/worker.mjs` | Implementação real do backend | Alta |
+| `src/router.mjs` | Catálogo e despacho das rotas HTTP | Alta |
 
 **Regra crítica:** quando `db/schema.ts` divergir de `migrations/`, **as migrações vencem**. O `schema.ts` é apenas referência e está desatualizado (ver seção 15).
 
@@ -106,7 +109,7 @@ A fonte primária depende do tipo de pergunta:
 1. **Leia** `docs/CONTEXTO_PROJETO.md` e a seção relevante de `docs/DOCUMENTACAO_TECNICA.md`.
 2. **Verifique** se a mudança conflita com alguma decisão arquitetural em `docs/DECISOES_TECNICAS.md`.
 3. **Confirme** o estado atual em `docs/HANDOFF.md` (HEAD, branches pendentes, débitos).
-4. **Localize** o código real: `src/worker.mjs` (backend), `public/` (frontend), `migrations/` (esquema).
+4. **Localize** o código real: `src/router.mjs` (roteamento), `src/worker.mjs` (handlers), `public/` (frontend), `migrations/` (esquema).
 5. **Avalie impacto** em segurança, banco, frontend e testes antes de escrever.
 6. **Prefira a solução mais simples** que resolva o problema sem complexidade desnecessária.
 
@@ -193,11 +196,11 @@ Referência visual: `DESIGN_SYSTEM.md`.
 
 ## 12. Backend
 
-- **Arquivo único:** `src/worker.mjs` (roteamento em cadeia `if`/regex).
+- **Entrypoint e handlers:** `src/worker.mjs`; o catálogo declarativo e a correspondência de método/caminho ficam em `src/router.mjs`.
 - **Endpoints `/api/*`:** auth (register, login, logout, me, password-reset), account (profile, password, photo, delete, professional-profile, portfolio), públicos (photographers, contact, newsletter). Lista completa em `docs/DOCUMENTACAO_TECNICA.md` seção 6.3.
 - **Constantes principais:** `SESSION_COOKIE`, `SESSION_TTL_MS` (7 dias), `MAX_BODY_BYTES` (700k), `MAX_PROFILE_PICTURE_BYTES` (450k), `PBKDF2_ITERATIONS` (100k).
-- **Funções de apoio:** `cleanText`, `normalizeEmail`, `hashPassword`, `verifyPassword`, `parseCookies`, `sessionCookie`, `authenticatedUser`, `createSession`, `isRateLimited`, `decodeProfilePicture`, `portfolioUpload`, `storedImageResponse`, `handleApi`, `handleRequest`.
-- **Marco de transição do roadmap:** extrair roteador para `src/router.mjs` (ainda **não implementado** — é intenção futura).
+- **Funções de apoio:** `cleanText`, `normalizeEmail`, `hashPassword`, `verifyPassword`, `parseCookies`, `sessionCookie`, `authenticatedUser`, `createSession`, `isRateLimited`, `decodeProfilePicture`, `portfolioUpload`, `storedImageResponse` e `dispatchApiRoute`.
+- **Roteamento:** `src/router.mjs` exporta `matchApiRoute` e `createRequestRouter`; a modularização dos handlers por domínio permanece reservada para a Fase 4.
 
 ---
 
@@ -238,7 +241,7 @@ Use o agente adequado à natureza da tarefa. Para mudanças transversais, comece
 Pontos que exigem atenção especial ou estão em débito técnico conhecido:
 
 - **`db/schema.ts` desatualizado** — lista 6 tabelas, faltam `professional_profiles` e `portfolio_items`. Débito P1. As **migrações** são a fonte de verdade.
-- **Roteamento monolítico em `src/worker.mjs`** — cadeia `if`/regex. Extração para `src/router.mjs` é marco de transição do roadmap (ainda não feito).
+- **Handlers ainda centralizados em `src/worker.mjs`** — o roteador já foi extraído, mas a separação dos handlers por domínio permanece como iniciativa 4.2.
 - **Aliases visuais legados** (`--accent-1`, `--text`, `--radius`, `--shadow`) — devem ser migrados para `--lc-*`.
 - **`docs/CONTEXTO_PROJETO.md` não rastreado no git** — débito P2.
 - **Termos de Uso e Política de Privacidade** — pendentes de revisão institucional antes de publicação comercial.
@@ -271,7 +274,7 @@ Lista completa de débitos: `docs/CONTEXTO_PROJETO.md` (seção de débitos) e `
 2. Leia docs/CONTEXTO_PROJETO.md (visão e convenções).
 3. Verifique docs/HANDOFF.md (estado operacional atual).
 4. Confirme a decisão arquitetural relevante em docs/DECISOES_TECNICAS.md.
-5. Inspecione o código real (src/worker.mjs, public/, migrations/).
+5. Inspecione o código real (src/router.mjs, src/worker.mjs, public/, migrations/).
 6. Escolha o agente especializado adequado à natureza da tarefa.
 7. Planeje: arquitetura, arquivos afetados, riscos, estratégia.
 8. Implemente em branch curta e descritiva, escopo único.
@@ -295,6 +298,7 @@ Lista completa de débitos: `docs/CONTEXTO_PROJETO.md` (seção de débitos) e `
 | Fluxo de contribuição | `CONTRIBUTING.md` |
 | Configuração do Worker | `wrangler.jsonc` |
 | Backend | `src/worker.mjs` |
+| Roteamento | `src/router.mjs` |
 | Esquema (referência) | `db/schema.ts` |
 | Migrações (fonte de verdade) | `migrations/*.sql` |
 | Frontend | `public/` |

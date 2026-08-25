@@ -85,7 +85,7 @@ flowchart LR
 | Internacionalizacao | Portugues, ingles e transicao de idioma | `public/lang.js` |
 | UX compartilhada | Requisicoes, feedback, loading e validacao | `public/ux.js` |
 | Perfil | Carregamento, edicao, imagem e logout | `public/profile-api.js` |
-| API e seguranca | Rotas, validacoes, autenticacao e cabecalhos | `src/worker.mjs` |
+| API e seguranca | Roteamento declarativo, validacoes, autenticacao e cabecalhos | `src/router.mjs`, `src/worker.mjs` |
 | Banco relacional | Usuarios, sessoes, contatos, newsletter e rate limit | Cloudflare D1 |
 | Objetos | Imagens privadas de perfil e portfolio | Cloudflare R2 |
 | Infraestrutura | Bindings, assets, migracoes e publicacao | `wrangler.jsonc` |
@@ -121,7 +121,8 @@ LensClick/
 |   |-- photographer-profile.js # Renderizacao segura do perfil publico
 |   |-- account.css            # Layout da central da conta
 |   `-- refinements.css        # Design System e refinamentos
-|-- src/worker.mjs             # Back-end e entrega de assets
+|-- src/router.mjs             # Catalogo e despacho das rotas HTTP
+|-- src/worker.mjs             # Handlers, seguranca e entrypoint do Worker
 |-- migrations/0001_initial.sql# Esquema executavel do D1
 |-- migrations/0002_password_reset.sql # Tokens de recuperacao
 |-- migrations/0003_professional_profiles.sql # Perfil profissional
@@ -232,7 +233,7 @@ Principais decisoes:
 - reducao de movimento quando solicitada pelo sistema;
 - estados de loading, sucesso, erro, foco e desabilitado.
 
-## 6. Back-end - `src/worker.mjs`
+## 6. Back-end - `src/router.mjs` e `src/worker.mjs`
 
 O Worker possui duas responsabilidades: atender `/api/*` e entregar os arquivos da pasta `public/`.
 
@@ -269,8 +270,10 @@ O Worker possui duas responsabilidades: atender `/api/*` e entregar os arquivos 
 - `decodeProfilePicture`: valida formato, Base64, tamanho e MIME.
 - `portfolioUpload`: valida multipart, MIME, tamanho e descricao alternativa das imagens do portfolio.
 - `storedImageResponse`: padroniza resposta, cache e cabecalhos de imagens vindas do R2.
-- `handleApi`: roteia e executa os endpoints.
+- `matchApiRoute`: resolve metodo e caminho usando o catalogo declarativo de rotas estaticas e dinamicas.
+- `handleApi`: aplica a politica de origem, resolve a rota e encaminha para o handler correspondente.
 - `handleRequest`: separa API de arquivos estaticos.
+- `dispatchApiRoute`: executa os handlers existentes sem alterar suas regras de negocio.
 
 ### 6.3 Endpoints
 
@@ -851,7 +854,8 @@ O D1 e o R2 podem ser reaproveitados. O Worker precisara adicionar um contrato d
 
 ## 20. Fontes internas da documentacao
 
-- `src/worker.mjs` - API, autenticacao, seguranca e assets.
+- `src/router.mjs` - catalogo, correspondencia e despacho das rotas HTTP.
+- `src/worker.mjs` - handlers da API, autenticacao, seguranca, assets e entrypoint.
 - `migrations/0001_initial.sql` - modelo fisico do D1.
 - `wrangler.jsonc` - infraestrutura e bindings.
 - `public/` - interface, traducao, UX e Design System.

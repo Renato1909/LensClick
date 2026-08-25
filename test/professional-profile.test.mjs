@@ -97,12 +97,14 @@ test('a galeria publica so usa imagens autorizadas e textos seguros', () => {
   const page = read('public/fotografo.html');
   const script = read('public/photographer-profile.js');
   const worker = read('src/worker.mjs');
+  const router = read('src/router.mjs');
   assert.match(page, /id="portfolioSection" hidden/);
   assert.match(script, /image\.alt = item\.altText/);
   assert.match(script, /caption\.textContent = item\.caption/);
   assert.doesNotMatch(script, /innerHTML\s*=/);
   assert.match(worker, /p\.is_published = 1 AND u\.role = 'photographer'/);
-  assert.match(worker, /publicPortfolioImageMatch/);
+  assert.match(router, /id: 'photographers\.portfolio-image'/);
+  assert.match(worker, /routeId === 'photographers\.portfolio-image'/);
   assert.match(worker, /portfolioItem\(item, profile\.slug\)/);
   assert.match(worker, /\/api\/photographers\/\$\{encodeURIComponent\(slug\)\}\/portfolio\/\$\{id\}/);
   assert.match(worker, /portfolioObjects/);

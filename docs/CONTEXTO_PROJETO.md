@@ -37,7 +37,7 @@ O produto prioriza:
 | Camada | Tecnologia |
 |---|---|
 | Frontend | HTML5, CSS3, JavaScript vanilla (sem framework) |
-| Backend | Cloudflare Worker (`src/worker.mjs` — Worker principal e hotspot arquitetural atual) |
+| Backend | Cloudflare Worker (`src/worker.mjs` — handlers e entrypoint; `src/router.mjs` — roteamento) |
 | Banco de dados | Cloudflare D1 (SQLite serverless) |
 | Armazenamento de imagens | Cloudflare R2 (bucket privado) |
 | Assets estáticos | Cloudflare Workers Assets (`public/`) |
@@ -55,7 +55,7 @@ O produto prioriza:
 ```mermaid
 flowchart LR
     N[Navegador] -->|HTTP| W[Cloudflare Worker]
-    W -->|/api/*| API[handleApi]
+    W -->|/api/*| API[src/router.mjs]
     W -->|assets| A[Workers Assets - public/]
     API -->|SQL preparado| D1[(D1 - lensclick-db)]
     API -->|objetos| R2[(R2 - lensclick-profile-images)]
@@ -80,7 +80,7 @@ flowchart LR
 | i18n | Tradução PT/EN | `public/lang.js` |
 | UX | Feedback, loading, acessibilidade | `public/ux.js` |
 | Perfil | Lógica da conta | `public/profile-api.js`, `public/photographer-profile.js`, `public/public-shell.js` |
-| API | Rotas, autenticação, validação | `src/worker.mjs` |
+| API | Roteamento, autenticação e validação | `src/router.mjs`, `src/worker.mjs` |
 | Banco | Dados estruturados | `migrations/*.sql`, `db/schema.ts` |
 | Objetos | Imagens (perfil + portfolio) | R2 binding `PROFILE_IMAGES` |
 | Infra | Bindings e deploy | `wrangler.jsonc` |
@@ -134,7 +134,8 @@ LensClick/
 │   ├── http-smoke.mjs      # Smoke test HTTP
 │   ├── build_documentation.py
 │   └── build_documentation_pdf.py
-├── src/worker.mjs          # Backend (Worker)
+├── src/router.mjs          # Catálogo e despacho das rotas HTTP
+├── src/worker.mjs          # Handlers e entrypoint do Worker
 ├── test/                   # 14 arquivos .test.mjs (suíte automatizada de testes)
 ├── tmp/                    # Arquivos temporários (PRs, rascunhos)
 ├── package.json
@@ -312,12 +313,13 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 
 ## 12. Padrões de código
 
-### Backend (`src/worker.mjs`)
+### Backend (`src/router.mjs` e `src/worker.mjs`)
 
 - **Funções puras** para validação/normalização (`cleanText`, `normalizeEmail`, `isValidEmail`, `isValidPassword`, `slugify`).
 - **Statements preparados** com `.bind(...)` para todo SQL.
 - **Constantes no topo** (`SESSION_TTL_MS`, `MAX_BODY_BYTES`, `MAX_PORTFOLIO_ITEMS`, etc.).
-- **Handlers separados**: `handleApi` (linha ~383) para `/api/*`, `handleRequest` (linha ~987) para roteamento.
+- **Roteador declarativo**: `src/router.mjs` resolve método/caminho, parâmetros dinâmicos, política de origem e separação entre API e assets.
+- **Handlers preservados**: `dispatchApiRoute` em `src/worker.mjs` executa as regras existentes; a modularização por domínio pertence à Fase 4.
 - **Respostas JSON** via helper `json()` com headers de segurança.
 - **Escape HTML** (`escapeHtml`) para qualquer conteúdo exibido.
 - **Rate limiting** via `consumeRateLimit` / `isRateLimited`.
@@ -371,7 +373,7 @@ O estado atual de branches, branches órfãs, PRs e pendências Git é mantido e
 ### Débitos técnicos conhecidos
 
 1. **`db/schema.ts` desatualizado** — `schemaVersion=2` lista apenas 6 tabelas (`users`, `sessions`, `passwordResetTokens`, `contactMessages`, `newsletterSubscriptions`, `rateLimits`), mas **não inclui** `professional_profiles` (migração 0003) nem `portfolio_items` (migração 0004). O schema está à frente do código de aplicação.
-2. **Hotspots de conflito** — `src/worker.mjs` e `public/lang.js` são tocados por 5-6 branches; qualquer merge entre elas exige resolução cuidadosa.
+2. **Hotspots de conflito** — os handlers em `src/worker.mjs` e as traduções em `public/lang.js` continuam centralizados; branches concorrentes exigem resolução cuidadosa.
 3. **Branches órfãs** — `recuperacao-de-senha` e `gerenciamento-da-conta` perderam suas remotas; commits exclusivos correm risco de perda.
 4. **Sem 2FA** — apenas senha + sessão.
 5. **Sem verificação de e-mail** — cadastro não confirma o e-mail.
@@ -448,7 +450,7 @@ Baseado na revisão arquitetural das 7 branches:
 
 | Tarefa | Ler também |
 |---|---|
-| Alterar API/backend | `src/worker.mjs`, `migrations/*.sql` |
+| Alterar API/backend | `src/router.mjs`, `src/worker.mjs`, `migrations/*.sql` |
 | Alterar banco de dados | `migrations/*.sql`, `db/schema.ts` |
 | Alterar frontend | `public/*.html`, `public/*.js`, `public/*.css` |
 | Alterar UX/acessibilidade | `public/ux.js`, `public/lang.js`, `DESIGN_SYSTEM.md` |

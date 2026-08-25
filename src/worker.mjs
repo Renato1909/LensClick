@@ -5,6 +5,7 @@ import {
   reportOperationalError,
   responseWithRequestId
 } from './observability.mjs';
+import { createRequestRouter } from './router.mjs';
 
 const SESSION_COOKIE = 'lensclick_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -401,14 +402,12 @@ function decodeProfilePicture(dataUrl) {
   };
 }
 
-async function handleApi(request, env, url, context, requestContext) {
+// Route matching lives in router.mjs. Handler extraction by domain is intentionally
+// deferred to initiative 4.2 so this transition does not change business logic.
+async function dispatchApiRoute(routeId, params, request, env, url, context, requestContext) {
   const { pathname } = url;
-  const method = request.method.toUpperCase();
-  if (!['GET', 'HEAD'].includes(method) && !requestOriginIsAllowed(request)) {
-    return json(403, { error: 'Origem da requisicao nao autorizada.' });
-  }
 
-  if (pathname === '/api/health' && method === 'GET') {
+  if (routeId === 'health') {
     try {
       const databaseCheck = await env.DB.prepare('SELECT 1 AS ok').first('ok');
       if (Number(databaseCheck) !== 1) throw new Error('D1 health check returned an unexpected result.');
@@ -419,7 +418,7 @@ async function handleApi(request, env, url, context, requestContext) {
     }
   }
 
-  if (pathname === '/api/auth/register' && method === 'POST') {
+  if (routeId === 'auth.register') {
     if (await isRateLimited(request, env, pathname, 8, 15 * 60 * 1000, env.AUTH_RATE_LIMITER)) {
       return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });
     }
@@ -451,7 +450,7 @@ async function handleApi(request, env, url, context, requestContext) {
     }
   }
 
-  if (pathname === '/api/auth/login' && method === 'POST') {
+  if (routeId === 'auth.login') {
     if (await isRateLimited(request, env, pathname, 10, 15 * 60 * 1000, env.AUTH_RATE_LIMITER)) {
       return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });
     }
@@ -465,7 +464,7 @@ async function handleApi(request, env, url, context, requestContext) {
     return json(200, { user: publicUser(user) }, { 'Set-Cookie': cookie });
   }
 
-  if (pathname === '/api/auth/password-reset/request' && method === 'POST') {
+  if (routeId === 'auth.password-reset.request') {
     if (!env.BREVO_API_KEY || !env.BREVO_SENDER_EMAIL) {
       return json(503, { error: 'A recuperacao de senha esta temporariamente indisponivel.' });
     }
@@ -503,7 +502,7 @@ async function handleApi(request, env, url, context, requestContext) {
     return json(202, genericResponse);
   }
 
-  if (pathname === '/api/auth/password-reset/confirm' && method === 'POST') {
+  if (routeId === 'auth.password-reset.confirm') {
     if (await isRateLimited(request, env, pathname, 10, 15 * 60 * 1000, env.AUTH_RATE_LIMITER)) {
       return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });
     }
@@ -534,18 +533,18 @@ async function handleApi(request, env, url, context, requestContext) {
     return json(200, { message: 'Senha alterada com sucesso. Faca login novamente.' });
   }
 
-  if (pathname === '/api/auth/logout' && method === 'POST') {
+  if (routeId === 'auth.logout') {
     const token = parseCookies(request)[SESSION_COOKIE];
     if (token) await env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(await sha256(token)).run();
     return json(200, { ok: true }, { 'Set-Cookie': sessionCookie('', request, 0) });
   }
 
-  if (pathname === '/api/auth/me' && method === 'GET') {
+  if (routeId === 'auth.me') {
     const user = await authenticatedUser(request, env);
     return user ? json(200, { user: publicUser(user) }) : json(401, { error: 'Sessao nao encontrada.' });
   }
 
-  if (pathname === '/api/photographers' && method === 'GET') {
+  if (routeId === 'photographers.list') {
     const url = new URL(request.url);
     const city = cleanText(url.searchParams.get('city'), 80);
     const state = cleanText(url.searchParams.get('state'), 2).toUpperCase();
@@ -608,26 +607,26 @@ async function handleApi(request, env, url, context, requestContext) {
     }, { 'Cache-Control': 'public, max-age=60' });
   }
 
-  const publicPhotographerPhotoMatch = /^\/api\/photographers\/([a-z0-9-]{3,80})\/photo$/.exec(pathname);
-  if (publicPhotographerPhotoMatch && method === 'GET') {
+  if (routeId === 'photographers.photo') {
+    const [slug] = params;
     const profile = await env.DB.prepare(`
       SELECT p.slug, u.profile_pic_key FROM professional_profiles p
       JOIN users u ON u.id = p.user_id
       WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
-    `).bind(publicPhotographerPhotoMatch[1]).first();
+    `).bind(slug).first();
     if (!profile?.profile_pic_key) return json(404, { error: 'Imagem nao encontrada.' });
     const object = await env.PROFILE_IMAGES.get(profile.profile_pic_key);
     return storedImageResponse(object, request, 'public, max-age=300, must-revalidate');
   }
 
-  const publicPortfolioImageMatch = /^\/api\/photographers\/([a-z0-9-]{3,80})\/portfolio\/(\d+)$/.exec(pathname);
-  if (publicPortfolioImageMatch && method === 'GET') {
+  if (routeId === 'photographers.portfolio-image') {
+    const [slug, itemId] = params;
     const item = await env.DB.prepare(`
       SELECT i.object_key FROM portfolio_items i
       JOIN professional_profiles p ON p.user_id = i.user_id
       JOIN users u ON u.id = i.user_id
       WHERE p.slug = ? AND i.id = ? AND p.is_published = 1 AND u.role = 'photographer'
-    `).bind(publicPortfolioImageMatch[1], Number(publicPortfolioImageMatch[2])).first();
+    `).bind(slug, Number(itemId)).first();
     if (!item) return json(404, { error: 'Imagem nao encontrada.' });
     return storedImageResponse(
       await env.PROFILE_IMAGES.get(item.object_key),
@@ -636,14 +635,14 @@ async function handleApi(request, env, url, context, requestContext) {
     );
   }
 
-  const publicPhotographerMatch = /^\/api\/photographers\/([a-z0-9-]{3,80})$/.exec(pathname);
-  if (publicPhotographerMatch && method === 'GET') {
+  if (routeId === 'photographers.detail') {
+    const [slug] = params;
     const profile = await env.DB.prepare(`
       SELECT p.*, u.name, u.profile_pic_key, u.updated_at AS user_updated_at
       FROM professional_profiles p
       JOIN users u ON u.id = p.user_id
       WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
-    `).bind(publicPhotographerMatch[1]).first();
+    `).bind(slug).first();
     if (!profile) return json(404, { error: 'Perfil profissional nao encontrado.' });
     const portfolio = await env.DB.prepare(`
       SELECT id, caption, alt_text, position, updated_at FROM portfolio_items
@@ -654,7 +653,7 @@ async function handleApi(request, env, url, context, requestContext) {
     }, { 'Cache-Control': 'public, max-age=60' });
   }
 
-  if (pathname === '/api/account/portfolio' && method === 'GET') {
+  if (routeId === 'account.portfolio.list') {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
     const portfolio = await env.DB.prepare(`
@@ -664,7 +663,7 @@ async function handleApi(request, env, url, context, requestContext) {
     return json(200, { portfolio: portfolio.results.map((item) => portfolioItem(item)) });
   }
 
-  if (pathname === '/api/account/portfolio' && method === 'POST') {
+  if (routeId === 'account.portfolio.create') {
     if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
       return json(429, { error: 'Muitos envios. Aguarde antes de tentar novamente.' });
     }
@@ -691,7 +690,7 @@ async function handleApi(request, env, url, context, requestContext) {
     }
   }
 
-  if (pathname === '/api/account/portfolio' && method === 'PUT') {
+  if (routeId === 'account.portfolio.update') {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
     const body = await readJson(request);
@@ -724,21 +723,21 @@ async function handleApi(request, env, url, context, requestContext) {
     return json(200, { portfolio: portfolio.results.map((item) => portfolioItem(item)), message: 'Portfolio atualizado.' });
   }
 
-  const ownerPortfolioImageMatch = /^\/api\/account\/portfolio\/(\d+)\/image$/.exec(pathname);
-  if (ownerPortfolioImageMatch && method === 'GET') {
+  if (routeId === 'account.portfolio.image') {
+    const [itemId] = params;
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
     const item = await env.DB.prepare('SELECT object_key FROM portfolio_items WHERE id = ? AND user_id = ?')
-      .bind(Number(ownerPortfolioImageMatch[1]), current.id).first();
+      .bind(Number(itemId), current.id).first();
     if (!item) return json(404, { error: 'Imagem nao encontrada.' });
     return storedImageResponse(await env.PROFILE_IMAGES.get(item.object_key), request, 'private, max-age=300, must-revalidate');
   }
 
-  const ownerPortfolioMatch = /^\/api\/account\/portfolio\/(\d+)$/.exec(pathname);
-  if (ownerPortfolioMatch && method === 'DELETE') {
+  if (routeId === 'account.portfolio.delete') {
+    const [portfolioItemId] = params;
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
-    const itemId = Number(ownerPortfolioMatch[1]);
+    const itemId = Number(portfolioItemId);
     const item = await env.DB.prepare('SELECT object_key FROM portfolio_items WHERE id = ? AND user_id = ?')
       .bind(itemId, current.id).first();
     if (!item) return json(404, { error: 'Imagem nao encontrada.' });
@@ -747,7 +746,7 @@ async function handleApi(request, env, url, context, requestContext) {
     return json(200, { message: 'Imagem removida permanentemente.' });
   }
 
-  if (pathname === '/api/account/professional-profile' && method === 'GET') {
+  if (routeId === 'account.professional-profile.read') {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
     const profile = await env.DB.prepare('SELECT * FROM professional_profiles WHERE user_id = ?').bind(current.id).first();
@@ -761,7 +760,7 @@ async function handleApi(request, env, url, context, requestContext) {
     });
   }
 
-  if (pathname === '/api/account/professional-profile' && method === 'PUT') {
+  if (routeId === 'account.professional-profile.update') {
     if (await isRateLimited(request, env, pathname, 30, 60 * 60 * 1000, env.ACCOUNT_RATE_LIMITER)) {
       return json(429, { error: 'Muitas alteracoes. Aguarde antes de tentar novamente.' });
     }
@@ -825,7 +824,7 @@ async function handleApi(request, env, url, context, requestContext) {
     return json(200, { profile: professionalProfile(profile, true), message: isPublished ? 'Perfil profissional publicado.' : 'Perfil profissional salvo.' });
   }
 
-  if (pathname === '/api/profile' && method === 'PUT') {
+  if (routeId === 'account.profile.update') {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
     const body = await readJson(request);
@@ -896,7 +895,7 @@ async function handleApi(request, env, url, context, requestContext) {
     return json(200, { user: publicUser(user) });
   }
 
-  if (pathname === '/api/account/password' && method === 'PUT') {
+  if (routeId === 'account.password.update') {
     if (await isRateLimited(request, env, pathname, 8, 15 * 60 * 1000, env.AUTH_RATE_LIMITER)) {
       return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });
     }
@@ -924,7 +923,7 @@ async function handleApi(request, env, url, context, requestContext) {
     return json(200, { message: 'Senha alterada com sucesso. As outras sessoes foram encerradas.' });
   }
 
-  if (pathname === '/api/account/photo' && method === 'DELETE') {
+  if (routeId === 'account.photo.delete') {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
     if (current.profile_pic_key) await env.PROFILE_IMAGES.delete(current.profile_pic_key);
@@ -936,7 +935,7 @@ async function handleApi(request, env, url, context, requestContext) {
     return json(200, { user: publicUser(user), message: 'Foto removida com sucesso.' });
   }
 
-  if (pathname === '/api/account' && method === 'DELETE') {
+  if (routeId === 'account.delete') {
     if (await isRateLimited(request, env, pathname, 5, 60 * 60 * 1000, env.SENSITIVE_RATE_LIMITER)) {
       return json(429, { error: 'Muitas tentativas. Aguarde antes de tentar novamente.' });
     }
@@ -968,17 +967,17 @@ async function handleApi(request, env, url, context, requestContext) {
     });
   }
 
-  const pictureMatch = /^\/api\/profile-picture\/(\d+)$/.exec(pathname);
-  if (pictureMatch && method === 'GET') {
+  if (routeId === 'account.profile-picture') {
+    const [userId] = params;
     const current = await authenticatedUser(request, env);
-    if (!current || Number(pictureMatch[1]) !== Number(current.id) || !current.profile_pic_key) {
+    if (!current || Number(userId) !== Number(current.id) || !current.profile_pic_key) {
       return json(404, { error: 'Imagem nao encontrada.' });
     }
     const object = await env.PROFILE_IMAGES.get(current.profile_pic_key);
     return storedImageResponse(object, request, 'private, max-age=300, must-revalidate');
   }
 
-  if (pathname === '/api/contact' && method === 'POST') {
+  if (routeId === 'contact.create') {
     if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
       return json(429, { error: 'Limite de mensagens atingido. Tente mais tarde.' });
     }
@@ -999,7 +998,7 @@ async function handleApi(request, env, url, context, requestContext) {
     return json(201, { message: 'Mensagem recebida com sucesso.' });
   }
 
-  if (pathname === '/api/newsletter' && method === 'POST') {
+  if (routeId === 'newsletter.create') {
     if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
       return json(429, { error: 'Limite de inscricoes atingido. Tente mais tarde.' });
     }
@@ -1016,15 +1015,21 @@ async function handleApi(request, env, url, context, requestContext) {
   return json(404, { error: 'Endpoint nao encontrado.' });
 }
 
-async function handleRequest(request, env, context, requestContext) {
-  const url = new URL(request.url);
-  if (url.pathname.startsWith('/api/')) return handleApi(request, env, url, context, requestContext);
+async function handleAssetRequest(request, env) {
   const assetResponse = await env.ASSETS.fetch(request);
   const headers = new Headers(assetResponse.headers);
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
   if (headers.get('Content-Type')?.startsWith('text/html')) headers.set('Cache-Control', 'no-cache');
   return new Response(assetResponse.body, { status: assetResponse.status, statusText: assetResponse.statusText, headers });
 }
+
+const router = createRequestRouter({
+  dispatchApiRoute,
+  handleAssetRequest,
+  requestOriginIsAllowed,
+  forbiddenResponse: () => json(403, { error: 'Origem da requisicao nao autorizada.' }),
+  notFoundResponse: () => json(404, { error: 'Endpoint nao encontrado.' })
+});
 
 export default {
   async fetch(request, env, context) {
@@ -1034,7 +1039,7 @@ export default {
     let response;
     let errorCategory;
     try {
-      response = await handleRequest(request, env, context, requestContext);
+      response = await router.handleRequest(request, env, context, requestContext);
     } catch (error) {
       const status = Number(error?.status) || 500;
       errorCategory = errorCategoryForStatus(status);
