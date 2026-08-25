@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 24 de agosto de 2026, com `main` em `3f95de2`.
+> **Data de referência:** 24 de agosto de 2026, com `main` em `f94413e`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado da Fase 1:** iniciativas 1.1, 1.2 e 1.3 concluídas; a próxima prioridade é a iniciativa 1.4.
+> **Estado da Fase 1:** iniciativas 1.1, 1.2, 1.3 e 1.4 concluídas; a próxima prioridade é o marco de transição entre as Fases 1 e 2.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `3f95de2` — "feat: add native rate limit shield" (#30).
+- **Branch:** `main` → commit `f94413e` — "feat: add D1 health check and search indexes" (#32).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -55,11 +55,11 @@
 
 `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`.
 
-### Migrações publicadas (4)
+### Migrações publicadas (5)
 
-`0001_initial.sql`, `0002_password_reset.sql`, `0003_professional_profiles.sql`, `0004_portfolio_items.sql`.
+`0001_initial.sql`, `0002_password_reset.sql`, `0003_professional_profiles.sql`, `0004_portfolio_items.sql`, `0005_search_indexes.sql`.
 
-> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0005_*.sql` para qualquer alteração de schema.
+> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0006_*.sql` para qualquer alteração de schema.
 
 ---
 
@@ -76,7 +76,7 @@ A limpeza controlada foi concluída após comparar a árvore de cada branch obso
 
 ## 3. Funcionalidades em desenvolvimento
 
-Não há iniciativa em desenvolvimento em uma branch ativa. A observabilidade estruturada (1.1), a suíte de contratos por rota (1.2) e o escudo nativo de rate limiting (1.3) estão integrados e validados em produção. As funcionalidades de produto abaixo já estão em `main` e em produção:
+Não há iniciativa em desenvolvimento em uma branch ativa. As quatro iniciativas da Fase 1 estão integradas; observabilidade (1.1), contratos por rota (1.2), rate limiting nativo (1.3) e índices/health check do D1 (1.4) foram publicados e validados em produção. As funcionalidades de produto abaixo já estão em `main` e em produção:
 
 ### Funcionalidades entregues
 
@@ -99,12 +99,12 @@ Não há iniciativa em desenvolvimento em uma branch ativa. A observabilidade es
 ### Não implementado (gaps identificados)
 
 - Sem `sitemap.xml` / `robots.txt`.
-- Sem endpoint `/api/health` ou health check do D1.
 - Sem Open Graph / JSON-LD (SEO social e dados estruturados).
 - Sem cache via `caches.default`.
 - Sem 2FA / verificação de e-mail.
 - O rate limiting permanece deliberadamente híbrido: escudo de rajada nativo na edge e políticas longas autoritativas no D1.
-- A suíte de contratos cobre os 21 padrões de rota e os 24 contratos HTTP catalogados; testes ponta a ponta com serviços reais permanecem fora do escopo atual.
+- A suíte de contratos cobre os 22 padrões de rota e os 25 contratos HTTP catalogados; testes ponta a ponta com serviços reais permanecem fora do escopo atual.
+- O endpoint `GET /api/health` verifica Worker e D1; o R2 é monitorado pelas rotas reais de imagem para evitar operações artificiais de armazenamento.
 
 ---
 
@@ -143,6 +143,8 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #28 | `0aad905` | test: complete API route contracts |
 | #29 | `11d11aa` | docs: finalize route contract handoff |
 | #30 | `3f95de2` | feat: add native rate limit shield |
+| #31 | `d4621b3` | docs: record rate limit production validation |
+| #32 | `f94413e` | feat: add D1 health check and search indexes |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -170,6 +172,8 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 - **Migrações imutáveis** — regra estabelecida: nunca editar migração publicada.
 - **Contratos por rota** — a iniciativa 1.2 consolidou infraestrutura compartilhada de testes e cobriu os 21 padrões de rota e 24 contratos HTTP catalogados, sem alterar código de produção.
 - **Rate limiting híbrido** — a iniciativa 1.3 adicionou quatro bindings nativos de 60 segundos como escudo de rajada e preservou as políticas longas no D1 como camada autoritativa e fallback.
+- **Health check mínimo e seguro** — `GET /api/health` executa `SELECT 1` no D1, retorna somente estado genérico e não consulta o R2 para evitar operações artificiais.
+- **Índices orientados pelas consultas reais** — a migration `0005` adicionou índices para listagem, estado e disponibilidade; o índice explícito redundante de `slug` foi removido, preservando o autoíndice da restrição `UNIQUE`.
 
 ---
 
@@ -185,7 +189,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 
 4. **Hotspots de conflito** — `src/worker.mjs` e `public/lang.js` são tocados por praticamente toda feature. Alto risco de conflito de merge.
 5. **Sem alertas e SLOs** — os logs estruturados existem, mas a detecção proativa pertence à Fase 4.
-6. **Sem health check** — sem endpoint `/api/health` ou verificação de D1/R2.
+6. **Health check não cobre R2** — decisão deliberada para não gerar operações artificiais; indisponibilidade do bucket é detectada pelos eventos das rotas reais de imagem.
 7. **SEO incompleto** — sem `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD. Impacta indexação e compartilhamento social.
 8. **Sem cache** — `caches.default` não utilizado; toda requisição pode bater no D1/R2.
 
@@ -203,7 +207,12 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - **1.1 Observabilidade** — concluída: integrada pelo PR #22, publicada e validada em produção.
 - **1.2 Suíte de testes por rota** — concluída pelos PRs #25–#28: 21 padrões de rota e 24 contratos HTTP cobertos; 116 testes aprovados no snapshot de integração.
 - **1.3 Rate limiting nativo Cloudflare** — concluída pelo PR #30 e validada em produção após aproximadamente 58 horas: 0 respostas `429` inesperadas, 0 erros `5xx` e nenhum rollback.
-- **1.4 Índices e health check D1** — próxima iniciativa: revisar índices justificados pelas consultas reais e criar `/api/health`.
+- **1.4 Índices e health check D1** — concluída pelo PR #32: migration `0005` aplicada no D1 remoto, `GET /api/health` validado com `200`, buscas públicas validadas e versão `83c02bf5-5fa3-4ce2-ac66-d2023a5f82ba` servindo 100% do tráfego, sem rollback.
+
+### Marco de transição entre Fases 1 e 2 (próxima ação)
+- Extrair o roteamento de `src/worker.mjs` para `src/router.mjs`, preservando integralmente o comportamento.
+- Usar a suíte automatizada como rede de segurança antes e depois da extração.
+- Não iniciar mudanças de UX da Fase 2 no mesmo PR estrutural.
 
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD.
@@ -220,16 +229,19 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [P3.4] Health check /api/health + índices D1     ← 0,5 dia, baixo risco
-2. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← 1-2 dias, baixo risco
-3. [P5] Segurança: verificação e-mail, 2FA, roles   ← 3-5 dias, alto risco
+1. [Transição] Extrair roteador para src/router.mjs ← atividade estrutural, risco médio
+2. [Fase 2] Iniciar onboarding guiado do fotógrafo ← próxima evolução de produto
+3. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← 1-2 dias, baixo risco
+4. [P5] Segurança: verificação e-mail, 2FA, roles   ← 3-5 dias, alto risco
 ```
 
 **Justificativa da ordem:**
 - O catálogo `db/schema.ts` já foi sincronizado pelo PR #20 e a observabilidade foi validada antes da integração.
 - A iniciativa 1.2 criou a cobertura de regressão necessária antes das mudanças de rate limiting e health check.
-- A iniciativa 1.3 foi concluída com uma arquitetura híbrida e rollback documentado; a próxima iniciativa de desenvolvimento é a 1.4.
-- P4 (SEO) é independente e pode rodar em paralelo com P3 se houver mais de uma pessoa.
+- A iniciativa 1.3 foi concluída com uma arquitetura híbrida e rollback documentado.
+- A iniciativa 1.4 foi concluída com migration remota, health check e smoke test de produção; a Fase 1 está encerrada.
+- O marco estrutural do roteador deve ocorrer antes da Fase 2, conforme o roadmap técnico.
+- P4 (SEO) é independente e pode ocorrer depois do marco de transição.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
 ---
@@ -248,7 +260,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 
 ### Convenções do projeto
 
-- **Migrações imutáveis** — nunca editar `0001`–`0004`. Nova alteração de schema = novo arquivo `0005_*.sql`.
+- **Migrações imutáveis** — nunca editar `0001`–`0005`. Nova alteração de schema = novo arquivo `0006_*.sql`.
 - **Fast-forward only** — `main` não aceita merge commits. Todo PR é squash-mergeado.
 - **Status check obrigatório** — o CI "Qualidade" precisa passar antes do merge. Rodar `npm test` e `npm run check` localmente antes de abrir PR.
 - **i18n** — toda string visível ao usuário deve passar por `window.i18n` (`public/lang.js`). Não hardcoded em PT ou EN.
@@ -263,9 +275,10 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 1 em andamento).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 1 concluída; marco de transição é o próximo passo).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
+- `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
 - `docs/DOCUMENTACAO_TECNICA.md` — documentação técnica detalhada.
 - `DESIGN_SYSTEM.md` — guia de design e tokens.
 - `CONTRIBUTING.md` — fluxo de contribuição.
@@ -279,4 +292,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 24 de agosto de 2026, com `main` em `3f95de2`; iniciativas 1.1 e 1.2 concluídas; iniciativa 1.3 integrada pelo PR #30, publicada no deployment `1fc5d64a-4bbb-4f17-8426-d865fdf1647c` e validada em produção após aproximadamente 58 horas, sem respostas `429` inesperadas, erros `5xx` ou rollback.
+**Última atualização deste handoff:** 24 de agosto de 2026, com `main` em `f94413e`; Fase 1 concluída. A iniciativa 1.4 foi integrada pelo PR #32, a migration `0005` foi aplicada no D1 remoto e a versão `83c02bf5-5fa3-4ce2-ac66-d2023a5f82ba` foi validada em produção com health check, busca pública e observabilidade, sem rollback.
