@@ -281,6 +281,48 @@ body.profile-page {
 .professional-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
 .professional-heading .card-heading { margin-bottom: 24px; }
 .professional-eyebrow { margin: 0 0 4px !important; color: #bd91ff !important; font-size: 0.69rem !important; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; }
+.onboarding-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--lc-space-4) var(--lc-space-6);
+  margin-bottom: var(--lc-space-5);
+  padding: var(--lc-space-5);
+  border: 1px solid var(--lc-color-line);
+  border-radius: var(--lc-radius-lg);
+  background: var(--lc-color-surface-soft);
+}
+.onboarding-overview h3 { margin: var(--lc-space-1) 0; font-size: 1rem; }
+.onboarding-overview p { margin: 0; color: var(--lc-color-text-muted); font-size: var(--lc-font-size-sm); line-height: var(--lc-line-height-compact); }
+.onboarding-kicker { color: var(--lc-color-brand-primary) !important; font-size: .68rem !important; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.onboarding-progress-copy { display: flex; align-items: flex-end; flex-direction: column; justify-content: center; }
+.onboarding-progress-copy strong { color: var(--lc-color-text); font-size: 1.2rem; }
+.onboarding-progress-copy span { color: var(--lc-color-text-subtle); font-size: .68rem; }
+.onboarding-progress { grid-column: 1 / -1; height: 7px; overflow: hidden; border-radius: var(--lc-radius-round); background: var(--lc-color-line); }
+.onboarding-progress span { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--lc-btn-gradient); transition: width var(--lc-duration-base) var(--lc-ease-standard); }
+.onboarding-steps { margin-bottom: var(--lc-space-6); overflow-x: auto; scrollbar-width: thin; }
+.onboarding-steps ol { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: var(--lc-space-2); min-width: 560px; margin: 0; padding: 0; list-style: none; }
+.onboarding-step { width: 100%; min-height: var(--lc-control-height); display: flex; align-items: center; gap: var(--lc-space-2); padding: var(--lc-space-2) var(--lc-space-3); color: var(--lc-color-text-muted); border: 1px solid var(--lc-color-line); border-radius: var(--lc-radius-md); background: var(--lc-color-surface-soft); font: 600 .72rem/1.3 var(--lc-font-sans); text-align: left; cursor: pointer; transition: color var(--lc-duration-fast) var(--lc-ease-standard), border-color var(--lc-duration-fast) var(--lc-ease-standard), background var(--lc-duration-fast) var(--lc-ease-standard); }
+.onboarding-step > span { width: 27px; height: 27px; flex: 0 0 27px; display: grid; place-items: center; border-radius: var(--lc-radius-round); background: var(--lc-color-line); font-size: .68rem; }
+.onboarding-step[aria-current="step"] { color: var(--lc-color-text); border-color: var(--lc-color-brand-secondary); background: var(--lc-color-surface); }
+.onboarding-step[aria-current="step"] > span,
+.onboarding-step[data-complete="true"] > span { color: var(--lc-btn-ink); background: var(--lc-color-brand-primary); }
+.onboarding-step:focus-visible { outline: 3px solid var(--lc-color-brand-primary); outline-offset: 2px; }
+.onboarding-panel { min-height: 350px; padding: var(--lc-space-5); border: 1px solid var(--lc-color-line); border-radius: var(--lc-radius-lg); background: var(--lc-color-surface-soft); animation: onboarding-panel-in var(--lc-duration-base) var(--lc-ease-standard) both; }
+.onboarding-panel-heading { margin-bottom: var(--lc-space-6); }
+.onboarding-panel-heading p { margin: 0 0 var(--lc-space-1); color: var(--lc-color-brand-secondary); font-size: .68rem; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; }
+.onboarding-panel-heading h3 { margin: 0 0 var(--lc-space-2); font-size: 1.12rem; }
+.onboarding-panel-heading h3:focus { outline: none; }
+.onboarding-panel-heading > span { color: var(--lc-color-text-muted); font-size: var(--lc-font-size-sm); line-height: var(--lc-line-height-compact); }
+.onboarding-review { min-height: 0; }
+.onboarding-checklist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--lc-space-3); margin: 0 0 var(--lc-space-6); padding: 0; list-style: none; }
+.onboarding-checklist li { display: flex; align-items: center; gap: var(--lc-space-3); min-height: var(--lc-control-height); padding: var(--lc-space-3); color: var(--lc-color-text-muted); border: 1px solid var(--lc-color-line); border-radius: var(--lc-radius-md); background: var(--lc-color-surface-soft); font-size: var(--lc-font-size-sm); }
+.onboarding-checklist i { width: 23px; height: 23px; display: grid; place-items: center; color: var(--lc-color-text-subtle); border-radius: var(--lc-radius-round); background: var(--lc-color-line); font-size: .65rem; }
+.onboarding-checklist li[data-complete="true"] { color: var(--lc-color-text); border-color: color-mix(in srgb, var(--lc-color-success) 30%, transparent); }
+.onboarding-checklist li[data-complete="true"] i { color: var(--lc-color-bg); background: var(--lc-color-success); }
+.onboarding-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--lc-space-3); width: 100%; }
+.onboarding-actions .text-button { margin-right: auto; }
+.onboarding-actions .secondary-button { min-height: var(--lc-control-height); }
+@keyframes onboarding-panel-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .publish-control { display: inline-flex; align-items: center; gap: 9px; min-height: 42px; padding: 0 13px; color: #dfe2f5; border: 1px solid var(--account-border); border-radius: 12px; background: rgba(255, 255, 255, 0.035); font-size: 0.78rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .publish-control input { position: absolute; opacity: 0; pointer-events: none; }
 .publish-switch { position: relative; width: 34px; height: 19px; border-radius: 999px; background: #4a4d66; transition: background 180ms ease; }
@@ -288,6 +330,9 @@ body.profile-page {
 .publish-control input:checked + .publish-switch { background: #7d60e9; }
 .publish-control input:checked + .publish-switch::after { transform: translateX(15px); }
 .publish-control input:focus-visible + .publish-switch { outline: 3px solid rgba(154, 92, 255, 0.3); outline-offset: 2px; }
+.onboarding-review .publish-control { width: 100%; justify-content: flex-start; gap: var(--lc-space-3); padding: var(--lc-space-3) var(--lc-space-4); white-space: normal; }
+.onboarding-review .publish-control > span:last-child { display: grid; gap: var(--lc-space-1); }
+.onboarding-review .publish-control small { color: var(--lc-color-text-muted); font-size: .68rem; font-weight: 500; }
 .professional-url { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 24px; padding: 13px 15px; border: 1px solid rgba(102, 186, 255, 0.16); border-radius: 12px; background: rgba(72, 139, 221, 0.07); font-size: 0.78rem; }
 .professional-url > span { color: #aacdf5; }
 .professional-url a { color: #d9eaff; overflow-wrap: anywhere; }
@@ -433,7 +478,15 @@ body.profile-page {
   .danger-outline-button { width: 100%; }
   .professional-card { padding: 22px 18px; }
   .professional-heading { flex-direction: column; gap: 0; }
-  .publish-control { width: 100%; justify-content: space-between; margin-bottom: 22px; }
+  .onboarding-overview { grid-template-columns: 1fr; }
+  .onboarding-progress-copy { align-items: flex-start; }
+  .onboarding-progress { grid-column: auto; }
+  .onboarding-panel { min-height: 0; padding: var(--lc-space-4); }
+  .onboarding-checklist { grid-template-columns: 1fr; }
+  .onboarding-actions { align-items: stretch; flex-direction: column-reverse; }
+  .onboarding-actions .text-button { margin-right: 0; }
+  .onboarding-actions button { width: 100%; justify-content: center; }
+  .publish-control { width: 100%; margin-bottom: 22px; }
   .specialty-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .professional-url { align-items: flex-start; flex-direction: column; }
   .portfolio-heading, .portfolio-file-field, .portfolio-actions { align-items: stretch; flex-direction: column; }
@@ -448,4 +501,7 @@ body.profile-page {
   .primary-button,
   .secondary-button,
   .danger-button { transition: none; }
+  .onboarding-progress span,
+  .onboarding-step { transition: none; }
+  .onboarding-panel { animation: none; }
 }

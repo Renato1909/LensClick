@@ -165,43 +165,69 @@
             <p data-i18n="profile.pro.lead">Conte como você trabalha e escolha exatamente o que ficará visível para clientes.</p>
           </div>
         </div>
-        <label class="publish-control" for="professionalPublished">
-          <input id="professionalPublished" type="checkbox">
-          <span class="publish-switch" aria-hidden="true"></span>
-          <span data-i18n="profile.pro.publish">Perfil público</span>
-        </label>
       </div>
 
+      <div class="onboarding-overview" aria-labelledby="onboardingProgressTitle">
+        <div>
+          <p class="onboarding-kicker" data-i18n="profile.onboarding.kicker">Preparação do perfil</p>
+          <h3 id="onboardingProgressTitle" data-i18n="profile.onboarding.title">Complete sua vitrine passo a passo</h3>
+          <p data-i18n="profile.onboarding.lead">Você pode salvar como rascunho e continuar quando quiser.</p>
+        </div>
+        <div class="onboarding-progress-copy" aria-live="polite">
+          <strong id="onboardingProgressValue">0%</strong>
+          <span data-i18n="profile.onboarding.complete">essencial concluído</span>
+        </div>
+        <div class="onboarding-progress" role="progressbar" aria-labelledby="onboardingProgressTitle" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span id="onboardingProgressBar"></span>
+        </div>
+      </div>
+
+      <nav class="onboarding-steps" aria-label="Etapas do perfil profissional" data-i18n-aria="profile.onboarding.navLabel">
+        <ol>
+          <li><button type="button" class="onboarding-step" data-onboarding-step="1" aria-controls="onboardingStepIdentity"><span>1</span><strong data-i18n="profile.onboarding.step1">Identidade</strong></button></li>
+          <li><button type="button" class="onboarding-step" data-onboarding-step="2" aria-controls="onboardingStepService"><span>2</span><strong data-i18n="profile.onboarding.step2">Atendimento</strong></button></li>
+          <li><button type="button" class="onboarding-step" data-onboarding-step="3" aria-controls="onboardingStepContact"><span>3</span><strong data-i18n="profile.onboarding.step3">Contato</strong></button></li>
+          <li><button type="button" class="onboarding-step" data-onboarding-step="4" aria-controls="onboardingStepPublish"><span>4</span><strong data-i18n="profile.onboarding.step4">Revisar</strong></button></li>
+        </ol>
+      </nav>
+
       <form id="professionalForm">
-        <div class="professional-url" id="professionalUrlBox" hidden>
-          <span><i class="fa-solid fa-link" aria-hidden="true"></i> <span data-i18n="profile.pro.publicLink">Seu endereço público</span></span>
-          <a id="professionalPublicLink" href="#" target="_blank" rel="noopener noreferrer"></a>
-        </div>
-
-        <div class="field">
-          <label for="professionalBio" data-i18n="profile.pro.bio">Apresentação profissional</label>
-          <textarea id="professionalBio" maxlength="1200" rows="6" aria-describedby="professionalBioHint"></textarea>
-          <div class="field-meta"><p class="field-note" id="professionalBioHint" data-i18n="profile.pro.bioHint">Fale sobre seu olhar, experiência e maneira de conduzir cada trabalho. Mínimo de 60 caracteres para publicar.</p><span id="professionalBioCount">0/1200</span></div>
-        </div>
-
-        <fieldset class="specialties-fieldset">
-          <legend data-i18n="profile.pro.specialties">Especialidades</legend>
-          <p class="field-note" data-i18n="profile.pro.specialtiesHint">Escolha até seis áreas que representam seu trabalho.</p>
-          <div class="specialty-grid">
-            <label><input type="checkbox" name="specialties" value="wedding"><span data-i18n="specialty.wedding">Casamentos</span></label>
-            <label><input type="checkbox" name="specialties" value="events"><span data-i18n="specialty.events">Eventos</span></label>
-            <label><input type="checkbox" name="specialties" value="portrait"><span data-i18n="specialty.portrait">Retratos</span></label>
-            <label><input type="checkbox" name="specialties" value="family"><span data-i18n="specialty.family">Família</span></label>
-            <label><input type="checkbox" name="specialties" value="corporate"><span data-i18n="specialty.corporate">Corporativo</span></label>
-            <label><input type="checkbox" name="specialties" value="product"><span data-i18n="specialty.product">Produtos</span></label>
-            <label><input type="checkbox" name="specialties" value="fashion"><span data-i18n="specialty.fashion">Moda</span></label>
-            <label><input type="checkbox" name="specialties" value="newborn"><span data-i18n="specialty.newborn">Newborn</span></label>
-            <label><input type="checkbox" name="specialties" value="nature"><span data-i18n="specialty.nature">Natureza</span></label>
-            <label><input type="checkbox" name="specialties" value="real-estate"><span data-i18n="specialty.realEstate">Imóveis</span></label>
+        <section class="onboarding-panel" id="onboardingStepIdentity" data-onboarding-panel="1" aria-labelledby="onboardingIdentityTitle">
+          <div class="onboarding-panel-heading">
+            <p data-i18n="profile.onboarding.stepLabel">Etapa 1 de 4</p>
+            <h3 id="onboardingIdentityTitle" data-i18n="profile.onboarding.identityTitle">Mostre o que torna seu trabalho único</h3>
+            <span data-i18n="profile.onboarding.identityLead">Uma apresentação clara ajuda o cliente a reconhecer seu estilo.</span>
           </div>
-        </fieldset>
+          <div class="field">
+            <label for="professionalBio" data-i18n="profile.pro.bio">Apresentação profissional</label>
+            <textarea id="professionalBio" maxlength="1200" rows="6" aria-describedby="professionalBioHint"></textarea>
+            <div class="field-meta"><p class="field-note" id="professionalBioHint" data-i18n="profile.pro.bioHint">Fale sobre seu olhar, experiência e maneira de conduzir cada trabalho. Mínimo de 60 caracteres para publicar.</p><span id="professionalBioCount">0/1200</span></div>
+          </div>
+          <fieldset class="specialties-fieldset">
+            <legend data-i18n="profile.pro.specialties">Especialidades</legend>
+            <p class="field-note" data-i18n="profile.pro.specialtiesHint">Escolha até seis áreas que representam seu trabalho.</p>
+            <div class="specialty-grid">
+              <label><input type="checkbox" name="specialties" value="wedding"><span data-i18n="specialty.wedding">Casamentos</span></label>
+              <label><input type="checkbox" name="specialties" value="events"><span data-i18n="specialty.events">Eventos</span></label>
+              <label><input type="checkbox" name="specialties" value="portrait"><span data-i18n="specialty.portrait">Retratos</span></label>
+              <label><input type="checkbox" name="specialties" value="family"><span data-i18n="specialty.family">Família</span></label>
+              <label><input type="checkbox" name="specialties" value="corporate"><span data-i18n="specialty.corporate">Corporativo</span></label>
+              <label><input type="checkbox" name="specialties" value="product"><span data-i18n="specialty.product">Produtos</span></label>
+              <label><input type="checkbox" name="specialties" value="fashion"><span data-i18n="specialty.fashion">Moda</span></label>
+              <label><input type="checkbox" name="specialties" value="newborn"><span data-i18n="specialty.newborn">Newborn</span></label>
+              <label><input type="checkbox" name="specialties" value="nature"><span data-i18n="specialty.nature">Natureza</span></label>
+              <label><input type="checkbox" name="specialties" value="real-estate"><span data-i18n="specialty.realEstate">Imóveis</span></label>
+            </div>
+          </fieldset>
+        </section>
 
-        <div class="form-grid professional-grid">
+        <section class="onboarding-panel" id="onboardingStepService" data-onboarding-panel="2" aria-labelledby="onboardingServiceTitle" hidden>
+          <div class="onboarding-panel-heading">
+            <p data-i18n="profile.onboarding.stepLabel2">Etapa 2 de 4</p>
+            <h3 id="onboardingServiceTitle" data-i18n="profile.onboarding.serviceTitle">Defina onde e como você atende</h3>
+            <span data-i18n="profile.onboarding.serviceLead">Essas informações ajudam clientes a encontrar uma opção compatível.</span>
+          </div>
+          <div class="form-grid professional-grid">
           <div class="field">
             <label for="professionalCity" data-i18n="profile.pro.city">Cidade base</label>
             <input id="professionalCity" type="text" maxlength="80" autocomplete="address-level2">
@@ -226,11 +252,18 @@
               <option value="unavailable" data-i18n="availability.unavailable">Agenda temporariamente fechada</option>
             </select>
           </div>
-        </div>
+          </div>
+        </section>
 
-        <div class="professional-divider"><span data-i18n="profile.pro.contacts">Contatos profissionais</span></div>
-        <p class="privacy-note"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span data-i18n="profile.pro.contactsHint">Nada será exibido sem você ativar o controle de visibilidade correspondente.</span></p>
-        <div class="form-grid professional-grid">
+        <section class="onboarding-panel" id="onboardingStepContact" data-onboarding-panel="3" aria-labelledby="onboardingContactTitle" hidden>
+          <div class="onboarding-panel-heading">
+            <p data-i18n="profile.onboarding.stepLabel3">Etapa 3 de 4</p>
+            <h3 id="onboardingContactTitle" data-i18n="profile.onboarding.contactTitle">Escolha como os clientes falam com você</h3>
+            <span data-i18n="profile.onboarding.contactLead">Você controla quais dados ficam públicos.</span>
+          </div>
+          <div class="professional-divider"><span data-i18n="profile.pro.contacts">Contatos profissionais</span></div>
+          <p class="privacy-note"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span data-i18n="profile.pro.contactsHint">Nada será exibido sem você ativar o controle de visibilidade correspondente.</span></p>
+          <div class="form-grid professional-grid">
           <div class="field contact-field">
             <label for="professionalEmail" data-i18n="profile.pro.email">E-mail profissional</label>
             <input id="professionalEmail" type="email" maxlength="254" autocomplete="email">
@@ -249,18 +282,43 @@
             <label for="professionalWebsite" data-i18n="profile.pro.website">Site profissional</label>
             <input id="professionalWebsite" type="url" maxlength="300" placeholder="https://">
           </div>
-        </div>
+          </div>
+        </section>
+
+        <section class="onboarding-panel onboarding-review" id="onboardingStepPublish" data-onboarding-panel="4" aria-labelledby="onboardingPublishTitle" hidden>
+          <div class="onboarding-panel-heading">
+            <p data-i18n="profile.onboarding.stepLabel4">Etapa 4 de 4</p>
+            <h3 id="onboardingPublishTitle" data-i18n="profile.onboarding.publishTitle">Revise e apresente seu perfil</h3>
+            <span data-i18n="profile.onboarding.publishLead">Confira os itens essenciais antes de abrir sua vitrine ao público.</span>
+          </div>
+          <ul class="onboarding-checklist" id="onboardingChecklist">
+            <li data-requirement="photo"><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="profile.onboarding.requirement.photo">Foto de perfil</span></li>
+            <li data-requirement="identity"><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="profile.onboarding.requirement.identity">Apresentação e especialidade</span></li>
+            <li data-requirement="location"><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="profile.onboarding.requirement.location">Cidade e estado</span></li>
+            <li data-requirement="contact"><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="profile.onboarding.requirement.contact">Canal de contato público</span></li>
+          </ul>
+          <label class="publish-control" for="professionalPublished">
+            <input id="professionalPublished" type="checkbox">
+            <span class="publish-switch" aria-hidden="true"></span>
+            <span><strong data-i18n="profile.pro.publish">Perfil público</strong><small data-i18n="profile.onboarding.publishHint">Ative quando estiver pronto para receber visitas.</small></span>
+          </label>
+          <div class="professional-url" id="professionalUrlBox" hidden>
+            <span><i class="fa-solid fa-link" aria-hidden="true"></i> <span data-i18n="profile.pro.publicLink">Seu endereço público</span></span>
+            <a id="professionalPublicLink" href="#" target="_blank" rel="noopener noreferrer"></a>
+          </div>
+        </section>
 
         <div class="form-footer professional-footer">
           <p id="professionalMsg" class="feedback-message" role="status" aria-live="polite" aria-atomic="true" hidden></p>
-          <button id="saveProfessionalProfile" class="primary-button" type="submit">
-            <span data-i18n="profile.pro.save">Salvar perfil profissional</span>
-            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-          </button>
+          <div class="onboarding-actions">
+            <button id="onboardingBack" class="text-button" type="button"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span data-i18n="profile.onboarding.back">Voltar</span></button>
+            <button id="saveProfessionalProfile" class="secondary-button" type="submit"><i class="fa-regular fa-floppy-disk" aria-hidden="true"></i><span id="saveProfessionalProfileLabel" data-i18n="profile.onboarding.saveDraft">Salvar rascunho</span></button>
+            <button id="onboardingNext" class="primary-button" type="button"><span data-i18n="profile.onboarding.next">Continuar</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+          </div>
         </div>
       </form>
 
-      <section class="portfolio-manager" aria-labelledby="portfolioManagerTitle">
+      <section class="portfolio-manager" aria-labelledby="portfolioManagerTitle" data-onboarding-panel="4" hidden>
         <div class="portfolio-heading">
           <div>
             <p class="professional-eyebrow" data-i18n="profile.portfolio.eyebrow">Portfólio</p>

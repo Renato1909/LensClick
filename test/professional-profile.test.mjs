@@ -38,6 +38,26 @@ test('a conta profissional oferece rascunho, publicacao e controles de contato',
   assert.match(styles, /\.specialty-grid/);
 });
 
+test('o onboarding profissional guia, valida e preserva o rascunho no D1', () => {
+  const page = read('public/perfil.html');
+  const script = read('public/profile-api.js');
+  const styles = read('public/account.css');
+
+  assert.equal((page.match(/data-onboarding-step="[1-4]"/g) || []).length, 4);
+  assert.equal((page.match(/data-onboarding-panel="[1-4]"/g) || []).length, 5);
+  assert.match(page, /role="progressbar"[^>]*aria-valuenow="0"/);
+  assert.match(page, /id="onboardingChecklist"/);
+  assert.match(page, /id="onboardingBack"/);
+  assert.match(page, /id="onboardingNext"/);
+  assert.match(script, /function validateOnboardingStep/);
+  assert.match(script, /function onboardingRequirements/);
+  assert.match(script, /window\.sessionStorage\.setItem\(ONBOARDING_STEP_KEY, String\(step\)\)/);
+  assert.doesNotMatch(script, /sessionStorage\.setItem\([^,]+,\s*JSON\.stringify/);
+  assert.match(script, /method: 'PUT'/);
+  assert.match(styles, /\.onboarding-progress/);
+  assert.match(styles, /prefers-reduced-motion/);
+});
+
 test('o perfil publico renderiza dados seguros sem HTML fornecido pelo usuario', () => {
   const page = read('public/fotografo.html');
   const script = read('public/photographer-profile.js');

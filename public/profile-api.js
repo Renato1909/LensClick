@@ -55,7 +55,16 @@
   const professionalPublicLink = document.getElementById('professionalPublicLink');
   const professionalMessage = document.getElementById('professionalMsg');
   const saveProfessionalProfile = document.getElementById('saveProfessionalProfile');
+  const saveProfessionalProfileLabel = document.getElementById('saveProfessionalProfileLabel');
   const specialtyInputs = [...document.querySelectorAll('input[name="specialties"]')];
+  const onboardingPanels = [...document.querySelectorAll('[data-onboarding-panel]')];
+  const onboardingStepButtons = [...document.querySelectorAll('[data-onboarding-step]')];
+  const onboardingBack = document.getElementById('onboardingBack');
+  const onboardingNext = document.getElementById('onboardingNext');
+  const onboardingProgress = document.querySelector('.onboarding-progress');
+  const onboardingProgressBar = document.getElementById('onboardingProgressBar');
+  const onboardingProgressValue = document.getElementById('onboardingProgressValue');
+  const onboardingChecklist = document.getElementById('onboardingChecklist');
   const portfolioUploadForm = document.getElementById('portfolioUploadForm');
   const portfolioImage = document.getElementById('portfolioImage');
   const portfolioFileLabel = document.getElementById('portfolioFileLabel');
@@ -73,6 +82,8 @@
   let profilePicture = '';
   let originalEmail = '';
   let portfolioItems = [];
+  let onboardingStep = 1;
+  const ONBOARDING_STEP_KEY = 'lensclick.professionalOnboardingStep';
 
   function redirectToLogin() {
     window.location.replace('login.html?next=perfil.html');
@@ -90,6 +101,7 @@
     removePhotoButton.hidden = !profilePicture;
     if (profilePicture) profileImage.src = profilePicture;
     else profileImage.removeAttribute('src');
+    updateOnboardingProgress();
   }
 
   function updateIdentity() {
@@ -123,6 +135,125 @@
     professionalBioCount.textContent = `${professionalBio.value.length}/1200`;
   }
 
+  function selectedSpecialties() {
+    return specialtyInputs.filter((input) => input.checked).map((input) => input.value);
+  }
+
+  function onboardingRequirements() {
+    const publicEmailReady = professionalShowEmail.checked && professionalEmail.validity.valid && Boolean(professionalEmail.value.trim());
+    const publicPhoneReady = professionalShowPhone.checked && professionalPhone.value.trim().length >= 8;
+    const instagramReady = /^[A-Za-z0-9._]{1,30}$/.test(professionalInstagram.value.trim().replace(/^@/, ''));
+    const websiteReady = professionalWebsite.validity.valid && Boolean(professionalWebsite.value.trim());
+    return {
+      photo: Boolean(profilePicture),
+      identity: professionalBio.value.trim().length >= 60 && selectedSpecialties().length > 0,
+      location: professionalCity.value.trim().length >= 2 && /^[A-Z]{2}$/.test(professionalState.value.trim()),
+      contact: publicEmailReady || publicPhoneReady || instagramReady || websiteReady
+    };
+  }
+
+  function updateOnboardingSaveLabel() {
+    if (!saveProfessionalProfileLabel) return;
+    saveProfessionalProfileLabel.textContent = professionalPublished.checked
+      ? UX.textByLanguage('Salvar e publicar', 'Save and publish')
+      : UX.textByLanguage('Salvar rascunho', 'Save draft');
+  }
+
+  function updateOnboardingProgress() {
+    if (!onboardingProgress) return;
+    const requirements = onboardingRequirements();
+    const completed = Object.values(requirements).filter(Boolean).length;
+    const percentage = Math.round((completed / Object.keys(requirements).length) * 100);
+    onboardingProgress.setAttribute('aria-valuenow', String(percentage));
+    onboardingProgressBar.style.width = `${percentage}%`;
+    onboardingProgressValue.textContent = `${percentage}%`;
+    Object.entries(requirements).forEach(([name, isComplete]) => {
+      const item = onboardingChecklist.querySelector(`[data-requirement="${name}"]`);
+      if (item) item.dataset.complete = String(isComplete);
+    });
+    const stepCompletion = {
+      1: requirements.identity,
+      2: requirements.location,
+      3: requirements.contact,
+      4: Object.values(requirements).every(Boolean)
+    };
+    onboardingStepButtons.forEach((button) => {
+      button.dataset.complete = String(stepCompletion[Number(button.dataset.onboardingStep)]);
+    });
+    updateOnboardingSaveLabel();
+  }
+
+  function rememberOnboardingStep(step) {
+    try { window.sessionStorage.setItem(ONBOARDING_STEP_KEY, String(step)); } catch { /* Session continuity is optional. */ }
+  }
+
+  function showOnboardingStep(step, options = {}) {
+    onboardingStep = Math.min(4, Math.max(1, Number(step) || 1));
+    onboardingPanels.forEach((panel) => { panel.hidden = Number(panel.dataset.onboardingPanel) !== onboardingStep; });
+    onboardingStepButtons.forEach((button) => {
+      const active = Number(button.dataset.onboardingStep) === onboardingStep;
+      if (active) button.setAttribute('aria-current', 'step');
+      else button.removeAttribute('aria-current');
+    });
+    onboardingBack.hidden = onboardingStep === 1;
+    onboardingNext.hidden = onboardingStep === 4;
+    rememberOnboardingStep(onboardingStep);
+    updateOnboardingProgress();
+    if (options.focus) {
+      const heading = document.querySelector(`[data-onboarding-panel="${onboardingStep}"] h3`);
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        heading.focus({ preventScroll: true });
+        heading.scrollIntoView({ behavior: UX.prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' });
+      }
+    }
+  }
+
+  function showOnboardingValidation(message, element) {
+    UX.showMessage(professionalMessage, message, 'error');
+    if (element) {
+      element.setAttribute('aria-invalid', 'true');
+      element.focus();
+    }
+  }
+
+  function validateOnboardingStep(step) {
+    const requirements = onboardingRequirements();
+    if (step === 1 && !requirements.identity) {
+      const missingBio = professionalBio.value.trim().length < 60;
+      showOnboardingValidation(
+        UX.textByLanguage('Escreva uma apresentação de pelo menos 60 caracteres e escolha uma especialidade.', 'Write an introduction of at least 60 characters and choose one specialty.'),
+        missingBio ? professionalBio : specialtyInputs[0]
+      );
+      return false;
+    }
+    if (step === 2 && !requirements.location) {
+      const target = professionalCity.value.trim().length < 2 ? professionalCity : professionalState;
+      showOnboardingValidation(
+        UX.textByLanguage('Informe sua cidade e a sigla do estado com duas letras.', 'Enter your city and the two-letter state code.'),
+        target
+      );
+      return false;
+    }
+    if (step === 3 && !requirements.contact) {
+      showOnboardingValidation(
+        UX.textByLanguage('Adicione ao menos um contato que possa aparecer no perfil público.', 'Add at least one contact that can appear on your public profile.'),
+        professionalEmail
+      );
+      return false;
+    }
+    UX.showMessage(professionalMessage, '');
+    return true;
+  }
+
+  function firstIncompleteOnboardingStep() {
+    const requirements = onboardingRequirements();
+    if (!requirements.identity) return 1;
+    if (!requirements.location) return 2;
+    if (!requirements.contact) return 3;
+    return 4;
+  }
+
   function updateProfessionalLink(profile) {
     const visible = Boolean(profile?.isPublished && profile.slug);
     professionalUrlBox.hidden = !visible;
@@ -154,6 +285,7 @@
     specialtyInputs.forEach((input) => { input.checked = selected.has(input.value); });
     updateBioCount();
     updateProfessionalLink(profile);
+    updateOnboardingProgress();
   }
 
   function portfolioLabel(pt, en) {
@@ -274,6 +406,9 @@
       );
       populateProfessional(data.profile);
       await loadPortfolio();
+      let rememberedStep = 1;
+      try { rememberedStep = Number(window.sessionStorage.getItem(ONBOARDING_STEP_KEY)) || 1; } catch { /* Start at the first step. */ }
+      showOnboardingStep(rememberedStep);
     } catch (error) {
       if (error.status === 401) return redirectToLogin();
       UX.showMessage(professionalMessage, error.message, 'error');
@@ -332,19 +467,62 @@
     updateEmailProtection();
   });
 
-  professionalBio.addEventListener('input', updateBioCount);
+  professionalBio.addEventListener('input', () => {
+    professionalBio.removeAttribute('aria-invalid');
+    updateBioCount();
+    updateOnboardingProgress();
+  });
   professionalState.addEventListener('input', () => {
+    professionalState.removeAttribute('aria-invalid');
     professionalState.value = professionalState.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
+    updateOnboardingProgress();
   });
   specialtyInputs.forEach((input) => {
     input.addEventListener('change', () => {
+      specialtyInputs.forEach((item) => item.removeAttribute('aria-invalid'));
       const selectedCount = specialtyInputs.filter((item) => item.checked).length;
       if (selectedCount > 6) {
         input.checked = false;
         UX.showMessage(professionalMessage, UX.textByLanguage('Escolha no máximo seis especialidades.', 'Choose up to six specialties.'), 'error');
       }
+      updateOnboardingProgress();
     });
   });
+
+  [professionalCity, professionalEmail, professionalPhone, professionalInstagram, professionalWebsite].forEach((input) => {
+    input.addEventListener('input', () => {
+      input.removeAttribute('aria-invalid');
+      updateOnboardingProgress();
+    });
+  });
+  [professionalShowEmail, professionalShowPhone].forEach((input) => {
+    input.addEventListener('change', updateOnboardingProgress);
+  });
+
+  onboardingStepButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const targetStep = Number(button.dataset.onboardingStep);
+      if (targetStep > onboardingStep && !validateOnboardingStep(onboardingStep)) return;
+      showOnboardingStep(targetStep, { focus: true });
+    });
+  });
+  onboardingBack.addEventListener('click', () => showOnboardingStep(onboardingStep - 1, { focus: true }));
+  onboardingNext.addEventListener('click', () => {
+    if (!validateOnboardingStep(onboardingStep)) return;
+    showOnboardingStep(onboardingStep + 1, { focus: true });
+  });
+  professionalPublished.addEventListener('change', () => {
+    if (professionalPublished.checked && !Object.values(onboardingRequirements()).every(Boolean)) {
+      professionalPublished.checked = false;
+      showOnboardingStep(firstIncompleteOnboardingStep(), { focus: true });
+      UX.showMessage(professionalMessage, UX.textByLanguage(
+        'Complete os itens essenciais antes de tornar o perfil público.',
+        'Complete the essential items before making the profile public.'
+      ), 'info');
+    }
+    updateOnboardingProgress();
+  });
+  document.addEventListener('translations.updated', updateOnboardingSaveLabel);
 
   portfolioImage.addEventListener('change', () => {
     const file = portfolioImage.files?.[0];
@@ -418,7 +596,15 @@
   professionalForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!professionalForm.reportValidity()) return;
-    const selectedSpecialties = specialtyInputs.filter((input) => input.checked).map((input) => input.value);
+    if (professionalPublished.checked && !Object.values(onboardingRequirements()).every(Boolean)) {
+      showOnboardingStep(firstIncompleteOnboardingStep(), { focus: true });
+      UX.showMessage(professionalMessage, UX.textByLanguage(
+        'Complete os itens essenciais antes de publicar.',
+        'Complete the essential items before publishing.'
+      ), 'error');
+      return;
+    }
+    const selectedSpecialtyValues = selectedSpecialties();
     const priceValue = professionalPrice.value === '' ? null : Math.round(Number(professionalPrice.value) * 100);
     UX.setBusy(saveProfessionalProfile, true, { pt: 'Salvando...', en: 'Saving...' });
     UX.showMessage(professionalMessage, '');
@@ -428,7 +614,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bio: professionalBio.value.trim(),
-          specialties: selectedSpecialties,
+          specialties: selectedSpecialtyValues,
           city: professionalCity.value.trim(),
           state: professionalState.value.trim(),
           serviceRadiusKm: professionalRadius.value,
