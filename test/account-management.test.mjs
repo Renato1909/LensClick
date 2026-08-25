@@ -42,14 +42,16 @@ test('o gerenciamento da conta possui tradução completa em português e inglê
 
 test('o Worker protege alterações sensíveis e revoga outras sessões', () => {
   const worker = read('src/worker.mjs');
+  const router = read('src/router.mjs');
 
   assert.match(worker, /emailChanged[\s\S]*verifyPassword/);
-  assert.match(worker, /\/api\/account\/password/);
+  assert.match(router, /id: 'account\.password\.update', method: 'PUT', path: '\/api\/account\/password'/);
   assert.match(worker, /DELETE FROM sessions WHERE user_id = \? AND token_hash <> \?/);
   assert.match(worker, /DELETE FROM password_reset_tokens WHERE user_id = \?/);
-  assert.match(worker, /\/api\/account\/photo/);
+  assert.match(router, /id: 'account\.photo\.delete', method: 'DELETE', path: '\/api\/account\/photo'/);
   assert.match(worker, /PROFILE_IMAGES\.delete\(current\.profile_pic_key\)/);
-  assert.match(worker, /pathname === '\/api\/account' && method === 'DELETE'/);
+  assert.match(router, /id: 'account\.delete', method: 'DELETE', path: '\/api\/account'/);
+  assert.match(worker, /routeId === 'account\.delete'/);
   assert.doesNotMatch(worker, /DELETE FROM contact_messages WHERE email = \? COLLATE NOCASE/);
   assert.doesNotMatch(worker, /DELETE FROM newsletter_subscriptions WHERE email = \? COLLATE NOCASE/);
   assert.match(worker, /DELETE FROM users WHERE id = \?/);

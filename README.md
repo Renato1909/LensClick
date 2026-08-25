@@ -44,7 +44,8 @@ npm run test:smoke
 
 ## Estrutura principal
 
-- `src/worker.mjs`: Worker, autenticacao e APIs.
+- `src/worker.mjs`: entrypoint, handlers, autenticacao e APIs.
+- `src/router.mjs`: catalogo declarativo e despacho de rotas HTTP.
 - `migrations/`: evolucao versionada do D1, incluindo autenticacao, perfis profissionais e portfolio.
 - `db/schema.ts`: referencia dos nomes e da versao do esquema.
 - `public/`: HTML, JavaScript e demais arquivos publicos.

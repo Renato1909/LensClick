@@ -207,8 +207,8 @@ Frontend e API são atendidos pelo **mesmo Worker no mesmo domínio**:
 ### Consequências
 
 - **Benefícios:** cookies simples, sem CORS, deploy único, validação de origem direta.
-- **Limitações:** frontend e API compartilham o mesmo Worker, o que significa que o roteamento (21 rotas if/regex em `worker.mjs`) cresce em um único arquivo — um hotspot conhecido.
-- **Pontos futuros:** o roadmap prevê extrair o roteador para `src/router.mjs` (marco de transição da Fase 1) e modularizar o Worker por domínio (Fase 4), sem separar domínios.
+- **Limitações:** frontend e API compartilham o mesmo Worker; o catálogo e o despacho já estão em `src/router.mjs`, mas os handlers ainda permanecem centralizados em `src/worker.mjs`.
+- **Pontos futuros:** a Fase 4 modulariza os handlers por domínio, preservando o roteador já extraído e sem separar o deploy em múltiplos Workers.
 
 ### Status
 
