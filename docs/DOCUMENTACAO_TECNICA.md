@@ -282,6 +282,7 @@ O Worker possui duas responsabilidades: atender `/api/*` e entregar os arquivos 
 | POST | `/api/auth/password-reset/confirm` | Nao | Definir senha com token unico | 200, 400, 429 |
 | POST | `/api/auth/logout` | Cookie | Encerrar sessao | 200 |
 | GET | `/api/auth/me` | Cookie | Obter usuario atual | 200, 401 |
+| GET | `/api/health` | Nao | Verificar disponibilidade do Worker e do D1 | 200, 503 |
 | GET | `/api/account/professional-profile` | Cookie | Obter rascunho profissional | 200, 401 |
 | PUT | `/api/account/professional-profile` | Cookie + papel fotografo | Salvar ou publicar perfil profissional | 200, 400, 401, 403, 429 |
 | GET | `/api/account/portfolio` | Cookie | Listar portfolio do proprio fotografo | 200, 401 |
@@ -313,6 +314,7 @@ O Worker possui duas responsabilidades: atender `/api/*` e entregar os arquivos 
 - `413`: corpo ou foto acima do limite.
 - `429`: excesso de tentativas.
 - `500`: erro interno sem detalhes sensiveis para o usuario.
+- `503`: dependencia essencial temporariamente indisponivel.
 
 ## 7. Autenticacao e sessao
 
@@ -508,6 +510,18 @@ erDiagram
 - `bucket_key` e um hash do escopo, IP e janela de tempo;
 - `request_count` registra tentativas;
 - `expires_at` permite limpeza de janelas antigas.
+
+### 8.5 Indices de busca
+
+A migration `0005_search_indexes.sql` alinha a listagem publica aos filtros e a
+ordenacao usados pela API. Ela adiciona indices compostos para perfis publicados
+por atualizacao, estado e disponibilidade, e remove o indice explicito redundante
+de `slug`; a restricao `UNIQUE` continua fornecendo o indice correspondente.
+
+Cidade e especialidade continuam sendo filtros por correspondencia parcial. Como
+especialidades sao armazenadas em JSON, um indice SQLite comum nao elimina a
+varredura desses valores. Uma futura normalizacao deve ser tratada como evolucao
+de modelo propria, nao como parte desta migration de baixo risco.
 
 ## 9. Armazenamento R2
 

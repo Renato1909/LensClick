@@ -5,6 +5,7 @@ export const API_CONTRACTS = Object.freeze([
   { area: 'auth', method: 'POST', route: '/api/auth/password-reset/confirm' },
   { area: 'auth', method: 'POST', route: '/api/auth/logout' },
   { area: 'auth', method: 'GET', route: '/api/auth/me' },
+  { area: 'operations', method: 'GET', route: '/api/health' },
   { area: 'discovery', method: 'GET', route: '/api/photographers' },
   { area: 'discovery', method: 'GET', route: '/api/photographers/:slug' },
   { area: 'discovery', method: 'GET', route: '/api/photographers/:slug/photo' },

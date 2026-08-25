@@ -408,6 +408,17 @@ async function handleApi(request, env, url, context, requestContext) {
     return json(403, { error: 'Origem da requisicao nao autorizada.' });
   }
 
+  if (pathname === '/api/health' && method === 'GET') {
+    try {
+      const databaseCheck = await env.DB.prepare('SELECT 1 AS ok').first('ok');
+      if (Number(databaseCheck) !== 1) throw new Error('D1 health check returned an unexpected result.');
+      return json(200, { status: 'ok', checks: { database: 'ok' } });
+    } catch {
+      reportOperationalError(requestContext, 'database.health_check.failed', 'database_error');
+      return json(503, { status: 'unavailable' });
+    }
+  }
+
   if (pathname === '/api/auth/register' && method === 'POST') {
     if (await isRateLimited(request, env, pathname, 8, 15 * 60 * 1000, env.AUTH_RATE_LIMITER)) {
       return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });

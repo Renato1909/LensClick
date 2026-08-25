@@ -1,6 +1,6 @@
 // Referencia do esquema D1. A migracao executavel correspondente fica em
 // migrations/; alteracoes futuras devem atualizar ambos.
-export const schemaVersion = 4;
+export const schemaVersion = 5;
 
 export const tables = {
   users: "users",

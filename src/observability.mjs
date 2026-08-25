@@ -2,6 +2,7 @@ const SCHEMA_VERSION = 1;
 
 const REQUEST_EVENT = 'http.request.completed';
 const OPERATIONAL_EVENTS = new Set([
+  'database.health_check.failed',
   'email.password_reset.delivery_failed',
   'storage.profile_picture.cleanup_failed'
 ]);
@@ -21,6 +22,7 @@ const STATIC_API_ROUTES = new Set([
   '/api/auth/password-reset/confirm',
   '/api/auth/logout',
   '/api/auth/me',
+  '/api/health',
   '/api/photographers',
   '/api/account/portfolio',
   '/api/account/professional-profile',
