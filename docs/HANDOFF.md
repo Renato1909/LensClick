@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 24 de agosto de 2026, com `main` em `f94413e`.
+> **Data de referência:** 25 de agosto de 2026, com `main` em `de4c2d0`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado da Fase 1:** iniciativas 1.1, 1.2, 1.3 e 1.4 concluídas; a próxima prioridade é o marco de transição entre as Fases 1 e 2.
+> **Estado da Fase 1:** iniciativas 1.1–1.4 e o marco de transição concluídos; a próxima prioridade é a iniciativa 2.1.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `f94413e` — "feat: add D1 health check and search indexes" (#32).
+- **Branch:** `main` → commit `de4c2d0` — "refactor: extract request router" (#34).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -76,7 +76,7 @@ A limpeza controlada foi concluída após comparar a árvore de cada branch obso
 
 ## 3. Funcionalidades em desenvolvimento
 
-Não há iniciativa em desenvolvimento em uma branch ativa. As quatro iniciativas da Fase 1 estão integradas; observabilidade (1.1), contratos por rota (1.2), rate limiting nativo (1.3) e índices/health check do D1 (1.4) foram publicados e validados em produção. As funcionalidades de produto abaixo já estão em `main` e em produção:
+Não há iniciativa em desenvolvimento em uma branch ativa. As quatro iniciativas da Fase 1 e o marco de transição estão integrados e validados em produção. O catálogo e o despacho HTTP agora ficam em `src/router.mjs`; os handlers permanecem em `src/worker.mjs` até a modularização por domínio da iniciativa 4.2. As funcionalidades de produto abaixo já estão em `main` e em produção:
 
 ### Funcionalidades entregues
 
@@ -145,6 +145,8 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #30 | `3f95de2` | feat: add native rate limit shield |
 | #31 | `d4621b3` | docs: record rate limit production validation |
 | #32 | `f94413e` | feat: add D1 health check and search indexes |
+| #33 | `57b0e8c` | docs: close D1 health initiative |
+| #34 | `de4c2d0` | refactor: extract request router |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -174,6 +176,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 - **Rate limiting híbrido** — a iniciativa 1.3 adicionou quatro bindings nativos de 60 segundos como escudo de rajada e preservou as políticas longas no D1 como camada autoritativa e fallback.
 - **Health check mínimo e seguro** — `GET /api/health` executa `SELECT 1` no D1, retorna somente estado genérico e não consulta o R2 para evitar operações artificiais.
 - **Índices orientados pelas consultas reais** — a migration `0005` adicionou índices para listagem, estado e disponibilidade; o índice explícito redundante de `slug` foi removido, preservando o autoíndice da restrição `UNIQUE`.
+- **Roteador declarativo extraído** — o PR #34 criou `src/router.mjs` com as 25 combinações HTTP catalogadas, preservando origem, parâmetros dinâmicos, respostas e entrega de assets.
 
 ---
 
@@ -209,10 +212,14 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - **1.3 Rate limiting nativo Cloudflare** — concluída pelo PR #30 e validada em produção após aproximadamente 58 horas: 0 respostas `429` inesperadas, 0 erros `5xx` e nenhum rollback.
 - **1.4 Índices e health check D1** — concluída pelo PR #32: migration `0005` aplicada no D1 remoto, `GET /api/health` validado com `200`, buscas públicas validadas e versão `83c02bf5-5fa3-4ce2-ac66-d2023a5f82ba` servindo 100% do tráfego, sem rollback.
 
-### Marco de transição entre Fases 1 e 2 (próxima ação)
-- Extrair o roteamento de `src/worker.mjs` para `src/router.mjs`, preservando integralmente o comportamento.
-- Usar a suíte automatizada como rede de segurança antes e depois da extração.
-- Não iniciar mudanças de UX da Fase 2 no mesmo PR estrutural.
+### Marco de transição entre Fases 1 e 2 (concluído)
+- Integrado pelo PR #34 com catálogo declarativo em `src/router.mjs` e handlers preservados em `src/worker.mjs`.
+- Validado com 128 testes, smoke local completo, CI e smoke de produção.
+- Versão `c989bdad-ea2a-4b33-8088-f16ae355928b` servindo 100% do tráfego; zero `5xx`, zero erro operacional e nenhum rollback no smoke inicial.
+
+### Fase 2.1 — próxima ação
+- Planejar e implementar o onboarding guiado do fotógrafo em PRs de escopo controlado.
+- Preservar salvamento parcial, acessibilidade, PT/EN e o comportamento das APIs existentes.
 
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD.
@@ -229,8 +236,8 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Transição] Extrair roteador para src/router.mjs ← atividade estrutural, risco médio
-2. [Fase 2] Iniciar onboarding guiado do fotógrafo ← próxima evolução de produto
+1. [Fase 2.1] Onboarding guiado do fotógrafo       ← próxima evolução de produto
+2. [Fase 2.2] Busca com filtros e ordenação         ← após o onboarding
 3. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← 1-2 dias, baixo risco
 4. [P5] Segurança: verificação e-mail, 2FA, roles   ← 3-5 dias, alto risco
 ```
@@ -240,7 +247,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - A iniciativa 1.2 criou a cobertura de regressão necessária antes das mudanças de rate limiting e health check.
 - A iniciativa 1.3 foi concluída com uma arquitetura híbrida e rollback documentado.
 - A iniciativa 1.4 foi concluída com migration remota, health check e smoke test de produção; a Fase 1 está encerrada.
-- O marco estrutural do roteador deve ocorrer antes da Fase 2, conforme o roadmap técnico.
+- O marco estrutural do roteador foi concluído e validado em produção; a Fase 2 pode começar.
 - P4 (SEO) é independente e pode ocorrer depois do marco de transição.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
@@ -275,7 +282,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 1 concluída; marco de transição é o próximo passo).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 1 e marco de transição concluídos; Fase 2.1 é o próximo passo).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
@@ -292,4 +299,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 24 de agosto de 2026, com `main` em `f94413e`; Fase 1 concluída. A iniciativa 1.4 foi integrada pelo PR #32, a migration `0005` foi aplicada no D1 remoto e a versão `83c02bf5-5fa3-4ce2-ac66-d2023a5f82ba` foi validada em produção com health check, busca pública e observabilidade, sem rollback.
+**Última atualização deste handoff:** 25 de agosto de 2026, com `main` em `de4c2d0`; Fase 1 e marco de transição concluídos. O PR #34 extraiu o roteador declarativo, e a versão `c989bdad-ea2a-4b33-8088-f16ae355928b` foi validada em produção com seis leituras de smoke, zero `5xx`, zero erro operacional e nenhum rollback.

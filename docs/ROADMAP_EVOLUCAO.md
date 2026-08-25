@@ -2,7 +2,7 @@
 
 > **Premissa**: evoluir sem quebrar. Cada iniciativa e aditiva e reversivel. Nenhuma recomenda reescrita completa - o monolito atual e simples, testavel e adequado ao estadio do produto.
 >
-> **Arquitetura atual**: Worker unico Cloudflare (`src/worker.mjs`, 21 rotas em cadeia de `if pathname ===`/regex) - D1 `lensclick-db` (8 tabelas: `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`) - R2 `lensclick-profile-images` - Frontend HTML/JS/CSS vanilla (23 arquivos em `public/`) - suite automatizada de testes - Rate limiting via D1 - Sessoes por cookie (PBKDF2-SHA256, 100k iteracoes) - CSP rigorosa - Lazy loading nativo ja presente em `photographer-profile.js` (sem `srcset`/variantes) - Sem `sitemap.xml`, `robots.txt`, `/api/health`, `caches.default`, OG/JSON-LD/meta description dinamica.
+> **Arquitetura atual**: Worker unico Cloudflare (`src/worker.mjs`, handlers) com catalogo e despacho declarativos em `src/router.mjs` (22 padroes de rota e 25 contratos HTTP) - D1 `lensclick-db` (8 tabelas: `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`) - R2 `lensclick-profile-images` - Frontend HTML/JS/CSS vanilla (23 arquivos em `public/`) - suite automatizada de testes - Rate limiting hibrido (edge + politicas longas no D1) - `GET /api/health` para Worker/D1 - Sessoes por cookie (PBKDF2-SHA256, 100k iteracoes) - CSP rigorosa - Lazy loading nativo ja presente em `photographer-profile.js` (sem `srcset`/variantes) - Sem `sitemap.xml`, `robots.txt`, `caches.default`, OG/JSON-LD/meta description dinamica.
 >
 > **Agentes disponiveis**: Arquiteto de Software, Engenheiro Frontend, Engenheiro Backend, Engenheiro de Banco de Dados, Engenheiro DevOps, Engenheiro de QA, Designer, Especialista em Seguranca, Especialista em SEO e Performance, Especialista em Marketing para Fotografia, Revisor de Codigo.
 
@@ -70,6 +70,8 @@
 ## Marco de transicao entre Fase 1 e Fase 2
 
 Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada uma unica vez, habilitada por 1.2 (cobertura de testes E2E por endpoint), que prepara o terreno para a modularizacao por dominio (4.2).
+
+> **Status:** concluido pelo PR #34 e validado em producao em 25 de agosto de 2026. A proxima iniciativa e 2.1.
 
 - **Objetivo**: Extrair o roteador de `worker.mjs` para `src/router.mjs` antes de iniciar a Fase 2.
 - **O que executa**: **Etapa A (roteador)** - extrair `handleRequest`/`handleApi` para `src/router.mjs` como `Map` de handlers (ou estrutura equivalente); preservar comportamento; sem mudanca de logica de negocio.
