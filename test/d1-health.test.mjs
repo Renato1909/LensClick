@@ -14,7 +14,8 @@ function migratedDatabase() {
     'migrations/0002_password_reset.sql',
     'migrations/0003_professional_profiles.sql',
     'migrations/0004_portfolio_items.sql',
-    'migrations/0005_search_indexes.sql'
+    'migrations/0005_search_indexes.sql',
+    'migrations/0006_search_price_radius_indexes.sql'
   ]) {
     database.exec(read(migration));
   }
@@ -25,9 +26,9 @@ function queryPlan(database, sql, values) {
   return database.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...values).map(({ detail }) => detail).join('\n');
 }
 
-test('migration 0005 alinha os indices aos filtros e a ordenacao da busca', () => {
+test('migrations de busca alinham os indices aos filtros e a ordenacao', () => {
   const database = migratedDatabase();
-  assert.match(read('db/schema.ts'), /schemaVersion = 5/);
+  assert.match(read('db/schema.ts'), /schemaVersion = 6/);
   const base = `
     SELECT p.user_id
     FROM professional_profiles p
@@ -37,12 +38,16 @@ test('migration 0005 alinha os indices aos filtros e a ordenacao da busca', () =
   const plans = {
     default: queryPlan(database, `${base} ORDER BY p.updated_at DESC LIMIT 12`, ['photographer']),
     state: queryPlan(database, `${base} AND p.state = ? ORDER BY p.updated_at DESC LIMIT 12`, ['photographer', 'SP']),
-    availability: queryPlan(database, `${base} AND p.availability = ? ORDER BY p.updated_at DESC LIMIT 12`, ['photographer', 'available'])
+    availability: queryPlan(database, `${base} AND p.availability = ? ORDER BY p.updated_at DESC LIMIT 12`, ['photographer', 'available']),
+    price: queryPlan(database, `${base} AND p.starting_price_cents >= ? ORDER BY p.starting_price_cents ASC LIMIT 12`, ['photographer', 250000]),
+    radius: queryPlan(database, `${base} AND p.service_radius_km >= ? ORDER BY p.service_radius_km DESC LIMIT 12`, ['photographer', 50])
   };
 
   assert.match(plans.default, /idx_professional_profiles_published_updated/);
   assert.match(plans.state, /idx_professional_profiles_published_state_updated/);
   assert.match(plans.availability, /idx_professional_profiles_published_availability_updated/);
+  assert.match(plans.price, /idx_professional_profiles_published_price_updated/);
+  assert.match(plans.radius, /idx_professional_profiles_published_radius_updated/);
   for (const plan of Object.values(plans)) assert.doesNotMatch(plan, /TEMP B-TREE FOR ORDER BY/);
 
   const indexes = database.prepare("SELECT name, origin FROM pragma_index_list('professional_profiles')").all();

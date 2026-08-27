@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Encontre fotógrafos por cidade, especialidade e disponibilidade.">
+  <meta name="description" content="Encontre fotógrafos por localização, especialidade, disponibilidade, preço e raio de atendimento.">
   <title data-i18n="search.title">Buscar fotógrafos | LensClick</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,7 +31,7 @@
   <main id="main-content" class="public-shell" tabindex="-1">
     <section class="search-hero" aria-labelledby="searchTitle">
       <h1 id="searchTitle" data-i18n="search.heading">Encontre um fotógrafo</h1>
-      <p data-i18n="search.lead">Filtre por cidade, especialidade e disponibilidade.</p>
+      <p data-i18n="search.lead">Filtre por localização, especialidade, disponibilidade, preço e raio de atendimento.</p>
     </section>
 
     <section class="search-controls" aria-labelledby="filtersTitle">
@@ -72,8 +72,37 @@
             <option value="unavailable" data-i18n="availability.unavailable">Agenda temporariamente fechada</option>
           </select>
         </div>
+        <div class="field">
+          <label for="filterMinPrice" data-i18n="search.filters.minPrice">Preço mínimo (R$)</label>
+          <input id="filterMinPrice" type="number" min="0" step="50" inputmode="decimal" placeholder="500" />
+        </div>
+        <div class="field">
+          <label for="filterMaxPrice" data-i18n="search.filters.maxPrice">Preço máximo (R$)</label>
+          <input id="filterMaxPrice" type="number" min="0" step="50" inputmode="decimal" placeholder="5000" />
+        </div>
+        <div class="field">
+          <label for="filterMinRadius" data-i18n="search.filters.minRadius">Raio mínimo de atendimento</label>
+          <select id="filterMinRadius">
+            <option value="" data-i18n="search.filters.anyRadius">Qualquer raio</option>
+            <option value="25">25 km</option>
+            <option value="50">50 km</option>
+            <option value="100">100 km</option>
+            <option value="250">250 km</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="filterSort" data-i18n="search.filters.sort">Ordenar por</label>
+          <select id="filterSort">
+            <option value="recommended" data-i18n="search.sort.recommended">Recomendados</option>
+            <option value="price_asc" data-i18n="search.sort.priceAsc">Menor preço</option>
+            <option value="price_desc" data-i18n="search.sort.priceDesc">Maior preço</option>
+            <option value="radius_desc" data-i18n="search.sort.radiusDesc">Maior raio de atendimento</option>
+            <option value="recent" data-i18n="search.sort.recent">Atualizados recentemente</option>
+          </select>
+        </div>
         <div class="form-footer">
           <button id="searchButton" class="primary-button" type="submit" data-i18n="search.filters.search">Buscar</button>
+          <button id="clearFilters" class="secondary-button" type="button" data-i18n="search.filters.clear">Limpar filtros</button>
         </div>
       </form>
     </section>

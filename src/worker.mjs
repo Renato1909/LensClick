@@ -550,10 +550,22 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     const state = cleanText(url.searchParams.get('state'), 2).toUpperCase();
     const specialty = cleanText(url.searchParams.get('specialty'), 30);
     const availability = url.searchParams.get('availability');
+    const minPrice = url.searchParams.has('minPrice') ? Number(url.searchParams.get('minPrice')) : null;
+    const maxPrice = url.searchParams.has('maxPrice') ? Number(url.searchParams.get('maxPrice')) : null;
+    const minRadius = url.searchParams.has('minRadius') ? Number(url.searchParams.get('minRadius')) : null;
+    const sort = url.searchParams.get('sort') || 'recommended';
     const page = Math.max(1, Number(url.searchParams.get('page')) || 1);
     const pageSize = Math.min(50, Math.max(1, Number(url.searchParams.get('pageSize')) || 12));
 
     const validAvailabilities = ['available', 'limited', 'unavailable'];
+    const orderBy = {
+      recommended: "CASE p.availability WHEN 'available' THEN 0 WHEN 'limited' THEN 1 ELSE 2 END, p.updated_at DESC",
+      recent: 'p.updated_at DESC',
+      price_asc: 'p.starting_price_cents IS NULL, p.starting_price_cents ASC, p.updated_at DESC',
+      price_desc: 'p.starting_price_cents IS NULL, p.starting_price_cents DESC, p.updated_at DESC',
+      radius_desc: 'p.service_radius_km IS NULL, p.service_radius_km DESC, p.updated_at DESC'
+    };
+    const selectedSort = Object.hasOwn(orderBy, sort) ? sort : 'recommended';
     const whereClauses = ['p.is_published = 1', 'u.role = \'photographer\''];
     const params = [];
 
@@ -573,6 +585,18 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
       whereClauses.push('p.availability = ?');
       params.push(availability);
     }
+    if (minPrice != null && Number.isFinite(minPrice) && minPrice >= 0) {
+      whereClauses.push('p.starting_price_cents >= ?');
+      params.push(Math.round(minPrice * 100));
+    }
+    if (maxPrice != null && Number.isFinite(maxPrice) && maxPrice >= 0) {
+      whereClauses.push('p.starting_price_cents <= ?');
+      params.push(Math.round(maxPrice * 100));
+    }
+    if (minRadius != null && Number.isFinite(minRadius) && minRadius >= 0 && minRadius <= 1000) {
+      whereClauses.push('p.service_radius_km >= ?');
+      params.push(Math.round(minRadius));
+    }
 
     const whereSql = whereClauses.join(' AND ');
     const offset = (page - 1) * pageSize;
@@ -590,7 +614,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
       FROM professional_profiles p
       JOIN users u ON u.id = p.user_id
       WHERE ${whereSql}
-      ORDER BY p.updated_at DESC
+      ORDER BY ${orderBy[selectedSort]}
       LIMIT ? OFFSET ?
     `).bind(...params, pageSize, offset).all();
 
@@ -603,7 +627,8 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
         pageSize,
         total,
         totalPages: Math.ceil(total / pageSize)
-      }
+      },
+      sort: selectedSort
     }, { 'Cache-Control': 'public, max-age=60' });
   }
 

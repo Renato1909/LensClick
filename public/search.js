@@ -5,6 +5,11 @@
   const cityInput = document.getElementById('filterCity');
   const specialtyInput = document.getElementById('filterSpecialty');
   const availabilityInput = document.getElementById('filterAvailability');
+  const minPriceInput = document.getElementById('filterMinPrice');
+  const maxPriceInput = document.getElementById('filterMaxPrice');
+  const minRadiusInput = document.getElementById('filterMinRadius');
+  const sortInput = document.getElementById('filterSort');
+  const clearFiltersBtn = document.getElementById('clearFilters');
   const resultsList = document.getElementById('resultsList');
   const resultsEmpty = document.getElementById('resultsEmpty');
   const pagination = document.getElementById('pagination');
@@ -47,13 +52,24 @@
     const meta = document.createElement('p');
     meta.className = 'field-note';
     meta.textContent = `${p.city || ''}${p.city && p.state ? ', ' : ''}${p.state || ''}`;
+    const details = document.createElement('p');
+    details.className = 'search-card-details';
+    const detailParts = [];
+    if (p.startingPriceCents != null) {
+      detailParts.push(new Intl.NumberFormat(document.documentElement.lang || 'pt-BR', {
+        style: 'currency', currency: 'BRL', maximumFractionDigits: 0
+      }).format(p.startingPriceCents / 100));
+    }
+    if (p.serviceRadiusKm != null) detailParts.push(`${p.serviceRadiusKm} km`);
+    details.textContent = detailParts.join(' · ');
+    details.hidden = detailParts.length === 0;
     const specialties = document.createElement('div');
     specialties.className = 'public-specialties small';
     (p.specialties || []).slice(0,3).forEach(s => {
       const badge = document.createElement('span'); badge.textContent = s; specialties.append(badge);
     });
 
-    info.append(name, meta, specialties);
+    info.append(name, meta, details, specialties);
     link.append(avatar, info);
     article.append(link);
     return article;
@@ -68,6 +84,10 @@
       if (stateInput.value.trim()) params.set('state', String(stateInput.value).trim().toUpperCase());
       if (specialtyInput.value) params.set('specialty', specialtyInput.value);
       if (availabilityInput.value) params.set('availability', availabilityInput.value);
+      if (minPriceInput.value) params.set('minPrice', minPriceInput.value);
+      if (maxPriceInput.value) params.set('maxPrice', maxPriceInput.value);
+      if (minRadiusInput.value) params.set('minRadius', minRadiusInput.value);
+      if (sortInput.value) params.set('sort', sortInput.value);
       params.set('page', String(page));
       params.set('pageSize', String(pageSize));
 
@@ -92,6 +112,7 @@
   }
 
   form.addEventListener('submit', (e) => { e.preventDefault(); page = 1; load(); });
+  clearFiltersBtn.addEventListener('click', () => { form.reset(); page = 1; load(); });
   prevPageBtn.addEventListener('click', () => { if (page > 1) { page -= 1; load(); } });
   nextPageBtn.addEventListener('click', () => { page += 1; load(); });
 
