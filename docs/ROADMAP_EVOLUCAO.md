@@ -71,7 +71,7 @@
 
 Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada uma unica vez, habilitada por 1.2 (cobertura de testes E2E por endpoint), que prepara o terreno para a modularizacao por dominio (4.2).
 
-> **Status:** concluido pelo PR #34 e validado em producao em 25 de agosto de 2026. A iniciativa 2.1 tambem foi concluida; a proxima iniciativa e 2.2.
+> **Status:** concluido pelo PR #34 e validado em producao em 25 de agosto de 2026. As iniciativas 2.1 e 2.2 tambem foram concluidas; a proxima iniciativa e 2.3.
 
 - **Objetivo**: Extrair o roteador de `worker.mjs` para `src/router.mjs` antes de iniciar a Fase 2.
 - **O que executa**: **Etapa A (roteador)** - extrair `handleRequest`/`handleApi` para `src/router.mjs` como `Map` de handlers (ou estrutura equivalente); preservar comportamento; sem mudanca de logica de negocio.
@@ -103,12 +103,14 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 2.2 Busca com filtros avancados e ordenacao
 
+> **Status:** concluido pelo PR #38 e validado em producao em 27 de agosto de 2026. A busca agora filtra preco minimo/maximo e raio minimo, ordena por recomendacao, preco, raio ou atualizacao e usa os indices da migration `0006`. A versao `ea2cfd01-fa8c-4770-b81d-9209fb2af021` serve 100% do trafego.
+
 1. **Nome da iniciativa**: Filtros de preco, raio e ordenacao na busca.
 2. **Objetivo**: Permitir clientes filtrarem por faixa de preco, ordenar por relevancia/distancia/avaliacao.
-3. **Problema resolvido**: Hoje `search.js` envia apenas `city`, `state`, `specialty`, `availability`. Sem ordenacao, sem faixa de preco, sem raio de servico (`service_radius_km` existe no schema mas nao e usado na busca).
+3. **Problema resolvido**: `search.js` enviava apenas `city`, `state`, `specialty`, `availability`. A entrega adicionou ordenacao, faixa de preco e uso do raio de servico (`service_radius_km`) na busca.
 4. **Impacto esperado**: Resultados mais relevantes; maior taxa de contato; diferenciacao competitiva.
-5. **Complexidade**: Media - backend ja tem os campos; adicionar query params e clausulas SQL; frontend precisa de UI de filtros.
-6. **Riscos**: Queries com multiplos filtros podem nao usar indices. Mitigacao: depende de 1.4 (indices) e testes de plano de query com `EXPLAIN`.
+5. **Implementacao entregue**: Query params e clausulas SQL parametrizadas, ordenacao em allowlist, UI responsiva e bilingue, exibicao de preco/raio nos cards e limpeza dos filtros.
+6. **Risco residual**: Distancia geografica real e avaliacao dependem de coordenadas e reputacao, dados ainda nao existentes; nao foram simuladas. Os planos de preco e raio possuem testes com `EXPLAIN`.
 7. **Dependencias**: 1.4 (indices), 1.2 (testes).
 8. **Agentes envolvidos**: Engenheiro Backend, Engenheiro Frontend, Engenheiro de Banco de Dados, Especialista em Marketing para Fotografia (consultado sobre relevancia dos filtros para o cliente).
 9. **Ordem recomendada**: **6a** - naturalmente apos onboarding (mais perfis publicados = mais valor na busca).

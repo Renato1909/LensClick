@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 25 de agosto de 2026, com `main` em `8b44417`.
+> **Data de referência:** 27 de agosto de 2026, com `main` em `2a2b672`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição e iniciativa 2.1 concluídos; a próxima prioridade é a iniciativa 2.2.
+> **Estado do roadmap:** Fase 1, marco de transição e iniciativas 2.1 e 2.2 concluídos; a próxima prioridade é a iniciativa 2.3.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `8b44417` — "feat: add guided photographer onboarding" (#36).
+- **Branch:** `main` → commit `2a2b672` — "Fase 2.2: adiciona filtros e ordenacao na busca" (#38).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -150,6 +150,8 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #34 | `de4c2d0` | refactor: extract request router |
 | #35 | `52dbeb7` | docs: close router transition |
 | #36 | `8b44417` | feat: add guided photographer onboarding |
+| #37 | `2c06174` | docs: close guided photographer onboarding |
+| #38 | `2a2b672` | Fase 2.2: adiciona filtros e ordenacao na busca |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -225,9 +227,11 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Validada com 129 testes, build do Wrangler, CI, revisão visual local e smoke de produção.
 - Versão `8df9581d-5dc9-40b2-80c3-76b52e12865e` servindo 100% do tráfego; zero `5xx`, zero exceção operacional e nenhum rollback no smoke inicial.
 
-### Fase 2.2 — próxima ação
-- Planejar e implementar filtros avançados e ordenação na busca em PRs de escopo controlado.
-- Preservar paginação, privacidade dos perfis não publicados, índices existentes e contratos HTTP atuais.
+### Fase 2.2 — concluída
+- Integrada pelo PR #38 com filtros de preço mínimo/máximo e raio mínimo, além de ordenação por recomendação, preço, raio e atualização recente.
+- Paginação e privacidade dos perfis não publicados foram preservadas; a ordenação usa allowlist e a migration `0006` adiciona índices para preço e raio.
+- Validada com 130 testes, build do Wrangler, CI, smoke HTTP local, health check e busca avançada em produção.
+- Versão `ea2cfd01-fa8c-4770-b81d-9209fb2af021` servindo 100% do tráfego; migration remota aplicada e nenhuma pendência no D1.
 
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD.
@@ -244,11 +248,10 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Fase 2.2] Busca com filtros e ordenação         ← próxima evolução de produto
-2. [Fase 2.3] Galeria com markup responsivo         ← após a busca
-3. [Fase 2.4] Internacionalização por catálogos     ← conforme prioridade internacional
-4. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← após as melhorias centrais de experiência
-5. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
+1. [Fase 2.3] Galeria com markup responsivo         ← próxima evolução de produto
+2. [Fase 2.4] Internacionalização por catálogos     ← conforme prioridade internacional
+3. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← após as melhorias centrais de experiência
+4. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
 ```
 
 **Justificativa da ordem:**
@@ -256,7 +259,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - A iniciativa 1.2 criou a cobertura de regressão necessária antes das mudanças de rate limiting e health check.
 - A iniciativa 1.3 foi concluída com uma arquitetura híbrida e rollback documentado.
 - A iniciativa 1.4 foi concluída com migration remota, health check e smoke test de produção; a Fase 1 está encerrada.
-- O marco estrutural do roteador e a iniciativa 2.1 foram concluídos e validados em produção; a Fase 2 segue pela busca avançada da iniciativa 2.2.
+- O marco estrutural do roteador e as iniciativas 2.1 e 2.2 foram concluídos e validados em produção; a Fase 2 segue pela galeria responsiva da iniciativa 2.3.
 - P4 (SEO) é independente e pode ocorrer depois do marco de transição.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
@@ -291,7 +294,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 1, marco de transição e Fase 2.1 concluídos; Fase 2.2 é o próximo passo).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 1, marco de transição e iniciativas 2.1 e 2.2 concluídos; Fase 2.3 é o próximo passo).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
@@ -308,4 +311,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 25 de agosto de 2026, com `main` em `8b44417`; Fase 1, marco de transição e iniciativa 2.1 concluídos. O PR #36 adicionou o onboarding guiado do fotógrafo, e a versão `8df9581d-5dc9-40b2-80c3-76b52e12865e` foi validada em produção com leituras de baixo impacto, zero `5xx`, zero exceção operacional e nenhum rollback.
+**Última atualização deste handoff:** 27 de agosto de 2026, com `main` em `2a2b672`; Fase 1, marco de transição e iniciativas 2.1 e 2.2 concluídos. O PR #38 adicionou filtros avançados e ordenação à busca, aplicou a migration `0006` e publicou a versão `ea2cfd01-fa8c-4770-b81d-9209fb2af021`, validada com D1 saudável e o novo contrato da API em produção.
