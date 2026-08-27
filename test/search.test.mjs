@@ -59,6 +59,30 @@ test('API de busca de fotógrafos funciona com filtros e paginação', async (t)
   assert.equal(avail.response.status, 200);
   assert.ok(avail.json.photographers.every(p => p.availability === 'available'));
 
+  const priceRange = await request('/api/photographers?minPrice=2600&maxPrice=3500');
+  assert.equal(priceRange.response.status, 200);
+  assert.deepEqual(priceRange.json.photographers.map(p => p.name), ['Ana Silva']);
+
+  const serviceRadius = await request('/api/photographers?minRadius=75');
+  assert.equal(serviceRadius.response.status, 200);
+  assert.deepEqual(serviceRadius.json.photographers.map(p => p.name), ['Bruno Costa']);
+
+  const priceAscending = await request('/api/photographers?sort=price_asc');
+  assert.equal(priceAscending.response.status, 200);
+  assert.equal(priceAscending.json.sort, 'price_asc');
+  assert.deepEqual(priceAscending.json.photographers.map(p => p.name), ['Bruno Costa', 'Ana Silva', 'Carla Dias']);
+
+  const priceDescending = await request('/api/photographers?sort=price_desc');
+  assert.deepEqual(priceDescending.json.photographers.map(p => p.name), ['Carla Dias', 'Ana Silva', 'Bruno Costa']);
+
+  const radiusDescending = await request('/api/photographers?sort=radius_desc');
+  assert.deepEqual(radiusDescending.json.photographers.map(p => p.name), ['Bruno Costa', 'Ana Silva', 'Carla Dias']);
+
+  const invalidAdvancedFilters = await request('/api/photographers?minPrice=invalid&maxPrice=-1&minRadius=1001&sort=DROP%20TABLE');
+  assert.equal(invalidAdvancedFilters.response.status, 200);
+  assert.equal(invalidAdvancedFilters.json.pagination.total, 3);
+  assert.equal(invalidAdvancedFilters.json.sort, 'recommended');
+
   const page1 = await request('/api/photographers?page=1&pageSize=2');
   assert.equal(page1.response.status, 200);
   assert.equal(page1.json.pagination.page, 1);
