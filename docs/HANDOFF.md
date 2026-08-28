@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 27 de agosto de 2026, com `main` em `2a2b672`.
+> **Data de referência:** 27 de agosto de 2026, com `main` em `d5ce86a`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição e iniciativas 2.1 e 2.2 concluídos; a próxima prioridade é a iniciativa 2.3.
+> **Estado do roadmap:** Fase 1, marco de transição e iniciativas 2.1, 2.2 e 2.3 concluídos; a próxima prioridade é a iniciativa 2.4.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `2a2b672` — "Fase 2.2: adiciona filtros e ordenacao na busca" (#38).
+- **Branch:** `main` → commit `d5ce86a` — "feat: add responsive portfolio gallery" (#40).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -55,11 +55,11 @@
 
 `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`.
 
-### Migrações publicadas (5)
+### Migrações publicadas (6)
 
-`0001_initial.sql`, `0002_password_reset.sql`, `0003_professional_profiles.sql`, `0004_portfolio_items.sql`, `0005_search_indexes.sql`.
+`0001_initial.sql`, `0002_password_reset.sql`, `0003_professional_profiles.sql`, `0004_portfolio_items.sql`, `0005_search_indexes.sql`, `0006_search_price_radius_indexes.sql`.
 
-> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0006_*.sql` para qualquer alteração de schema.
+> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0007_*.sql` para qualquer alteração de schema.
 
 ---
 
@@ -152,6 +152,8 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #36 | `8b44417` | feat: add guided photographer onboarding |
 | #37 | `2c06174` | docs: close guided photographer onboarding |
 | #38 | `2a2b672` | Fase 2.2: adiciona filtros e ordenacao na busca |
+| #39 | `717a03a` | docs: close advanced search initiative |
+| #40 | `d5ce86a` | feat: add responsive portfolio gallery |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -233,6 +235,11 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Validada com 130 testes, build do Wrangler, CI, smoke HTTP local, health check e busca avançada em produção.
 - Versão `ea2cfd01-fa8c-4770-b81d-9209fb2af021` servindo 100% do tráfego; migration remota aplicada e nenhuma pendência no D1.
 
+### Fase 2.3 — concluída
+- Integrada pelo PR #40 com galeria editorial responsiva, lista acessível, dimensões explícitas, `sizes`/`srcset`, carregamento progressivo, fallback bilíngue de erro e respeito a movimento reduzido.
+- Validada com 131 testes, build do Wrangler, CI, revisão visual em desktop e mobile, troca PT/EN e smoke de produção sem erros `5xx`.
+- Versão `24d21de1-bd1f-4450-b4a3-37bb09500890` publicada sem necessidade de rollback. As variantes reais de imagem permanecem, intencionalmente, no escopo da iniciativa 4.3.
+
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD.
 - Cache via `caches.default` para assets e respostas imutáveis.
@@ -248,10 +255,9 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Fase 2.3] Galeria com markup responsivo         ← próxima evolução de produto
-2. [Fase 2.4] Internacionalização por catálogos     ← conforme prioridade internacional
-3. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← após as melhorias centrais de experiência
-4. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
+1. [Fase 2.4] Internacionalização por catálogos     ← próxima evolução de produto
+2. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← após as melhorias centrais de experiência
+3. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
 ```
 
 **Justificativa da ordem:**
@@ -259,7 +265,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - A iniciativa 1.2 criou a cobertura de regressão necessária antes das mudanças de rate limiting e health check.
 - A iniciativa 1.3 foi concluída com uma arquitetura híbrida e rollback documentado.
 - A iniciativa 1.4 foi concluída com migration remota, health check e smoke test de produção; a Fase 1 está encerrada.
-- O marco estrutural do roteador e as iniciativas 2.1 e 2.2 foram concluídos e validados em produção; a Fase 2 segue pela galeria responsiva da iniciativa 2.3.
+- O marco estrutural do roteador e as iniciativas 2.1, 2.2 e 2.3 foram concluídos e validados em produção; a Fase 2 segue pela internacionalização por catálogos da iniciativa 2.4.
 - P4 (SEO) é independente e pode ocorrer depois do marco de transição.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
@@ -279,7 +285,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 
 ### Convenções do projeto
 
-- **Migrações imutáveis** — nunca editar `0001`–`0005`. Nova alteração de schema = novo arquivo `0006_*.sql`.
+- **Migrações imutáveis** — nunca editar `0001`–`0006`. Nova alteração de schema = novo arquivo `0007_*.sql`.
 - **Fast-forward only** — `main` não aceita merge commits. Todo PR é squash-mergeado.
 - **Status check obrigatório** — o CI "Qualidade" precisa passar antes do merge. Rodar `npm test` e `npm run check` localmente antes de abrir PR.
 - **i18n** — toda string visível ao usuário deve passar por `window.i18n` (`public/lang.js`). Não hardcoded em PT ou EN.
@@ -294,7 +300,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 1, marco de transição e iniciativas 2.1 e 2.2 concluídos; Fase 2.3 é o próximo passo).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 1, marco de transição e iniciativas 2.1, 2.2 e 2.3 concluídos; Fase 2.4 é o próximo passo).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
@@ -311,4 +317,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 27 de agosto de 2026, com `main` em `2a2b672`; Fase 1, marco de transição e iniciativas 2.1 e 2.2 concluídos. O PR #38 adicionou filtros avançados e ordenação à busca, aplicou a migration `0006` e publicou a versão `ea2cfd01-fa8c-4770-b81d-9209fb2af021`, validada com D1 saudável e o novo contrato da API em produção.
+**Última atualização deste handoff:** 27 de agosto de 2026, com `main` em `d5ce86a`; Fase 1, marco de transição e iniciativas 2.1, 2.2 e 2.3 concluídos. O PR #40 adicionou a galeria responsiva e progressiva, publicada na versão `24d21de1-bd1f-4450-b4a3-37bb09500890` e validada em produção sem necessidade de rollback.
