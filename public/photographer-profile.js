@@ -17,6 +17,7 @@
   const contactsElement = document.getElementById('photographerContacts');
   const portfolioSection = document.getElementById('portfolioSection');
   const portfolioElement = document.getElementById('photographerPortfolio');
+  const portfolioImageUnavailableLabel = document.getElementById('portfolioImageUnavailableLabel');
   let currentProfile = null;
 
   const specialtyLabels = {
@@ -44,6 +45,41 @@
       link.rel = 'noopener noreferrer';
     }
     contactsElement.append(link);
+  }
+
+  function responsiveImageSources(imageUrl) {
+    return `${imageUrl} 1200w`;
+  }
+
+  function renderPortfolioItem(item, index) {
+    const figure = document.createElement('figure');
+    figure.className = 'portfolio-figure is-loading';
+    figure.setAttribute('role', 'listitem');
+    figure.dataset.errorLabel = portfolioImageUnavailableLabel.textContent;
+
+    const image = document.createElement('img');
+    image.className = 'portfolio-image';
+    image.alt = item.altText;
+    image.width = index === 0 ? 1600 : 1200;
+    image.height = 900;
+    image.loading = 'lazy';
+    image.decoding = 'async';
+    image.sizes = index === 0
+      ? '(max-width: 520px) calc(100vw - 68px), (max-width: 760px) calc(100vw - 98px), 660px'
+      : '(max-width: 520px) calc(100vw - 68px), (max-width: 760px) calc((100vw - 110px) / 2), 324px';
+    image.srcset = responsiveImageSources(item.imageUrl);
+    image.addEventListener('load', () => figure.classList.replace('is-loading', 'is-loaded'), { once: true });
+    image.addEventListener('error', () => figure.classList.replace('is-loading', 'is-unavailable'), { once: true });
+    image.src = item.imageUrl;
+    figure.append(image);
+
+    if (item.caption) {
+      const caption = document.createElement('figcaption');
+      caption.textContent = item.caption;
+      figure.append(caption);
+    }
+
+    return figure;
   }
 
   function render(profile) {
@@ -78,22 +114,7 @@
     portfolioElement.replaceChildren();
     const portfolio = Array.isArray(profile.portfolio) ? profile.portfolio : [];
     portfolioSection.hidden = portfolio.length === 0;
-    portfolio.forEach((item) => {
-      const figure = document.createElement('figure');
-      figure.className = 'portfolio-figure';
-      const image = document.createElement('img');
-      image.src = item.imageUrl;
-      image.alt = item.altText;
-      image.loading = 'lazy';
-      image.decoding = 'async';
-      figure.append(image);
-      if (item.caption) {
-        const caption = document.createElement('figcaption');
-        caption.textContent = item.caption;
-        figure.append(caption);
-      }
-      portfolioElement.append(figure);
-    });
+    portfolio.forEach((item, index) => portfolioElement.append(renderPortfolioItem(item, index)));
 
     priceRow.hidden = profile.startingPriceCents == null;
     if (!priceRow.hidden) {
