@@ -20,11 +20,10 @@
   const portfolioImageUnavailableLabel = document.getElementById('portfolioImageUnavailableLabel');
   let currentProfile = null;
 
-  const specialtyLabels = {
-    wedding: ['Casamentos', 'Weddings'], events: ['Eventos', 'Events'], portrait: ['Retratos', 'Portraits'],
-    family: ['Família', 'Family'], corporate: ['Corporativo', 'Corporate'], product: ['Produtos', 'Products'],
-    fashion: ['Moda', 'Fashion'], newborn: ['Newborn', 'Newborn'], nature: ['Natureza', 'Nature'],
-    'real-estate': ['Imóveis', 'Real estate']
+  const specialtyKeys = {
+    wedding: 'wedding', events: 'events', portrait: 'portrait', family: 'family',
+    corporate: 'corporate', product: 'product', fashion: 'fashion', newborn: 'newborn',
+    nature: 'nature', 'real-estate': 'realEstate'
   };
 
   function initials(name) {
@@ -84,7 +83,6 @@
 
   function render(profile) {
     currentProfile = profile;
-    const english = UX.isEnglish();
     nameElement.textContent = profile.name;
     locationElement.textContent = `${profile.city}, ${profile.state}`;
     bioElement.textContent = profile.bio;
@@ -93,21 +91,17 @@
     initialsElement.hidden = Boolean(profile.profilePic);
     if (profile.profilePic) {
       imageElement.src = profile.profilePic;
-      imageElement.alt = english ? `Portrait of ${profile.name}` : `Retrato de ${profile.name}`;
+      imageElement.alt = UX.t('photographer.portraitAlt', { name: profile.name }, `Retrato de ${profile.name}`);
     }
 
-    const availabilityLabels = {
-      available: english ? 'Open for bookings' : 'Agenda aberta',
-      limited: english ? 'Limited dates available' : 'Poucas datas disponíveis',
-      unavailable: english ? 'Temporarily unavailable' : 'Agenda temporariamente fechada'
-    };
     availabilityElement.dataset.status = profile.availability;
-    availabilityElement.textContent = availabilityLabels[profile.availability] || availabilityLabels.available;
+    availabilityElement.textContent = UX.t(`availability.${profile.availability || 'available'}`);
 
     specialtiesElement.replaceChildren();
     profile.specialties.forEach((specialty) => {
       const badge = document.createElement('span');
-      badge.textContent = specialtyLabels[specialty]?.[english ? 1 : 0] || specialty;
+      const key = specialtyKeys[specialty];
+      badge.textContent = key ? UX.t(`specialty.${key}`, {}, specialty) : specialty;
       specialtiesElement.append(badge);
     });
 
@@ -118,16 +112,16 @@
 
     priceRow.hidden = profile.startingPriceCents == null;
     if (!priceRow.hidden) {
-      priceElement.textContent = new Intl.NumberFormat(english ? 'en-US' : 'pt-BR', { style: 'currency', currency: 'BRL' }).format(profile.startingPriceCents / 100);
+      priceElement.textContent = new Intl.NumberFormat(window.i18n?.getLocale?.() || 'pt-BR', { style: 'currency', currency: 'BRL' }).format(profile.startingPriceCents / 100);
     }
     radiusRow.hidden = profile.serviceRadiusKm == null;
-    if (!radiusRow.hidden) radiusElement.textContent = english ? `Up to ${profile.serviceRadiusKm} km` : `Até ${profile.serviceRadiusKm} km`;
+    if (!radiusRow.hidden) radiusElement.textContent = UX.t('photographer.radiusValue', { distance: profile.serviceRadiusKm }, `Até ${profile.serviceRadiusKm} km`);
 
     contactsElement.replaceChildren();
     if (profile.contacts.email) addContact('fa-regular fa-envelope', profile.contacts.email, `mailto:${profile.contacts.email}`);
     if (profile.contacts.phone) addContact('fa-solid fa-phone', profile.contacts.phone, `tel:${profile.contacts.phone.replace(/[^+\d]/g, '')}`);
     if (profile.instagram) addContact('fa-brands fa-instagram', `@${profile.instagram}`, `https://www.instagram.com/${encodeURIComponent(profile.instagram)}/`);
-    if (profile.website) addContact('fa-solid fa-globe', english ? 'Professional website' : 'Site profissional', profile.website);
+    if (profile.website) addContact('fa-solid fa-globe', UX.t('photographer.website', {}, 'Site profissional'), profile.website);
     document.title = `${profile.name} | LensClick`;
   }
 
@@ -141,7 +135,7 @@
     try {
       const { data } = await UX.apiFetch(`/api/photographers/${encodeURIComponent(slug)}`, {
         headers: { Accept: 'application/json' }
-      }, UX.textByLanguage('Este perfil não está disponível.', 'This profile is not available.'));
+      }, UX.t('photographer.errorTitle', {}, 'Este perfil não está disponível.'));
       render(data.profile);
       loading.hidden = true;
       profileArticle.hidden = false;
@@ -152,5 +146,5 @@
   }
 
   document.addEventListener('translations.updated', () => { if (currentProfile) render(currentProfile); });
-  loadProfile();
+  Promise.resolve(window.i18n?.ready).then(loadProfile);
 })();

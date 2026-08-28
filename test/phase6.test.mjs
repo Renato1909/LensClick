@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { readCatalogs } from '../test-utils/i18n.mjs';
 
 const readPublic = (file) => readFileSync(resolve('public', file), 'utf8');
 
@@ -49,10 +50,10 @@ test('a camada compartilhada respeita foco, contraste e validade dos campos', ()
 
 test('o consentimento de cadastro e seus links possuem traducao completa', () => {
   const signup = readPublic('cadastro.html');
-  const translations = readPublic('lang.js');
+  const translations = readCatalogs();
 
   assert.match(signup, /data-i18n="signup\.consent" data-i18n-html="true"/);
-  assert.match(translations, /'signup\.consent': 'Li e concordo/);
-  assert.match(translations, /'signup\.consent': 'I have read and agree/);
-  assert.match(translations, />Terms of Use<\/a> and <a[^>]+>Privacy Policy<\/a>/);
+  assert.match(translations['pt-BR']['signup.consent'], /Li e concordo/);
+  assert.match(translations['en-US']['signup.consent'], /I have read and agree/);
+  assert.match(translations['en-US']['signup.consent'], />Terms of Use<\/a> and <a[^>]+>Privacy Policy<\/a>/);
 });

@@ -51,10 +51,7 @@
 
     if (!/^[A-Za-z0-9_-]{40,100}$/.test(token)) {
       form.hidden = true;
-      UX.showMessage(message, UX.textByLanguage(
-        'Este link é inválido ou expirou. Solicite uma nova recuperação.',
-        'This link is invalid or expired. Request a new password reset.'
-      ), 'error');
+      UX.showMessage(message, UX.t('recovery.confirm.invalidLink'), 'error');
     }
 
     form.addEventListener('submit', async (event) => {
@@ -62,15 +59,12 @@
       confirmInput.setCustomValidity('');
       passwordInput.setCustomValidity('');
       if (!/^(?=.*\p{L})(?=.*\d).{8,}$/u.test(passwordInput.value)) {
-        passwordInput.setCustomValidity(UX.textByLanguage(
-          'Use pelo menos 8 caracteres, incluindo uma letra e um número.',
-          'Use at least 8 characters, including one letter and one number.'
-        ));
+        passwordInput.setCustomValidity(UX.t('recovery.confirm.passwordRules'));
         passwordInput.reportValidity();
         return;
       }
       if (passwordInput.value !== confirmInput.value) {
-        confirmInput.setCustomValidity(UX.textByLanguage('As senhas não coincidem.', 'Passwords do not match.'));
+        confirmInput.setCustomValidity(UX.t('signup.passwordMismatch'));
         confirmInput.reportValidity();
         return;
       }
@@ -81,19 +75,13 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token, password: passwordInput.value })
-        }, UX.textByLanguage('Não foi possível alterar a senha.', 'Could not change the password.'));
+        }, UX.t('recovery.confirm.error'));
         form.hidden = true;
-        UX.showMessage(message, UX.textByLanguage(
-          'Senha alterada com segurança. Você já pode entrar novamente.',
-          'Password changed securely. You can now sign in again.'
-        ), 'success');
+        UX.showMessage(message, UX.t('recovery.confirm.success'), 'success');
       } catch (error) {
         const translatedError = error.status === 429
-          ? UX.textByLanguage('Muitas tentativas. Aguarde alguns minutos.', 'Too many attempts. Please wait a few minutes.')
-          : UX.textByLanguage(
-            'Este link é inválido ou expirou. Solicite uma nova recuperação.',
-            'This link is invalid or expired. Request a new password reset.'
-          );
+          ? UX.t('recovery.confirm.rateLimited')
+          : UX.t('recovery.confirm.invalidLink');
         UX.showMessage(message, translatedError, 'error');
         UX.setBusy(button, false);
       }

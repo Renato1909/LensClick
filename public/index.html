@@ -1576,8 +1576,8 @@
       menuList.classList.toggle('open', open);
       menuBtn.setAttribute('aria-expanded', String(open));
       menuBtn.setAttribute('aria-label', open
-        ? UX.textByLanguage('Fechar menu', 'Close menu')
-        : UX.textByLanguage('Abrir menu', 'Open menu'));
+        ? UX.t('nav.menu.close')
+        : UX.t('nav.menu.open'));
       menuBtn.innerHTML = open
         ? '<i class="fas fa-times" aria-hidden="true"></i>'
         : '<i class="fas fa-bars" aria-hidden="true"></i>';
@@ -1723,17 +1723,17 @@
     const items = document.querySelectorAll('#portfolioGrid .item');
     function updatePortfolioAccessibility() {
       const categories = {
-        retratos: UX.textByLanguage('Retrato', 'Portrait'),
-        casamentos: UX.textByLanguage('Casamento', 'Wedding'),
-        eventos: UX.textByLanguage('Evento', 'Event'),
-        comercial: UX.textByLanguage('Produto', 'Product')
+        retratos: UX.t('portfolio.category.portrait'),
+        casamentos: UX.t('portfolio.category.wedding'),
+        eventos: UX.t('portfolio.category.event'),
+        comercial: UX.t('portfolio.category.product')
       };
       items.forEach(item => {
         const categoryKey = Object.keys(categories).find(key => item.classList.contains(key));
-        const category = categories[categoryKey] || UX.textByLanguage('Fotografia', 'Photo');
+        const category = categories[categoryKey] || UX.t('portfolio.category.photo');
         const thumbnail = item.querySelector('img');
         if (thumbnail) thumbnail.alt = category;
-        item.setAttribute('aria-label', UX.textByLanguage(`Ampliar fotografia: ${category}`, `Open photo: ${category}`));
+        item.setAttribute('aria-label', UX.t('portfolio.openPhoto', { category }));
       });
     }
     updatePortfolioAccessibility();
@@ -1773,7 +1773,7 @@
         modal.classList.add('open');
         modal.setAttribute('aria-hidden', 'false');
         modalImg.src = item.getAttribute('data-src');
-        modalImg.alt = thumbnail?.alt || UX.textByLanguage('Fotografia ampliada', 'Enlarged photo');
+        modalImg.alt = thumbnail?.alt || UX.t('portfolio.enlargedAlt');
         document.body.style.overflow = 'hidden';
         modalClose.focus();
       });
@@ -1816,10 +1816,7 @@
         answer.id = answerId;
         answer.setAttribute('aria-hidden', String(!open));
         btn.setAttribute('aria-controls', answerId);
-        btn.setAttribute('aria-label', UX.textByLanguage(
-          `${open ? 'Ocultar' : 'Mostrar'} resposta: ${question}`,
-          `${open ? 'Hide' : 'Show'} answer: ${question}`
-        ));
+        btn.setAttribute('aria-label', UX.t(open ? 'faq.answer.hide' : 'faq.answer.show', { question }));
       });
     }
 
@@ -1854,8 +1851,8 @@
             name: fields.get('nome'), phone: fields.get('tel'), email: fields.get('email'),
             serviceType: fields.get('tipo'), eventDate: fields.get('data'), message: fields.get('msg')
           })
-        }, UX.textByLanguage('Não foi possível enviar a mensagem.', 'Could not send the message.'));
-        UX.showMessage(message, UX.textByLanguage('Mensagem recebida! Responderemos em breve.', 'Message received. We will reply soon.'), 'success');
+        }, UX.t('contact.form.submitError'));
+        UX.showMessage(message, UX.t('contact.form.success'), 'success');
         form.reset();
       } catch (error) {
         UX.showMessage(message, error.message, 'error');
@@ -1925,8 +1922,8 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: new FormData(form).get('email') })
-        }, UX.textByLanguage('Não foi possível concluir a inscrição.', 'Could not complete the subscription.'));
-        UX.showMessage(message, UX.textByLanguage('Inscrição registrada com sucesso.', 'Subscription saved successfully.'), 'success');
+        }, UX.t('newsletter.submitError'));
+        UX.showMessage(message, UX.t('newsletter.success'), 'success');
         form.reset();
       } catch (error) {
         UX.showMessage(message, error.message, 'error');
