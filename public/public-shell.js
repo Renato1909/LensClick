@@ -4,27 +4,24 @@
   const UX = window.LensClickUX || {};
 
   function isEnglish() {
-    return document.documentElement.lang.toLowerCase().startsWith('en');
+    return UX.isEnglish?.() || document.documentElement.lang.toLowerCase().startsWith('en');
   }
 
-  function t(key) {
-    if (window.LensClickI18N && typeof window.LensClickI18N.t === 'function') {
-      return window.LensClickI18N.t(key);
-    }
-    return '';
+  function t(key, fallback = '') {
+    return UX.t?.(key, {}, fallback) || window.i18n?.t?.(key, {}, fallback) || fallback;
   }
 
   function applyI18nToLocationControls(ufSelect, citySelect) {
-    const allStatesResolved = t('search.filters.allStates') || (isEnglish() ? 'All states' : 'Todos os estados');
-    const allCitiesResolved = t('search.filters.allCities') || (isEnglish() ? 'All cities' : 'Todas as cidades');
+    const allStatesResolved = t('search.filters.allStates', isEnglish() ? 'All states' : 'Todos os estados');
+    const allCitiesResolved = t('search.filters.allCities', isEnglish() ? 'All cities' : 'Todas as cidades');
 
     const ufPlaceholder = ufSelect.options[0];
     if (ufPlaceholder && ufPlaceholder.value === '') ufPlaceholder.textContent = allStatesResolved;
     const cityPlaceholder = citySelect.options[0];
     if (cityPlaceholder && cityPlaceholder.value === '') cityPlaceholder.textContent = allCitiesResolved;
 
-    ufSelect.setAttribute('aria-label', isEnglish() ? 'State (UF)' : 'Estado (UF)');
-    citySelect.setAttribute('aria-label', isEnglish() ? 'City' : 'Cidade');
+    ufSelect.setAttribute('aria-label', t('search.filters.stateAria', isEnglish() ? 'State (UF)' : 'Estado (UF)'));
+    citySelect.setAttribute('aria-label', t('search.filters.cityAria', isEnglish() ? 'City' : 'Cidade'));
   }
 
   function initLocationControls() {
@@ -54,12 +51,9 @@
     const previousCity = citySelect.value;
     ufSelect.replaceChildren();
 
-    const allCitiesLabel = isEnglish() ? 'All cities' : 'Todas as cidades';
-    const allUfLabel = isEnglish() ? 'All states' : 'Todos os estados';
-
     const placeholderOpt = document.createElement('option');
     placeholderOpt.value = '';
-    placeholderOpt.textContent = allUfLabel;
+    placeholderOpt.textContent = t('search.filters.allStates', isEnglish() ? 'All states' : 'Todos os estados');
     ufSelect.append(placeholderOpt);
 
     data.states.forEach((s) => {
@@ -74,7 +68,7 @@
       citySelect.replaceChildren();
       const defaultOpt = document.createElement('option');
       defaultOpt.value = '';
-      defaultOpt.textContent = allCitiesLabel;
+      defaultOpt.textContent = t('search.filters.allCities', isEnglish() ? 'All cities' : 'Todas as cidades');
       citySelect.append(defaultOpt);
       const cities = uf ? data.citiesFor(uf) : [];
       cities.forEach((c) => {
@@ -133,7 +127,7 @@
       citySelect.replaceChildren();
       const placeholder = document.createElement('option');
       placeholder.value = '';
-      placeholder.textContent = allCitiesLabel;
+      placeholder.textContent = t('search.filters.allCities', isEnglish() ? 'All cities' : 'Todas as cidades');
       citySelect.append(placeholder);
       capitalCities.forEach((c) => {
         const opt = document.createElement('option');
@@ -149,7 +143,9 @@
   }
 
   function refreshLocationLabels() {
-    initLocationControls();
+    const stateSelect = document.getElementById('filterState');
+    const citySelect = document.getElementById('filterCity');
+    if (stateSelect && citySelect) applyI18nToLocationControls(stateSelect, citySelect);
   }
 
   function initAuthState() {

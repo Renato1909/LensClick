@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { readCatalogs } from '../test-utils/i18n.mjs';
 
 const read = (file) => readFileSync(file, 'utf8');
 
@@ -8,7 +9,7 @@ test('a galeria publica reserva espaco e prepara imagens responsivas com carrega
   const html = read('public/fotografo.html');
   const script = read('public/photographer-profile.js');
   const styles = read('public/photographer.css');
-  const translations = read('public/lang.js');
+  const translations = readCatalogs();
 
   assert.match(html, /id="photographerPortfolio"[^>]*role="list"/);
   assert.match(script, /figure\.setAttribute\('role', 'listitem'\)/);
@@ -26,5 +27,6 @@ test('a galeria publica reserva espaco e prepara imagens responsivas com carrega
   assert.match(styles, /content-visibility:\s*auto/);
   assert.match(styles, /contain-intrinsic-size:/);
   assert.match(styles, /prefers-reduced-motion:\s*reduce/);
-  assert.equal(translations.split("'photographer.imageUnavailable'").length - 1, 2);
+  assert.ok(translations['pt-BR']['photographer.imageUnavailable']);
+  assert.ok(translations['en-US']['photographer.imageUnavailable']);
 });

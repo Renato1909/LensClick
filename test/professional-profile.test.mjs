@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { readCatalogs } from '../test-utils/i18n.mjs';
 
 const read = (file) => readFileSync(resolve(file), 'utf8');
 
@@ -77,11 +78,12 @@ test('o perfil publico renderiza dados seguros sem HTML fornecido pelo usuario',
 test('a experiencia profissional e bilingue em edicao e visualizacao publica', () => {
   const accountPage = read('public/perfil.html');
   const publicPage = read('public/fotografo.html');
-  const translations = read('public/lang.js');
+  const translations = readCatalogs();
   const keys = [...`${accountPage}\n${publicPage}`.matchAll(/data-i18n="([^"]+)"/g)].map((match) => match[1]);
 
   for (const key of new Set(keys)) {
-    assert.equal(translations.split(`'${key}':`).length - 1, 2, key);
+    assert.ok(translations['pt-BR'][key], `pt-BR: ${key}`);
+    assert.ok(translations['en-US'][key], `en-US: ${key}`);
   }
 });
 

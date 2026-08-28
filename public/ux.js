@@ -1,6 +1,10 @@
 (function () {
   function isEnglish() {
-    return document.documentElement.lang.toLowerCase().startsWith('en');
+    return window.i18n?.getLanguage?.() === 'en' || document.documentElement.lang.toLowerCase().startsWith('en');
+  }
+
+  function t(key, params = {}, fallback = '') {
+    return window.i18n?.t?.(key, params, fallback) || fallback;
   }
 
   function textByLanguage(portuguese, english) {
@@ -24,7 +28,7 @@
     try {
       response = await fetch(input, options);
     } catch {
-      const error = new Error(textByLanguage('Não foi possível conectar ao servidor.', 'Could not connect to the server.'));
+      const error = new Error(t('common.networkError', {}, textByLanguage('Não foi possível conectar ao servidor.', 'Could not connect to the server.')));
       error.status = 0;
       throw error;
     }
@@ -45,7 +49,9 @@
       button.disabled = true;
       button.classList.add('is-loading');
       button.setAttribute('aria-busy', 'true');
-      button.textContent = textByLanguage(labels.pt || 'Aguarde...', labels.en || 'Please wait...');
+      button.textContent = labels.key
+        ? t(labels.key, labels.params, textByLanguage(labels.pt || 'Aguarde...', labels.en || 'Please wait...'))
+        : t('common.wait', {}, textByLanguage(labels.pt || 'Aguarde...', labels.en || 'Please wait...'));
       return;
     }
     button.disabled = false;
@@ -135,6 +141,7 @@
     safeNextDestination,
     setBusy,
     showMessage,
+    t,
     textByLanguage,
     updateAccessibilityLabels
   };

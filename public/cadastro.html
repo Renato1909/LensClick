@@ -317,7 +317,7 @@
       const password = document.getElementById('signupPassword').value;
       const confirmPassword = document.getElementById('signupConfirmPassword').value;
       if (password !== confirmPassword) {
-        confirmPasswordInput.setCustomValidity(UX.textByLanguage('As senhas não coincidem.', 'Passwords do not match.'));
+        confirmPasswordInput.setCustomValidity(UX.t('signup.passwordMismatch'));
         confirmPasswordInput.reportValidity();
         confirmPasswordInput.focus();
         showSignupMessage(confirmPasswordInput.validationMessage);
@@ -331,8 +331,8 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, phone, password })
-        }, UX.textByLanguage('Não foi possível criar a conta.', 'Could not create the account.'));
-        showSignupMessage(UX.textByLanguage('Conta criada com segurança. Redirecionando para o perfil...', 'Account created securely. Redirecting to your profile...'), 'success');
+        }, UX.t('signup.createError'));
+        showSignupMessage(UX.t('signup.createdRedirect'), 'success');
         setTimeout(() => { window.location.href = 'perfil.html'; }, 700);
       } catch (error) {
         showSignupMessage(error.message);

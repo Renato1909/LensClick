@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { readCatalogs } from '../test-utils/i18n.mjs';
 
 const pages = ['index.html', 'cadastro.html', 'login.html', 'recuperar-senha.html', 'redefinir-senha.html', 'perfil.html', 'fotografo.html', 'privacidade.html', 'termos.html'];
 
@@ -50,15 +51,17 @@ test('a camada visual da Fase 2 está vinculada às páginas principais', () => 
 
 test('a tradução preserva títulos formatados, tooltips e links do rodapé', () => {
   const home = readFileSync(resolve('public', 'index.html'), 'utf8');
-  const translations = readFileSync(resolve('public', 'lang.js'), 'utf8');
+  const runtime = readFileSync(resolve('public', 'lang.js'), 'utf8');
+  const translations = readCatalogs();
 
   assert.match(home, /data-i18n="section\.servicesTitle"/);
   assert.match(home, /data-i18n="section\.portfolioTitle"/);
-  assert.match(translations, /'section\.services': 'Services'/);
-  assert.match(translations, /'section\.portfolio': 'Portfolio'/);
-  assert.equal((translations.match(/'privacy\.footer':/g) || []).length, 2);
-  assert.match(translations, /function translatedOrOriginal/);
-  assert.match(translations, /replace\(\/<\[\^>\]\*>\/g, ''\)/);
+  assert.equal(translations['en-US']['section.services'], 'Services');
+  assert.equal(translations['en-US']['section.portfolio'], 'Portfolio');
+  assert.ok(translations['pt-BR']['privacy.footer']);
+  assert.ok(translations['en-US']['privacy.footer']);
+  assert.match(runtime, /function translatedOrOriginal/);
+  assert.match(runtime, /replace\(\/<\[\^>\]\*>\/g, ''\)/);
 });
 
 test('a Fase 3 centraliza feedback e carregamento dos fluxos', () => {

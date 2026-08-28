@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { readCatalogs } from '../test-utils/i18n.mjs';
 
 const publicDir = resolve('public');
 const pageNames = ['index.html', 'login.html', 'cadastro.html', 'recuperar-senha.html', 'redefinir-senha.html', 'perfil.html', 'termos.html', 'privacidade.html', 'perfil_temp.html'];
@@ -44,12 +45,14 @@ test('paginas nao possuem IDs duplicados e links externos sao seguros', () => {
 });
 
 test('rodape usa ano dinamico e o Worker mantem cabecalhos de seguranca', () => {
-  const translations = readPublic('lang.js');
+  const runtime = readPublic('lang.js');
+  const translations = readCatalogs();
   const worker = readFileSync(resolve('src', 'worker.mjs'), 'utf8');
 
-  assert.match(translations, /© \{year\} Lens Click/);
-  assert.match(translations, /function copyrightYear\(\)/);
-  assert.match(translations, /replaceAll\('\{year\}', copyrightYear\(\)\)/);
+  assert.match(translations['pt-BR'].footer, /© \{year\} Lens Click/);
+  assert.match(translations['en-US'].footer, /© \{year\} Lens Click/);
+  assert.match(runtime, /function currentYear\(\)/);
+  assert.match(runtime, /function interpolate\(message, params = \{\}\)/);
   assert.match(worker, /'Content-Security-Policy'/);
   assert.match(worker, /'X-Content-Type-Options': 'nosniff'/);
   assert.match(worker, /'X-Frame-Options': 'DENY'/);

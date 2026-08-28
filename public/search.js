@@ -19,6 +19,13 @@
 
   let page = 1;
   let pageSize = 12;
+  let currentResults = [];
+  let currentPagination = null;
+  const specialtyKeys = {
+    wedding: 'wedding', events: 'events', portrait: 'portrait', family: 'family',
+    corporate: 'corporate', product: 'product', fashion: 'fashion', newborn: 'newborn',
+    nature: 'nature', 'real-estate': 'realEstate'
+  };
 
   function clearResults() {
     resultsList.replaceChildren();
@@ -56,7 +63,7 @@
     details.className = 'search-card-details';
     const detailParts = [];
     if (p.startingPriceCents != null) {
-      detailParts.push(new Intl.NumberFormat(document.documentElement.lang || 'pt-BR', {
+      detailParts.push(new Intl.NumberFormat(window.i18n?.getLocale?.() || 'pt-BR', {
         style: 'currency', currency: 'BRL', maximumFractionDigits: 0
       }).format(p.startingPriceCents / 100));
     }
@@ -66,13 +73,29 @@
     const specialties = document.createElement('div');
     specialties.className = 'public-specialties small';
     (p.specialties || []).slice(0,3).forEach(s => {
-      const badge = document.createElement('span'); badge.textContent = s; specialties.append(badge);
+      const key = specialtyKeys[s];
+      const badge = document.createElement('span');
+      badge.textContent = key ? UX.t(`specialty.${key}`, {}, s) : s;
+      specialties.append(badge);
     });
 
     info.append(name, meta, details, specialties);
     link.append(avatar, info);
     article.append(link);
     return article;
+  }
+
+  function renderResults(list, paginationData) {
+    clearResults();
+    if (!list.length) {
+      resultsEmpty.hidden = false;
+      return;
+    }
+    list.forEach((photographer) => resultsList.append(photographerCard(photographer)));
+    pagination.hidden = false;
+    pageInfo.textContent = `${paginationData.page} / ${paginationData.totalPages}`;
+    prevPageBtn.disabled = paginationData.page <= 1;
+    nextPageBtn.disabled = paginationData.page >= paginationData.totalPages;
   }
 
   async function load() {
@@ -92,20 +115,11 @@
       params.set('pageSize', String(pageSize));
 
       const { data } = await UX.apiFetch(`/api/photographers?${params.toString()}`, { headers: { Accept: 'application/json' } });
-      const list = data.photographers || [];
-      if (!list.length) {
-        resultsEmpty.hidden = false;
-        return;
-      }
-      list.forEach((p) => resultsList.append(photographerCard(p)));
-      // pagination
-      const paginationData = data.pagination || { page: 1, pageSize, total: list.length };
-      pagination.hidden = false;
-      pageInfo.textContent = `${paginationData.page} / ${paginationData.totalPages}`;
-      prevPageBtn.disabled = paginationData.page <= 1;
-      nextPageBtn.disabled = paginationData.page >= paginationData.totalPages;
+      currentResults = data.photographers || [];
+      currentPagination = data.pagination || { page: 1, pageSize, total: currentResults.length, totalPages: 1 };
+      renderResults(currentResults, currentPagination);
     } catch (error) {
-      UX.showMessage(resultsEmpty, error.message || 'Erro ao buscar fotógrafos.', 'error');
+      UX.showMessage(resultsEmpty, error.message || UX.t('search.error', {}, 'Não foi possível buscar fotógrafos.'), 'error');
     } finally {
       UX.setBusy(document.getElementById('searchButton'), false);
     }
@@ -116,6 +130,9 @@
   prevPageBtn.addEventListener('click', () => { if (page > 1) { page -= 1; load(); } });
   nextPageBtn.addEventListener('click', () => { page += 1; load(); });
 
-  // initial load
-  load();
+  document.addEventListener('translations.updated', () => {
+    if (currentPagination) renderResults(currentResults, currentPagination);
+  });
+
+  Promise.resolve(window.i18n?.ready).then(load);
 })();

@@ -155,8 +155,8 @@
   function updateOnboardingSaveLabel() {
     if (!saveProfessionalProfileLabel) return;
     saveProfessionalProfileLabel.textContent = professionalPublished.checked
-      ? UX.textByLanguage('Salvar e publicar', 'Save and publish')
-      : UX.textByLanguage('Salvar rascunho', 'Save draft');
+      ? UX.t('profile.onboarding.saveAndPublish')
+      : UX.t('profile.onboarding.saveDraft');
   }
 
   function updateOnboardingProgress() {
@@ -222,7 +222,7 @@
     if (step === 1 && !requirements.identity) {
       const missingBio = professionalBio.value.trim().length < 60;
       showOnboardingValidation(
-        UX.textByLanguage('Escreva uma apresentação de pelo menos 60 caracteres e escolha uma especialidade.', 'Write an introduction of at least 60 characters and choose one specialty.'),
+        UX.t('profile.onboarding.validation.identity'),
         missingBio ? professionalBio : specialtyInputs[0]
       );
       return false;
@@ -230,14 +230,14 @@
     if (step === 2 && !requirements.location) {
       const target = professionalCity.value.trim().length < 2 ? professionalCity : professionalState;
       showOnboardingValidation(
-        UX.textByLanguage('Informe sua cidade e a sigla do estado com duas letras.', 'Enter your city and the two-letter state code.'),
+        UX.t('profile.onboarding.validation.location'),
         target
       );
       return false;
     }
     if (step === 3 && !requirements.contact) {
       showOnboardingValidation(
-        UX.textByLanguage('Adicione ao menos um contato que possa aparecer no perfil público.', 'Add at least one contact that can appear on your public profile.'),
+        UX.t('profile.onboarding.validation.contact'),
         professionalEmail
       );
       return false;
@@ -288,8 +288,8 @@
     updateOnboardingProgress();
   }
 
-  function portfolioLabel(pt, en) {
-    return UX.textByLanguage(pt, en);
+  function portfolioLabel(key, fallback = '') {
+    return UX.t(key, {}, fallback);
   }
 
   function renderPortfolio() {
@@ -309,7 +309,7 @@
       const fields = document.createElement('div');
       fields.className = 'portfolio-item-fields';
       const altLabel = document.createElement('label');
-      altLabel.textContent = portfolioLabel('Descrição da imagem', 'Image description');
+      altLabel.textContent = portfolioLabel('profile.portfolio.alt');
       const altInput = document.createElement('input');
       altInput.type = 'text';
       altInput.maxLength = 160;
@@ -318,7 +318,7 @@
       altInput.addEventListener('input', () => { item.altText = altInput.value; image.alt = altInput.value; });
       altLabel.append(altInput);
       const captionLabel = document.createElement('label');
-      captionLabel.textContent = portfolioLabel('Legenda', 'Caption');
+      captionLabel.textContent = portfolioLabel('profile.portfolio.caption');
       const captionInput = document.createElement('input');
       captionInput.type = 'text';
       captionInput.maxLength = 240;
@@ -332,7 +332,7 @@
       const moveUp = document.createElement('button');
       moveUp.type = 'button';
       moveUp.disabled = index === 0;
-      moveUp.setAttribute('aria-label', portfolioLabel('Mover imagem para cima', 'Move image up'));
+      moveUp.setAttribute('aria-label', portfolioLabel('profile.portfolio.moveUp'));
       const upIcon = document.createElement('i');
       upIcon.className = 'fa-solid fa-arrow-up';
       upIcon.setAttribute('aria-hidden', 'true');
@@ -344,7 +344,7 @@
       const moveDown = document.createElement('button');
       moveDown.type = 'button';
       moveDown.disabled = index === portfolioItems.length - 1;
-      moveDown.setAttribute('aria-label', portfolioLabel('Mover imagem para baixo', 'Move image down'));
+      moveDown.setAttribute('aria-label', portfolioLabel('profile.portfolio.moveDown'));
       const downIcon = document.createElement('i');
       downIcon.className = 'fa-solid fa-arrow-down';
       downIcon.setAttribute('aria-hidden', 'true');
@@ -356,7 +356,7 @@
       const remove = document.createElement('button');
       remove.type = 'button';
       remove.className = 'portfolio-remove';
-      remove.setAttribute('aria-label', portfolioLabel('Excluir imagem', 'Delete image'));
+      remove.setAttribute('aria-label', portfolioLabel('profile.portfolio.delete'));
       const removeIcon = document.createElement('i');
       removeIcon.className = 'fa-regular fa-trash-can';
       removeIcon.setAttribute('aria-hidden', 'true');
@@ -369,23 +369,19 @@
   }
 
   async function loadPortfolio() {
-    const { data } = await UX.apiFetch('/api/account/portfolio', { headers: { Accept: 'application/json' } }, portfolioLabel(
-      'Não foi possível carregar o portfólio.', 'Could not load the portfolio.'
-    ));
+    const { data } = await UX.apiFetch('/api/account/portfolio', { headers: { Accept: 'application/json' } }, portfolioLabel('profile.portfolio.loadError'));
     portfolioItems = data.portfolio || [];
     renderPortfolio();
   }
 
   async function removePortfolioItem(item, button) {
-    if (!window.confirm(portfolioLabel('Excluir esta imagem permanentemente?', 'Permanently delete this image?'))) return;
-    UX.setBusy(button, true, { pt: 'Excluindo...', en: 'Deleting...' });
+    if (!window.confirm(portfolioLabel('profile.portfolio.deleteConfirm'))) return;
+    UX.setBusy(button, true, { key: 'profile.portfolio.deleting' });
     try {
-      await UX.apiFetch(`/api/account/portfolio/${item.id}`, { method: 'DELETE' }, portfolioLabel(
-        'Não foi possível excluir a imagem.', 'Could not delete the image.'
-      ));
+      await UX.apiFetch(`/api/account/portfolio/${item.id}`, { method: 'DELETE' }, portfolioLabel('profile.portfolio.deleteError'));
       portfolioItems = portfolioItems.filter((entry) => entry.id !== item.id);
       renderPortfolio();
-      UX.showMessage(portfolioMessage, portfolioLabel('Imagem excluída permanentemente.', 'Image permanently deleted.'), 'success');
+      UX.showMessage(portfolioMessage, portfolioLabel('profile.portfolio.deleted'), 'success');
     } catch (error) {
       if (error.status === 401) return redirectToLogin();
       UX.showMessage(portfolioMessage, error.message, 'error');
@@ -402,7 +398,7 @@
       const { data } = await UX.apiFetch(
         '/api/account/professional-profile',
         { headers: { Accept: 'application/json' } },
-        UX.textByLanguage('Não foi possível carregar o perfil profissional.', 'Could not load the professional profile.')
+        UX.t('profile.pro.loadError')
       );
       populateProfessional(data.profile);
       await loadPortfolio();
@@ -426,7 +422,7 @@
       const { data } = await UX.apiFetch(
         '/api/auth/me',
         { headers: { Accept: 'application/json' } },
-        UX.textByLanguage('Não foi possível carregar sua conta.', 'Could not load your account.')
+        UX.t('profile.loadError')
       );
       populate(data.user);
       await loadProfessionalProfile();
@@ -444,19 +440,19 @@
     const file = event.target.files?.[0];
     if (!file) return;
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      UX.showMessage(profileMessage, UX.textByLanguage('Escolha uma imagem JPG, PNG ou WebP.', 'Choose a JPG, PNG or WebP image.'), 'error');
+      UX.showMessage(profileMessage, UX.t('profile.photo.invalidType'), 'error');
       picInput.value = '';
       return;
     }
     if (file.size > 450_000) {
-      UX.showMessage(profileMessage, UX.textByLanguage('A imagem deve ter no máximo 450 KB.', 'The image must be no larger than 450 KB.'), 'error');
+      UX.showMessage(profileMessage, UX.t('profile.photo.maxSize'), 'error');
       picInput.value = '';
       return;
     }
     const reader = new FileReader();
     reader.addEventListener('load', () => {
       showProfilePicture(String(reader.result || ''));
-      UX.showMessage(profileMessage, UX.textByLanguage('Foto pronta. Salve as alterações para confirmar.', 'Photo ready. Save your changes to confirm.'), 'info');
+      UX.showMessage(profileMessage, UX.t('profile.photo.ready'), 'info');
     });
     reader.readAsDataURL(file);
   });
@@ -483,7 +479,7 @@
       const selectedCount = specialtyInputs.filter((item) => item.checked).length;
       if (selectedCount > 6) {
         input.checked = false;
-        UX.showMessage(professionalMessage, UX.textByLanguage('Escolha no máximo seis especialidades.', 'Choose up to six specialties.'), 'error');
+        UX.showMessage(professionalMessage, UX.t('profile.pro.maxSpecialties'), 'error');
       }
       updateOnboardingProgress();
     });
@@ -515,10 +511,7 @@
     if (professionalPublished.checked && !Object.values(onboardingRequirements()).every(Boolean)) {
       professionalPublished.checked = false;
       showOnboardingStep(firstIncompleteOnboardingStep(), { focus: true });
-      UX.showMessage(professionalMessage, UX.textByLanguage(
-        'Complete os itens essenciais antes de tornar o perfil público.',
-        'Complete the essential items before making the profile public.'
-      ), 'info');
+      UX.showMessage(professionalMessage, UX.t('profile.onboarding.publishRequirements'), 'info');
     }
     updateOnboardingProgress();
   });
@@ -526,15 +519,12 @@
 
   portfolioImage.addEventListener('change', () => {
     const file = portfolioImage.files?.[0];
-    portfolioFileLabel.textContent = file?.name || portfolioLabel('Escolher imagem', 'Choose image');
+    portfolioFileLabel.textContent = file?.name || portfolioLabel('profile.portfolio.choose');
     if (!file) return;
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 4_000_000) {
-      UX.showMessage(portfolioUploadMessage, portfolioLabel(
-        'Escolha uma imagem JPG, PNG ou WebP de até 4 MB.',
-        'Choose a JPG, PNG or WebP image up to 4 MB.'
-      ), 'error');
+      UX.showMessage(portfolioUploadMessage, portfolioLabel('profile.portfolio.invalidFile'), 'error');
       portfolioImage.value = '';
-      portfolioFileLabel.textContent = portfolioLabel('Escolher imagem', 'Choose image');
+      portfolioFileLabel.textContent = portfolioLabel('profile.portfolio.choose');
     }
   });
 
@@ -550,14 +540,12 @@
     UX.setBusy(portfolioUploadButton, true, { pt: 'Enviando...', en: 'Uploading...' });
     UX.showMessage(portfolioUploadMessage, '');
     try {
-      const { data } = await UX.apiFetch('/api/account/portfolio', { method: 'POST', body: formData }, portfolioLabel(
-        'Não foi possível enviar a imagem.', 'Could not upload the image.'
-      ));
+      const { data } = await UX.apiFetch('/api/account/portfolio', { method: 'POST', body: formData }, portfolioLabel('profile.portfolio.uploadError'));
       portfolioItems.push(data.item);
       portfolioUploadForm.reset();
-      portfolioFileLabel.textContent = portfolioLabel('Escolher imagem', 'Choose image');
+      portfolioFileLabel.textContent = portfolioLabel('profile.portfolio.choose');
       renderPortfolio();
-      UX.showMessage(portfolioUploadMessage, portfolioLabel('Imagem adicionada ao portfólio.', 'Image added to the portfolio.'), 'success');
+      UX.showMessage(portfolioUploadMessage, portfolioLabel('profile.portfolio.added'), 'success');
     } catch (error) {
       if (error.status === 401) return redirectToLogin();
       UX.showMessage(portfolioUploadMessage, error.message, 'error');
@@ -569,9 +557,7 @@
 
   savePortfolioButton.addEventListener('click', async () => {
     if (portfolioItems.some((item) => item.altText.trim().length < 3)) {
-      UX.showMessage(portfolioMessage, portfolioLabel(
-        'Descreva todas as imagens antes de salvar.', 'Describe every image before saving.'
-      ), 'error');
+      UX.showMessage(portfolioMessage, portfolioLabel('profile.portfolio.describeAll'), 'error');
       return;
     }
     UX.setBusy(savePortfolioButton, true, { pt: 'Salvando...', en: 'Saving...' });
@@ -581,10 +567,10 @@
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: portfolioItems.map(({ id, caption, altText }) => ({ id, caption, altText })) })
-      }, portfolioLabel('Não foi possível salvar o portfólio.', 'Could not save the portfolio.'));
+      }, portfolioLabel('profile.portfolio.saveError'));
       portfolioItems = data.portfolio;
       renderPortfolio();
-      UX.showMessage(portfolioMessage, portfolioLabel('Ordem e textos salvos.', 'Order and text saved.'), 'success');
+      UX.showMessage(portfolioMessage, portfolioLabel('profile.portfolio.saved'), 'success');
     } catch (error) {
       if (error.status === 401) return redirectToLogin();
       UX.showMessage(portfolioMessage, error.message, 'error');
@@ -598,10 +584,7 @@
     if (!professionalForm.reportValidity()) return;
     if (professionalPublished.checked && !Object.values(onboardingRequirements()).every(Boolean)) {
       showOnboardingStep(firstIncompleteOnboardingStep(), { focus: true });
-      UX.showMessage(professionalMessage, UX.textByLanguage(
-        'Complete os itens essenciais antes de publicar.',
-        'Complete the essential items before publishing.'
-      ), 'error');
+      UX.showMessage(professionalMessage, UX.t('profile.onboarding.publishRequirementsError'), 'error');
       return;
     }
     const selectedSpecialtyValues = selectedSpecialties();
@@ -628,11 +611,10 @@
           showPhone: professionalShowPhone.checked,
           isPublished: professionalPublished.checked
         })
-      }, UX.textByLanguage('Não foi possível salvar o perfil profissional.', 'Could not save the professional profile.'));
+      }, UX.t('profile.pro.saveError'));
       populateProfessional(data.profile);
-      UX.showMessage(professionalMessage, UX.textByLanguage(
-        data.profile.isPublished ? 'Perfil profissional publicado com sucesso.' : 'Rascunho profissional salvo com sucesso.',
-        data.profile.isPublished ? 'Professional profile published successfully.' : 'Professional draft saved successfully.'
+      UX.showMessage(professionalMessage, UX.t(
+        data.profile.isPublished ? 'profile.pro.published' : 'profile.pro.draftSaved'
       ), 'success');
     } catch (error) {
       if (error.status === 401) return redirectToLogin();
@@ -662,11 +644,11 @@
           profilePic: profilePicture,
           currentPassword: emailCurrentPassword.value
         })
-      }, UX.textByLanguage('Não foi possível salvar os dados.', 'Could not save your details.'));
+      }, UX.t('profile.updateError'));
       populate(data.user);
       await loadProfessionalProfile();
       picInput.value = '';
-      UX.showMessage(profileMessage, UX.textByLanguage('Alterações salvas com segurança.', 'Changes saved securely.'), 'success');
+      UX.showMessage(profileMessage, UX.t('profile.updated'), 'success');
     } catch (error) {
       if (error.status === 401) return redirectToLogin();
       UX.showMessage(profileMessage, error.message, 'error');
@@ -679,7 +661,7 @@
   function validatePasswordConfirmation() {
     const message = newPasswordInput.value === confirmPasswordInput.value
       ? ''
-      : UX.textByLanguage('As senhas não coincidem.', 'Passwords do not match.');
+      : UX.t('profile.password.mismatch');
     confirmPasswordInput.setCustomValidity(message);
   }
 
@@ -700,9 +682,9 @@
           currentPassword: currentPasswordInput.value,
           newPassword: newPasswordInput.value
         })
-      }, UX.textByLanguage('Não foi possível atualizar a senha.', 'Could not update your password.'));
+      }, UX.t('profile.password.error'));
       passwordForm.reset();
-      UX.showMessage(passwordMessage, UX.textByLanguage('Senha atualizada. As outras sessões foram encerradas.', 'Password updated. Other sessions were signed out.'), 'success');
+      UX.showMessage(passwordMessage, UX.t('profile.password.success'), 'success');
     } catch (error) {
       if (error.status === 401) return redirectToLogin();
       UX.showMessage(passwordMessage, error.message, 'error');
@@ -722,10 +704,10 @@
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: '{}'
-      }, UX.textByLanguage('Não foi possível remover a foto.', 'Could not remove the photo.'));
+      }, UX.t('profile.photo.removeError'));
       populate(data.user);
       picInput.value = '';
-      UX.showMessage(profileMessage, UX.textByLanguage('Foto removida permanentemente.', 'Photo permanently removed.'), 'success');
+      UX.showMessage(profileMessage, UX.t('profile.photo.removed'), 'success');
     } catch (error) {
       if (error.status === 401) return redirectToLogin();
       UX.showMessage(profileMessage, error.message, 'error');
@@ -736,7 +718,7 @@
   });
 
   function expectedDeletionPhrase() {
-    return UX.isEnglish() ? 'DELETE' : 'EXCLUIR';
+    return UX.t('profile.delete.phrase');
   }
 
   function validateDeletionConfirmation() {
@@ -747,7 +729,7 @@
     confirmDeleteAccount.disabled = !matches || deleteCurrentPassword.value.length < 8;
     deleteConfirmation.setCustomValidity(
       deleteConfirmation.value && !matches
-        ? UX.textByLanguage('Digite EXCLUIR exatamente como indicado.', 'Type DELETE exactly as shown.')
+        ? UX.t('profile.delete.invalidPhrase')
         : ''
     );
   }
@@ -765,7 +747,7 @@
   document.addEventListener('translations.updated', () => {
     validateDeletionConfirmation();
     if (portfolioItems.length) renderPortfolio();
-    if (!portfolioImage.files?.length) portfolioFileLabel.textContent = portfolioLabel('Escolher imagem', 'Choose image');
+    if (!portfolioImage.files?.length) portfolioFileLabel.textContent = portfolioLabel('profile.portfolio.choose');
   });
   cancelDeleteAccount.addEventListener('click', () => deleteAccountDialog.close('cancel'));
 
@@ -783,7 +765,7 @@
           currentPassword: deleteCurrentPassword.value,
           confirmation: deleteConfirmation.value.trim()
         })
-      }, UX.textByLanguage('Não foi possível excluir a conta.', 'Could not delete the account.'));
+      }, UX.t('profile.delete.error'));
       window.location.replace('login.html?accountDeleted=1');
     } catch (error) {
       if (error.status === 401) return redirectToLogin();
@@ -801,7 +783,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: '{}'
-      }, UX.textByLanguage('Não foi possível encerrar a sessão.', 'Could not sign out.'));
+      }, UX.t('profile.logout.error'));
       window.location.replace('login.html');
     } catch (error) {
       UX.showMessage(profileMessage, error.message, 'error');

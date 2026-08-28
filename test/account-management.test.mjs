@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { readCatalogs } from '../test-utils/i18n.mjs';
 
 const read = (file) => readFileSync(resolve(file), 'utf8');
 
@@ -32,11 +33,12 @@ test('a central da conta oferece dados, segurança e remoção de foto', () => {
 
 test('o gerenciamento da conta possui tradução completa em português e inglês', () => {
   const page = read('public/perfil.html');
-  const translations = read('public/lang.js');
+  const translations = readCatalogs();
   const keys = [...page.matchAll(/data-i18n="([^"]+)"/g)].map((match) => match[1]);
 
   for (const key of new Set(keys)) {
-    assert.equal(translations.split(`'${key}':`).length - 1, 2, key);
+    assert.ok(translations['pt-BR'][key], `pt-BR: ${key}`);
+    assert.ok(translations['en-US'][key], `en-US: ${key}`);
   }
 });
 
@@ -59,12 +61,12 @@ test('o Worker protege alterações sensíveis e revoga outras sessões', () => 
 
 test('a politica explica retencao e exclusao em ambos os idiomas', () => {
   const privacy = read('public/privacidade.html');
-  const translations = read('public/lang.js');
+  const translations = readCatalogs();
 
   assert.match(privacy, /data-i18n="privacy\.sec7\.title"/);
   assert.match(privacy, /data-i18n="privacy\.sec9\.p"/);
-  assert.match(translations, /'privacy\.sec7\.title': '7\. Retenção e Exclusão'/);
-  assert.match(translations, /'privacy\.sec7\.title': '7\. Retention and Deletion'/);
-  assert.match(translations, /identificadores irreversíveis e expiram automaticamente/);
-  assert.match(translations, /irreversible identifiers and expire automatically/);
+  assert.equal(translations['pt-BR']['privacy.sec7.title'], '7. Retenção e Exclusão');
+  assert.equal(translations['en-US']['privacy.sec7.title'], '7. Retention and Deletion');
+  assert.match(translations['pt-BR']['privacy.sec7.p'], /identificadores irreversíveis e expiram automaticamente/);
+  assert.match(translations['en-US']['privacy.sec7.p'], /irreversible identifiers and expire automatically/);
 });

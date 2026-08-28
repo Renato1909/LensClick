@@ -272,7 +272,7 @@
     const accountWasDeleted = new URLSearchParams(window.location.search).get('accountDeleted') === '1';
     function showDeletedAccountMessage() {
       if (!accountWasDeleted) return;
-      showLoginMessage(UX.textByLanguage('Sua conta e os dados controlados por ela foram excluídos.', 'Your account and the data it controlled were deleted.'), 'success');
+      showLoginMessage(UX.t('login.accountDeleted'), 'success');
     }
     showDeletedAccountMessage();
     document.addEventListener('translations.updated', showDeletedAccountMessage);
@@ -289,8 +289,8 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
-        }, UX.textByLanguage('Não foi possível entrar.', 'Could not sign in.'));
-        showLoginMessage(UX.textByLanguage('Login realizado com segurança. Redirecionando...', 'Signed in securely. Redirecting...'), 'success');
+        }, UX.t('login.error'));
+        showLoginMessage(UX.t('login.secureRedirect'), 'success');
         setTimeout(() => { window.location.href = UX.safeNextDestination('perfil.html'); }, 700);
       } catch (error) {
         showLoginMessage(error.message);

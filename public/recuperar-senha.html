@@ -53,18 +53,15 @@
             email: document.getElementById('recoveryEmail').value.trim(),
             language: document.documentElement.lang.startsWith('en') ? 'en' : 'pt'
           })
-        }, UX.textByLanguage('Não foi possível solicitar a recuperação.', 'Could not request password recovery.'));
-        UX.showMessage(message, UX.textByLanguage(
-          'Se o e-mail estiver cadastrado, você receberá as instruções em instantes.',
-          'If the email is registered, you will receive instructions shortly.'
-        ), 'success');
+        }, UX.t('recovery.request.error'));
+        UX.showMessage(message, UX.t('recovery.request.success'), 'success');
         form.reset();
       } catch (error) {
         const translatedError = error.status === 429
-          ? UX.textByLanguage('Muitas solicitações. Aguarde antes de tentar novamente.', 'Too many requests. Please wait before trying again.')
+          ? UX.t('recovery.request.rateLimited')
           : error.status === 503
-            ? UX.textByLanguage('A recuperação está temporariamente indisponível.', 'Password recovery is temporarily unavailable.')
-            : UX.textByLanguage('Não foi possível solicitar a recuperação.', 'Could not request password recovery.');
+            ? UX.t('recovery.request.unavailable')
+            : UX.t('recovery.request.error');
         UX.showMessage(message, translatedError, 'error');
       } finally {
         UX.setBusy(button, false);
