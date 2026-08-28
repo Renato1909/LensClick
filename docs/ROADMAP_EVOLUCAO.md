@@ -71,7 +71,7 @@
 
 Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada uma unica vez, habilitada por 1.2 (cobertura de testes E2E por endpoint), que prepara o terreno para a modularizacao por dominio (4.2).
 
-> **Status:** concluido pelo PR #34 e validado em producao em 25 de agosto de 2026. As iniciativas 2.1 e 2.2 tambem foram concluidas; a proxima iniciativa e 2.3.
+> **Status:** concluido pelo PR #34 e validado em producao em 25 de agosto de 2026. As iniciativas 2.1, 2.2 e 2.3 tambem foram concluidas; a proxima iniciativa e 2.4.
 
 - **Objetivo**: Extrair o roteador de `worker.mjs` para `src/router.mjs` antes de iniciar a Fase 2.
 - **O que executa**: **Etapa A (roteador)** - extrair `handleRequest`/`handleApi` para `src/router.mjs` como `Map` de handlers (ou estrutura equivalente); preservar comportamento; sem mudanca de logica de negocio.
@@ -117,16 +117,19 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 2.3 Galeria de portfolio com markup responsivo
 
+> **Status:** concluido pelo PR #40 e validado em producao em 27 de agosto de 2026. A galeria responsiva e progressiva foi publicada na versao `24d21de1-bd1f-4450-b4a3-37bb09500890`, sem necessidade de rollback.
+
 1. **Nome da iniciativa**: Galeria performatica com markup responsivo e carregamento progressivo.
 2. **Objetivo**: Exibir portfolio (ate 12 itens, 4MB cada) com markup responsivo, dimensões explicitas e carregamento progressivo, preparando a interface para consumir variantes reais quando 4.3 estiver concluida.
-3. **Problema resolvido**: `photographer-profile.js` ja usa `loading="lazy"` nativo (linha 87), mas serve a imagem original (ate 4MB) em qualquer contexto - galeria, card, perfil. Sem `srcset`/`sizes`/dimensoes explicitas, a banda e desperdicada, o LCP e degradado em mobile e ha CLS por falta de espaco reservado.
+3. **Problema resolvido**: A galeria usava apenas `loading="lazy"`, sem `srcset`/`sizes`, dimensoes explicitas, reserva de espaco, estado progressivo ou fallback visual de erro. A entrega corrige o markup e a experiencia responsiva; a reducao efetiva de banda com variantes reais permanece no escopo de 4.3.
 4. **Impacto esperado**: LCP abaixo de 2.5s em mobile; CLS proximo de zero; menos banda consumida; melhor Core Web Vitals (indiretamente SEO); interface pronta para variantes reais (4.3).
-5. **Complexidade**: Media - adicionar `srcset`/`sizes` com dimensoes explicitas; placeholders; estabilidade visual; carregamento progressivo. Lazy loading nativo ja existe. Nao depende criticamente de 4.3.
-6. **Riscos**: Sem variantes reais, `srcset` aponta para a original como solucao interina. Mitigacao: registrar que a integracao completa de `srcset` com variantes reais sera finalizada quando 4.3 estiver concluida.
+5. **Implementacao entregue**: Lista acessivel, layout editorial responsivo, dimensoes explicitas, `sizes`/`srcset`, lazy loading assincrono, placeholder progressivo, transicao suave, fallback bilingue e respeito a `prefers-reduced-motion`.
+6. **Risco residual**: Sem variantes reais, `srcset` aponta para a imagem original como solucao interina. A integracao completa e a reducao de banda serao finalizadas quando 4.3 estiver concluida.
 7. **Dependencias**: Nenhuma critica. A integracao completa de `srcset` com variantes reais e finalizada quando 4.3 estiver concluida (dependencia unidirecional 4.3 -> 2.3, sem circularidade).
 8. **Agentes envolvidos**: Engenheiro Frontend (implementacao), Especialista em SEO e Performance (Responsavel por Core Web Vitals/LCP/CLS/metricas), Engenheiro Backend.
 9. **Ordem recomendada**: **7a** - ganho de UX e performance simultaneo.
 10. **Fronteira de responsabilidade**: Frontend=markup responsivo, `srcset`/`sizes`, dimensoes explicitas, placeholders, estabilidade visual | SEO/Performance=metricas (LCP, CLS, Core Web Vitals) e definicao dos tamanhos otimos.
+11. **Validacao realizada**: 131 testes, build do Wrangler, CI obrigatorio, revisao visual desktop/mobile, troca PT/EN e smoke de producao sem erros `5xx`.
 
 ### 2.4 Internacionalizacao real (i18n)
 
