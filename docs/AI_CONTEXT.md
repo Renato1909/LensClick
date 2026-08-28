@@ -98,7 +98,7 @@ A fonte primária depende do tipo de pergunta:
 7. **Operações de escrita validam origem, formato, tamanho e frequência** (rate limiting).
 8. **Frontend sem framework.** Não introduza React/Vue/etc. sem uma ADR que justifique.
 9. **Tokens visuais `--lc-*`** são a fonte oficial. Código novo não usa `--accent-1`, `--text`, `--radius`, `--shadow` (aliases temporários legados).
-10. **i18n via `public/lang.js`** (`window.i18n`, chaves `data-i18n`, PT/EN). Textos novos precisam das duas línguas.
+10. **i18n via catálogos** (`public/locales/pt-BR.json`, `public/locales/en-US.json`) e runtime `public/lang.js` (`window.i18n`, chaves `data-i18n`). Textos novos precisam existir nos dois catálogos.
 11. **Não trate roadmap como implementação.** Itens do `ROADMAP_EVOLUCAO.md` são intenção futura, não código existente.
 12. **Não invente fatos.** Se não tem certeza, leia a fonte ou marque como incerteza.
 
@@ -184,7 +184,7 @@ Princípio: **defesa em profundidade** (ADR-13).
 ## 11. Frontend e experiência
 
 - **Stack:** HTML/CSS/JS vanilla, sem framework (ADR-4).
-- **i18n:** `public/lang.js` (`window.i18n`, `data-i18n`, PT/EN). Textos novos exigem as duas línguas.
+- **i18n:** catálogos JSON em `public/locales/` e runtime `public/lang.js` (`window.i18n`, `data-i18n`, PT-BR/EN-US). Textos novos exigem paridade entre os dois catálogos.
 - **UX compartilhada:** `public/ux.js` (`window.LensClickUX` — `apiFetch`, `setBusy`, `showMessage`, `highlight`, `prefersReducedMotion`, `safeNextDestination`).
 - **Design System:** tokens `--lc-*` em `public/refinements.css` (cores, espaçamento, raios, sombras, movimento). Componentes: botões 48px, campos com label visível, cards, feedback. Direção visual: carvão, off-white, cinza quente, acento suave não neon.
 - **Acessibilidade:** foco visível, estados não dependentes só de cor, `prefers-reduced-motion`, `aria-invalid` em erros.

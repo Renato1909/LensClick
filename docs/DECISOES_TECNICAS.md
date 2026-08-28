@@ -147,7 +147,8 @@ O LensClick preserva a base original do projeto, que foi construída em HTML, CS
 
 O frontend permanece em **HTML, CSS e JavaScript vanilla**, sem framework de UI. A organização é feita por camadas compartilhadas:
 
-- `public/lang.js` — internacionalização (`window.i18n`, chaves `data-i18n`);
+- `public/lang.js` — runtime de internacionalização (`window.i18n`, chaves `data-i18n`);
+- `public/locales/` — catálogos PT-BR/EN-US com contrato de chaves equivalente;
 - `public/ux.js` — comportamentos reutilizáveis (`window.LensClickUX`: `apiFetch`, `setBusy`, `showMessage`, `highlight`, `safeNextDestination`, etc.);
 - `public/profile-api.js` — integração da tela de perfil;
 - `public/photographer-profile.js` — renderização segura do perfil público;
@@ -169,7 +170,7 @@ O frontend permanece em **HTML, CSS e JavaScript vanilla**, sem framework de UI.
 ### Consequências
 
 - **Benefícios:** simplicidade, sem build step, dependências mínimas, arquivos servidos diretamente, curva de aprendizado baixa.
-- **Limitações:** maior responsabilidade manual na organização de componentes e scripts; lógica de UI repetida pode surgir sem disciplina; `public/lang.js` e `src/worker.mjs` são hotspots que demandam organização e manutenção cuidadosa.
+- **Limitações:** maior responsabilidade manual na organização de componentes e scripts; lógica de UI repetida pode surgir sem disciplina; `public/locales/` e `src/worker.mjs` são hotspots que demandam organização e manutenção cuidadosa.
 - **Pontos futuros:** o roadmap recomenda separação progressiva dos scripts inline da página inicial e modularização do Worker por domínio (Fase 4), sem reescrita completa.
 
 ### Status
@@ -378,7 +379,7 @@ A autenticação é implementada com os seguintes componentes:
 
 ---
 
-## Decisão 10 — Internacionalização por chaves com `lang.js` e `window.i18n`
+## Decisão 10 — Internacionalização por catálogos com `lang.js` e `window.i18n`
 
 ### Contexto
 
@@ -386,11 +387,12 @@ O LensClick é uma plataforma bilingue (português e inglês). A interface preci
 
 ### Decisão tomada
 
-A internacionalização é implementada em **JavaScript vanilla** via `public/lang.js` (módulo `window.i18n`):
+A internacionalização é implementada em **JavaScript vanilla** pelo runtime `public/lang.js` (módulo `window.i18n`) e pelos catálogos `public/locales/pt-BR.json` e `public/locales/en-US.json`:
 
 - os elementos traduzíveis usam **chaves** como `data-i18n`, `data-i18n-placeholder`, `data-i18n-title`, `data-i18n-aria` e `data-i18n-section`;
-- o **português é o idioma de origem** (texto original no HTML);
-- o **inglês é aplicado por dicionário** (substituição via chaves);
+- o **português é o idioma de origem** e o HTML em português funciona como fallback progressivo;
+- PT-BR e EN-US mantêm o mesmo contrato de chaves em arquivos JSON separados;
+- o runtime carrega e armazena os catálogos em cache, interpola parâmetros e tenta novamente após falhas transitórias;
 - a preferência de idioma fica apenas no **`localStorage`** — dados de conta nunca ficam nesse armazenamento;
 - o módulo dispara `translations.updated` para outros componentes;
 - a transição de idioma tem animação vertical curta, respeitando `prefers-reduced-motion`.
@@ -398,7 +400,7 @@ A internacionalização é implementada em **JavaScript vanilla** via `public/la
 ### Motivo da escolha
 
 - **Sem framework**: mantém a decisão de frontend vanilla, sem adicionar dependência de biblioteca de i18n.
-- **PT como origem**: o HTML já está em português; o inglês é aplicado por chaves, evitando duplicar HTML.
+- **PT como origem**: o HTML já está em português e permanece utilizável se o catálogo falhar, sem duplicar páginas.
 - **Preferência em localStorage**: simples, persistente e suficiente para idioma (não é dado sensível).
 - **Acessibilidade**: a troca de idioma atualiza texto, placeholders, títulos e rótulos ARIA.
 - **Alinhamento ao produto**: PT/EN atende ao público atual; a estrutura por chaves permite adicionar idiomas no futuro.
@@ -411,13 +413,13 @@ A internacionalização é implementada em **JavaScript vanilla** via `public/la
 
 ### Consequências
 
-- **Benefícios:** troca dinâmica sem recarga, preferência persistente, acessibilidade preservada, sem dependência externa.
-- **Limitações:** `public/lang.js` é um hotspot que demanda organização e manutenção cuidadosa; o roadmap recomenda i18n real com catálogos separados (Fase 2) para escalar além de PT/EN.
-- **Pontos futuros:** extrair catálogos de tradução para arquivos separados se o número de idiomas crescer.
+- **Benefícios:** troca dinâmica sem recarga, preferência persistente, catálogos independentes, fallback progressivo, acessibilidade preservada e nenhuma dependência externa.
+- **Limitações:** a tradução continua aplicada no cliente após o HTML inicial; pluralização avançada ainda exigirá evolução do helper.
+- **Pontos futuros:** adicionar novos idiomas por catálogo e, quando necessário, evoluir pluralização e formatação locale-aware sem alterar o HTML.
 
 ### Status
 
-**Ativa.** Revisável para i18n com catálogos (Fase 2 do roadmap).
+**Ativa.** Evoluída para catálogos pelo PR #42 (Fase 2.4) e validada em produção em 28 de agosto de 2026.
 
 ---
 
@@ -624,7 +626,7 @@ O roadmap técnico é formalizado em `docs/ROADMAP_EVOLUCAO.md` como **documento
 | 7 | Pull Requests obrigatórios | Ativa |
 | 8 | Squash merge e proteção estrita de `main` | Ativa |
 | 9 | Autenticação por sessões, PBKDF2 e Web Crypto | Ativa (revisável para 2FA) |
-| 10 | i18n por chaves com `lang.js`/`window.i18n` | Ativa (revisável para catálogos) |
+| 10 | i18n por catálogos com `lang.js`/`window.i18n` | Ativa |
 | 11 | Design System com tokens `--lc-*` | Ativa (aliases temporários) |
 | 12 | Agentes especializados do Copilot | Ativa |
 | 13 | Segurança: R2 privado, validação, proteção de dados | Ativa (revisável para HSTS/2FA) |

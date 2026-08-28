@@ -71,7 +71,7 @@
 
 Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada uma unica vez, habilitada por 1.2 (cobertura de testes E2E por endpoint), que prepara o terreno para a modularizacao por dominio (4.2).
 
-> **Status:** concluido pelo PR #34 e validado em producao em 25 de agosto de 2026. As iniciativas 2.1, 2.2 e 2.3 tambem foram concluidas; a proxima iniciativa e 2.4.
+> **Status:** concluido pelo PR #34 e validado em producao em 25 de agosto de 2026. As quatro iniciativas da Fase 2 tambem foram concluidas; a proxima iniciativa e 3.1.
 
 - **Objetivo**: Extrair o roteador de `worker.mjs` para `src/router.mjs` antes de iniciar a Fase 2.
 - **O que executa**: **Etapa A (roteador)** - extrair `handleRequest`/`handleApi` para `src/router.mjs` como `Map` de handlers (ou estrutura equivalente); preservar comportamento; sem mudanca de logica de negocio.
@@ -133,15 +133,18 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 2.4 Internacionalizacao real (i18n)
 
+> **Status:** concluido pelo PR #42 e validado em producao em 28 de agosto de 2026. Os catalogos `pt-BR.json` e `en-US.json` possuem 500 chaves cada e sao carregados pelo runtime `public/lang.js`, com fallback progressivo, cache, interpolacao, persistencia de idioma e a transicao visual ja aprovada. A versao `a840abe4-6245-4616-8b06-1814587a7991` serve 100% do trafego, sem necessidade de rollback no smoke inicial.
+
 1. **Nome da iniciativa**: Substituir `lang.js` por sistema de i18n com catalogos.
 2. **Objetivo**: Suportar multiplos idiomas (pt-BR, en-US) sem duplicar HTML.
-3. **Problema resolvido**: `lang.js` e `ux.js` fazem traducao por substituicao de texto no DOM - fragil, sem pluralizacao, sem fallback, sem carregamento sob demanda. Adicionar ingles exigiria duplicar todas as paginas.
+3. **Problema resolvido**: Os dicionarios viviam dentro de `lang.js`, misturando runtime e conteudo e tornando manutencao, fallback e expansao mais frageis. A entrega separou o conteudo por locale sem duplicar as paginas.
 4. **Impacto esperado**: Base para expansao internacional; manutencao de copias centralizada.
-5. **Complexidade**: Media - adicionar catalogos JSON por idioma; helper `t(key, params)`; atributo `data-i18n` nos elementos.
-6. **Riscos**: Refatoracao toca todas as paginas HTML. Mitigacao: fazer pagina por pagina com testes de regressao (1.2).
+5. **Implementacao entregue**: Catalogos JSON com paridade automatizada; helper `t(key, params, fallback)`; cache de requisicoes; fallback PT-BR e fallback progressivo do HTML; API `window.i18n`; textos dinamicos migrados; transicao acessivel preservada.
+6. **Risco residual**: A traducao continua no cliente e pluralizacao avancada nao foi necessaria nesta etapa. Falhas de catalogo preservam o conteudo original em portugues e podem ser tentadas novamente.
 7. **Dependencias**: 1.2 (testes de `html-scripts` e `translation-transition` ja existem).
 8. **Agentes envolvidos**: Engenheiro Frontend, Designer, Especialista em Marketing para Fotografia (consultado sobre copias e tom por idioma).
 9. **Ordem recomendada**: **8a** - pode ser adiada se expansao internacional nao for prioridade de curto prazo.
+10. **Validacao realizada**: 134 testes, build do Wrangler, CI obrigatorio, revisao visual desktop/mobile, paginas legais e autenticacao em PT/EN, catálogos com 500 chaves cada e smoke de producao somente leitura sem erros `5xx`.
 
 ---
 
