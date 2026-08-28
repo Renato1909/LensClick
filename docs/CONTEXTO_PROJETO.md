@@ -77,7 +77,7 @@ flowchart LR
 |---|---|---|
 | Interface | Páginas HTML | `public/*.html` |
 | Design System | Tokens visuais | `DESIGN_SYSTEM.md`, `public/refinements.css` |
-| i18n | Tradução PT/EN | `public/lang.js` |
+| i18n | Catálogos PT-BR/EN-US e runtime vanilla | `public/locales/*.json`, `public/lang.js` |
 | UX | Feedback, loading, acessibilidade | `public/ux.js` |
 | Perfil | Lógica da conta | `public/profile-api.js`, `public/photographer-profile.js`, `public/public-shell.js` |
 | API | Roteamento, autenticação e validação | `src/router.mjs`, `src/worker.mjs` |
@@ -118,7 +118,8 @@ LensClick/
 │   ├── perfil_temp.html    # Redirecionamento legado
 │   ├── privacidade.html    # Política
 │   ├── termos.html         # Termos
-│   ├── lang.js             # i18n (window.i18n)
+│   ├── lang.js             # runtime i18n (window.i18n)
+│   ├── locales/            # catálogos pt-BR.json e en-US.json
 │   ├── ux.js               # Helpers UX (window.LensClickUX)
 │   ├── profile-api.js      # Lógica da conta
 │   ├── photographer-profile.js # Perfil profissional
@@ -329,7 +330,7 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 
 - **Sem framework** — manipulação direta do DOM.
 - **Helpers reutilizáveis** em `ux.js` (`window.LensClickUX`): `apiFetch`, `setBusy`, `showMessage`, `highlight`, `prefersReducedMotion`, `safeNextDestination`, `updateAccessibilityLabels`.
-- **i18n** em `lang.js` (`window.i18n`): chaves `data-i18n` no HTML, tradução por dicionário.
+- **i18n** em `lang.js` (`window.i18n`): chaves `data-i18n` no HTML e catálogos JSON separados em `public/locales/`, com fallback progressivo para o português do HTML.
 - **Sem dados de conta em `localStorage`** — apenas preferência de idioma.
 - **Acessibilidade**: semântica (`header`/`nav`/`main`), `aria-live`, `aria-busy`, `aria-invalid`, foco visível, `prefers-reduced-motion`.
 - **Design System**: tokens em `refinements.css` (prefixo `--lc-*`), aliases temporários (`--accent-1`, `--text`) para compatibilidade.
@@ -373,7 +374,7 @@ O estado atual de branches, branches órfãs, PRs e pendências Git é mantido e
 ### Débitos técnicos conhecidos
 
 1. **`db/schema.ts` desatualizado** — `schemaVersion=2` lista apenas 6 tabelas (`users`, `sessions`, `passwordResetTokens`, `contactMessages`, `newsletterSubscriptions`, `rateLimits`), mas **não inclui** `professional_profiles` (migração 0003) nem `portfolio_items` (migração 0004). O schema está à frente do código de aplicação.
-2. **Hotspots de conflito** — os handlers em `src/worker.mjs` e as traduções em `public/lang.js` continuam centralizados; branches concorrentes exigem resolução cuidadosa.
+2. **Hotspots de conflito** — os handlers em `src/worker.mjs` e os catálogos em `public/locales/` concentram alterações frequentes; branches concorrentes exigem resolução cuidadosa.
 3. **Branches órfãs** — `recuperacao-de-senha` e `gerenciamento-da-conta` perderam suas remotas; commits exclusivos correm risco de perda.
 4. **Sem 2FA** — apenas senha + sessão.
 5. **Sem verificação de e-mail** — cadastro não confirma o e-mail.
@@ -402,7 +403,7 @@ Baseado na revisão arquitetural das 7 branches:
 #### P2 — Consolidar funcionalidades da conta
 
 - `agent/exclusao-definitiva-da-conta` e `agent/gerenciamento-da-conta` compartilham 9 arquivos (mesmo domínio).
-- Estratégia: merge sequencial ou rebase sobre `main` com resolução de conflitos em `worker.mjs` e `lang.js`.
+- Estratégia: merge sequencial ou rebase sobre `main` com resolução de conflitos em `worker.mjs` e nos catálogos de `public/locales/`.
 
 #### P3 — Perfil profissional público
 
@@ -453,7 +454,7 @@ Baseado na revisão arquitetural das 7 branches:
 | Alterar API/backend | `src/router.mjs`, `src/worker.mjs`, `migrations/*.sql` |
 | Alterar banco de dados | `migrations/*.sql`, `db/schema.ts` |
 | Alterar frontend | `public/*.html`, `public/*.js`, `public/*.css` |
-| Alterar UX/acessibilidade | `public/ux.js`, `public/lang.js`, `DESIGN_SYSTEM.md` |
+| Alterar UX/acessibilidade | `public/ux.js`, `public/lang.js`, `public/locales/*.json`, `DESIGN_SYSTEM.md` |
 | Alterar infra/CI/CD | `wrangler.jsonc`, `.github/workflows/quality.yml`, `CLOUDFLARE_SETUP.md` |
 | Adicionar testes | `test/*.test.mjs`, `scripts/http-smoke.mjs` |
 | Segurança | `src/worker.mjs` (funções de hash/sessão), `CLOUDFLARE_SETUP.md` (segredos) |
@@ -481,7 +482,7 @@ npx wrangler deploy      # Publicar na Cloudflare
 7. **Imagens passam pelo Worker, não por URL pública do R2.**
 8. **SQL sempre preparado com `.bind(...)`** — nunca concatenação.
 9. **Dados de conta nunca em `localStorage`** — apenas preferência de idioma.
-10. **PT é o idioma de origem** — EN por chaves `data-i18n`.
+10. **PT-BR é o idioma de origem** — PT-BR e EN-US mantêm o mesmo contrato de chaves nos catálogos.
 
 ## Documentação complementar
 

@@ -82,7 +82,7 @@ flowchart LR
 |---|---|---|
 | Interface | Conteudo, formularios, navegacao e estados visuais | `public/*.html` |
 | Design System | Tokens, componentes, foco, movimento e responsividade | `public/refinements.css` |
-| Internacionalizacao | Portugues, ingles e transicao de idioma | `public/lang.js` |
+| Internacionalizacao | Catalogos PT-BR/EN-US, fallback e transicao | `public/locales/*.json`, `public/lang.js` |
 | UX compartilhada | Requisicoes, feedback, loading e validacao | `public/ux.js` |
 | Perfil | Carregamento, edicao, imagem e logout | `public/profile-api.js` |
 | API e seguranca | Roteamento declarativo, validacoes, autenticacao e cabecalhos | `src/router.mjs`, `src/worker.mjs` |
@@ -115,7 +115,8 @@ LensClick/
 |   |-- redefinir-senha.html   # Confirmacao da nova senha
 |   |-- privacidade.html       # Politica de privacidade
 |   |-- termos.html            # Termos de uso
-|   |-- lang.js                # Dicionario PT/EN e animacao
+|   |-- lang.js                # Runtime i18n, fallback e animacao
+|   |-- locales/               # Catalogos pt-BR.json e en-US.json
 |   |-- ux.js                  # Comportamentos compartilhados
 |   |-- profile-api.js         # Integracao da tela de perfil
 |   |-- photographer-profile.js # Renderizacao segura do perfil publico
@@ -191,15 +192,17 @@ A mesma area permite montar o portfolio profissional. Cada fotografo pode enviar
 
 A pagina recebe o identificador pelo parametro `perfil`, consulta apenas registros publicados e renderiza todo conteudo fornecido pelo usuario com `textContent`. O Worker nao devolve e-mail ou telefone sem o consentimento especifico correspondente. Links externos aceitam apenas HTTP ou HTTPS e abrem com `noopener noreferrer`. A galeria publica usa rotas do Worker para entregar apenas imagens de portfolios vinculados a perfis publicados.
 
-### 5.6 Traducao - `public/lang.js`
+### 5.6 Traducao - `public/lang.js` e `public/locales/`
 
 Os elementos traduziveis usam chaves como `data-i18n`, `data-i18n-placeholder`, `data-i18n-title`, `data-i18n-aria` e `data-i18n-section`.
 
-O modulo:
+Os catalogos `pt-BR.json` e `en-US.json` possuem o mesmo contrato de chaves. O runtime:
 
 - escolhe o idioma salvo ou o idioma do navegador;
-- preserva os valores originais em portugues;
-- aplica o dicionario em ingles;
+- preserva os valores originais em portugues como fallback progressivo;
+- carrega e guarda em cache o catalogo do idioma selecionado;
+- usa o catalogo PT-BR como fallback e interpola parametros como `{year}` e `{name}`;
+- permite nova tentativa apos falha transitoria de carregamento;
 - atualiza texto, HTML controlado, placeholders e rotulos;
 - atualiza o ano do copyright;
 - dispara `translations.updated` para outros componentes;
@@ -614,7 +617,7 @@ O portfolio usa o mesmo principio de privacidade. O upload chega como `multipart
 
 ### 11.3 Idiomas
 
-Portugues e o idioma de origem. Ingles e aplicado por chaves. A preferencia fica apenas no `localStorage`; dados de conta nunca ficam nesse armazenamento.
+Portugues e o idioma de origem e permanece no HTML como fallback progressivo. PT-BR e EN-US usam catalogos JSON com o mesmo contrato de chaves. A preferencia fica apenas no `localStorage`; dados de conta nunca ficam nesse armazenamento.
 
 ## 12. Testes e qualidade
 
