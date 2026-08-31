@@ -18,6 +18,9 @@ test('a reputacao conecta perfil publico, central da conta e catalogos bilingues
   assert.doesNotThrow(() => new Function(script));
   assert.match(script, /review-requests/);
   assert.match(script, /account\/reviews/);
+  assert.match(script, /window\.i18n\?\.ready/);
+  assert.match(script, /translations\.updated[^]*refreshReputation/);
+  assert.match(script, /Promise\.all\(\[loadPublicReputation\(\), loadDashboard\(\)\]\)/);
   for (const key of Object.keys(pt).filter((key) => key.startsWith('reputation.'))) assert.equal(typeof en[key], 'string', key);
 });
 

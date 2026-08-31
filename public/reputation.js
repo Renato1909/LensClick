@@ -167,7 +167,15 @@
     }
   }
 
-  loadPublicReputation();
-  loadDashboard();
-  document.addEventListener('translations.updated', () => { if (document.getElementById('publicReviewsList')) loadPublicReputation(); });
+  let refreshVersion = 0;
+
+  async function refreshReputation() {
+    const version = ++refreshVersion;
+    await Promise.resolve(window.i18n?.ready);
+    if (version !== refreshVersion) return;
+    await Promise.all([loadPublicReputation(), loadDashboard()]);
+  }
+
+  refreshReputation();
+  document.addEventListener('translations.updated', refreshReputation);
 })();

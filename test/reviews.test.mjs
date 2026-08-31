@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createWorkerFixture } from '../test-support/worker-fixture.mjs';
 
 async function register(fixture, name, email) {
@@ -73,6 +74,17 @@ test('avaliacao exige contato confirmado, preserva autoria e registra auditoria'
   assert.deepEqual(afterDeletion.json.summary, { total: 0, average: null });
   assert.equal(fixture.DB.prepare('SELECT COUNT(*) AS total FROM review_audit WHERE review_id = ?').bind(reviewId).first('total'), 3);
   assert.equal(fixture.DB.prepare('SELECT status FROM reviews WHERE id = ?').bind(reviewId).first('status'), 'deleted');
+});
+
+test('criacao da avaliacao persiste avaliacao e auditoria no mesmo batch', () => {
+  const source = readFileSync('src/worker.mjs', 'utf8');
+  const creation = source.slice(
+    source.indexOf("if (routeId === 'account.reviews.create')"),
+    source.indexOf("if (routeId === 'account.reviews.update')")
+  );
+  assert.match(creation, /env\.DB\.batch\(\[/);
+  assert.match(creation, /INSERT INTO reviews/);
+  assert.match(creation, /INSERT INTO review_audit/);
 });
 
 test('fotografo nao pode avaliar e cliente nao pode confirmar contato', async (t) => {
