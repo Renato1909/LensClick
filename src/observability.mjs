@@ -26,6 +26,7 @@ const STATIC_API_ROUTES = new Set([
   '/api/photographers',
   '/api/account/portfolio',
   '/api/account/review-requests',
+  '/api/account/conversations',
   '/api/account/professional-profile',
   '/api/profile',
   '/api/account/password',
@@ -80,9 +81,12 @@ export function normalizeRoute(input) {
   if (/^\/api\/photographers\/[^/]+\/portfolio\/[^/]+$/.test(pathname)) return '/api/photographers/:slug/portfolio/:id';
   if (/^\/api\/photographers\/[^/]+\/reviews$/.test(pathname)) return '/api/photographers/:slug/reviews';
   if (/^\/api\/photographers\/[^/]+\/review-requests$/.test(pathname)) return '/api/photographers/:slug/review-requests';
+  if (/^\/api\/photographers\/[^/]+\/conversations$/.test(pathname)) return '/api/photographers/:slug/conversations';
   if (/^\/api\/photographers\/[^/]+$/.test(pathname)) return '/api/photographers/:slug';
   if (/^\/api\/account\/review-requests\/[^/]+\/review$/.test(pathname)) return '/api/account/review-requests/:id/review';
   if (/^\/api\/account\/review-requests\/[^/]+$/.test(pathname)) return '/api/account/review-requests/:id';
+  if (/^\/api\/account\/conversations\/[^/]+\/messages$/.test(pathname)) return '/api/account/conversations/:id/messages';
+  if (/^\/api\/account\/conversations\/[^/]+\/read$/.test(pathname)) return '/api/account/conversations/:id/read';
   if (/^\/api\/account\/reviews\/[^/]+$/.test(pathname)) return '/api/account/reviews/:id';
   if (/^\/api\/account\/portfolio\/[^/]+\/image$/.test(pathname)) return '/api/account/portfolio/:id/image';
   if (/^\/api\/account\/portfolio\/[^/]+$/.test(pathname)) return '/api/account/portfolio/:id';
