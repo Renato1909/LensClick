@@ -824,12 +824,16 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     if (!Number.isInteger(rating) || rating < 1 || rating > 5 || comment.length < 10) {
       return json(400, { error: 'Informe uma nota de 1 a 5 e um comentario com pelo menos 10 caracteres.' });
     }
-    const inserted = await env.DB.prepare(`
-      INSERT INTO reviews (request_id, client_user_id, photographer_user_id, rating, comment) VALUES (?, ?, ?, ?, ?)
-    `).bind(Number(requestId), current.id, eligibility.photographer_user_id, rating, comment).run();
+    const [inserted] = await env.DB.batch([
+      env.DB.prepare(`
+        INSERT INTO reviews (request_id, client_user_id, photographer_user_id, rating, comment) VALUES (?, ?, ?, ?, ?)
+      `).bind(Number(requestId), current.id, eligibility.photographer_user_id, rating, comment),
+      env.DB.prepare(`
+        INSERT INTO review_audit (review_id, actor_user_id, action, rating, comment)
+        SELECT id, ?, 'created', ?, ? FROM reviews WHERE request_id = ?
+      `).bind(current.id, rating, comment, Number(requestId))
+    ]);
     const reviewId = Number(inserted.meta.last_row_id);
-    await env.DB.prepare(`INSERT INTO review_audit (review_id, actor_user_id, action, rating, comment) VALUES (?, ?, 'created', ?, ?)`)
-      .bind(reviewId, current.id, rating, comment).run();
     return json(201, { review: { id: reviewId, rating, comment, status: 'active' }, message: 'Avaliacao publicada.' });
   }
 
