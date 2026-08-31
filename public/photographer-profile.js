@@ -126,7 +126,8 @@
   }
 
   async function loadProfile() {
-    const slug = new URLSearchParams(window.location.search).get('perfil') || '';
+    const routeMatch = window.location.pathname.match(/^\/fotografo\/([a-z0-9-]{3,80})\/?$/);
+    const slug = routeMatch?.[1] || new URLSearchParams(window.location.search).get('perfil') || '';
     if (!/^[a-z0-9-]{3,80}$/.test(slug)) {
       loading.hidden = true;
       errorSection.hidden = false;

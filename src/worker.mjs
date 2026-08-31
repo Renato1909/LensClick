@@ -88,6 +88,93 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
+function escapeJsonForHtml(value) {
+  return JSON.stringify(value)
+    .replace(/&/g, '\\u0026')
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e');
+}
+
+function replaceElementText(html, id, value) {
+  const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return html.replace(
+    new RegExp(`(<[^>]+id=["']${escapedId}["'][^>]*>)[\\s\\S]*?(<\\/[^>]+>)`),
+    `$1${escapeHtml(value)}$2`
+  );
+}
+
+const SPECIALTY_LABELS = Object.freeze({
+  wedding: 'Casamentos', events: 'Eventos', portrait: 'Retratos', family: 'Família',
+  corporate: 'Corporativo', product: 'Produtos', fashion: 'Moda', newborn: 'Newborn',
+  nature: 'Natureza', 'real-estate': 'Imóveis'
+});
+
+export function renderPublicProfilePage(template, row, requestUrl) {
+  const profile = professionalProfile(row);
+  const canonicalUrl = new URL(`/fotografo/${encodeURIComponent(profile.slug)}`, requestUrl).toString();
+  const location = [profile.city, profile.state].filter(Boolean).join(', ');
+  const description = cleanText(profile.bio, 155)
+    || `${profile.name}, fotógrafo profissional${location ? ` em ${location}` : ''} na LensClick.`;
+  const imageUrl = profile.profilePic ? new URL(profile.profilePic, requestUrl).toString() : '';
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    url: canonicalUrl,
+    name: `${profile.name} | LensClick`,
+    description,
+    dateModified: row.updated_at || row.user_updated_at,
+    mainEntity: {
+      '@type': 'Person',
+      identifier: profile.slug,
+      name: profile.name,
+      description: profile.bio,
+      ...(imageUrl ? { image: imageUrl } : {}),
+      ...(location ? { address: { '@type': 'PostalAddress', addressLocality: profile.city, addressRegion: profile.state, addressCountry: 'BR' } } : {})
+    }
+  };
+  const head = [
+    `<link rel="canonical" href="${escapeHtml(canonicalUrl)}">`,
+    '<meta property="og:type" content="profile">',
+    `<meta property="og:title" content="${escapeHtml(`${profile.name} | LensClick`)}">`,
+    `<meta property="og:description" content="${escapeHtml(description)}">`,
+    `<meta property="og:url" content="${escapeHtml(canonicalUrl)}">`,
+    ...(imageUrl ? [`<meta property="og:image" content="${escapeHtml(imageUrl)}">`] : []),
+    `<script type="application/ld+json">${escapeJsonForHtml(structuredData)}</script>`
+  ].join('\n  ');
+
+  let html = template
+    .replace('<meta name="description" content="Conheça um fotógrafo profissional na LensClick.">', `<meta name="description" content="${escapeHtml(description)}">`)
+    .replace('<title data-i18n="photographer.title">Perfil profissional | LensClick</title>', `<title>${escapeHtml(profile.name)} | LensClick</title>`)
+    .replace('<!-- LENSCLICK_SSR_HEAD -->', head)
+    .replace('<div class="profile-loading" id="profileLoading" role="status">', '<div class="profile-loading" id="profileLoading" role="status" hidden>')
+    .replace('<article id="professionalProfile" hidden>', '<article id="professionalProfile">');
+  html = replaceElementText(html, 'photographerName', profile.name);
+  html = replaceElementText(html, 'photographerLocation', location);
+  html = replaceElementText(html, 'photographerBio', profile.bio);
+  html = replaceElementText(html, 'photographerInitials', profile.name.split(/\s+/).slice(0, 2).map((part) => part[0] || '').join('').toUpperCase());
+  html = html.replace(
+    '<div class="hero-status" id="photographerAvailability"></div>',
+    `<div class="hero-status" id="photographerAvailability" data-status="${escapeHtml(profile.availability)}">${escapeHtml(profile.availability)}</div>`
+  );
+  html = html.replace(
+    '<div class="public-specialties" id="photographerSpecialties"></div>',
+    `<div class="public-specialties" id="photographerSpecialties">${profile.specialties.map((item) => `<span>${escapeHtml(SPECIALTY_LABELS[item] || item)}</span>`).join('')}</div>`
+  );
+  if (profile.profilePic) {
+    html = html
+      .replace('<img id="photographerImage" alt="" hidden>', `<img id="photographerImage" src="${escapeHtml(profile.profilePic)}" alt="Retrato de ${escapeHtml(profile.name)}">`)
+      .replace('<span id="photographerInitials" aria-hidden="true">', '<span id="photographerInitials" aria-hidden="true" hidden>');
+  }
+  return html;
+}
+
+export function renderMissingProfilePage(template) {
+  return template
+    .replace('<!-- LENSCLICK_SSR_HEAD -->', '<meta name="robots" content="noindex">')
+    .replace('<div class="profile-loading" id="profileLoading" role="status">', '<div class="profile-loading" id="profileLoading" role="status" hidden>')
+    .replace('<section class="profile-error" id="profileError" hidden', '<section class="profile-error" id="profileError"');
+}
+
 function bytesToBase64Url(bytes) {
   let binary = '';
   for (const byte of bytes) binary += String.fromCharCode(byte);
@@ -1244,6 +1331,35 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
 }
 
 async function handleAssetRequest(request, env) {
+  const url = new URL(request.url);
+  const legacySlug = url.pathname === '/fotografo.html' ? url.searchParams.get('perfil') : '';
+  if (['GET', 'HEAD'].includes(request.method) && /^[a-z0-9-]{3,80}$/.test(legacySlug || '')) {
+    return Response.redirect(new URL(`/fotografo/${encodeURIComponent(legacySlug)}`, url), 301);
+  }
+
+  const profileRoute = url.pathname.match(/^\/fotografo\/([a-z0-9-]{3,80})\/?$/);
+  if (['GET', 'HEAD'].includes(request.method) && profileRoute) {
+    const slug = profileRoute[1];
+    const [profile, templateResponse] = await Promise.all([
+      env.DB.prepare(`
+        SELECT p.*, u.name, u.profile_pic_key, u.updated_at AS user_updated_at
+        FROM professional_profiles p
+        JOIN users u ON u.id = p.user_id
+        WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
+      `).bind(slug).first(),
+      env.ASSETS.fetch(new Request(new URL('/fotografo.html', url), request))
+    ]);
+    const template = await templateResponse.text();
+    const body = profile
+      ? renderPublicProfilePage(template, profile, url)
+      : renderMissingProfilePage(template);
+    const headers = new Headers(templateResponse.headers);
+    for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
+    headers.set('Content-Type', 'text/html; charset=UTF-8');
+    headers.set('Cache-Control', profile ? 'public, max-age=60' : 'no-store');
+    return new Response(request.method === 'HEAD' ? null : body, { status: profile ? 200 : 404, headers });
+  }
+
   const assetResponse = await env.ASSETS.fetch(request);
   const headers = new Headers(assetResponse.headers);
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);

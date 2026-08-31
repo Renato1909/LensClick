@@ -262,7 +262,7 @@
       professionalPublicLink.textContent = '';
       return;
     }
-    const relativeUrl = `fotografo.html?perfil=${encodeURIComponent(profile.slug)}`;
+    const relativeUrl = `/fotografo/${encodeURIComponent(profile.slug)}`;
     professionalPublicLink.href = relativeUrl;
     professionalPublicLink.textContent = new URL(relativeUrl, window.location.href).toString();
   }

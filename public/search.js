@@ -38,7 +38,7 @@
     article.className = 'photographer-card';
 
     const link = document.createElement('a');
-    link.href = `fotografo.html?perfil=${encodeURIComponent(p.slug)}`;
+    link.href = `/fotografo/${encodeURIComponent(p.slug)}`;
     link.className = 'photographer-link';
 
     const avatar = document.createElement('div');
