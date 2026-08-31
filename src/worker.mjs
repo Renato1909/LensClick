@@ -1347,7 +1347,10 @@ async function handleAssetRequest(request, env) {
         JOIN users u ON u.id = p.user_id
         WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
       `).bind(slug).first(),
-      env.ASSETS.fetch(new Request(new URL('/fotografo.html', url), request))
+      env.ASSETS.fetch(new Request(new URL('/fotografo.html', url), {
+        method: 'GET',
+        headers: { Accept: 'text/html' }
+      }))
     ]);
     const template = await templateResponse.text();
     const body = profile
