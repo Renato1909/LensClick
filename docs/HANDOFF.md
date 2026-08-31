@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 31 de agosto de 2026, com `main` em `14df46f`.
+> **Data de referência:** 31 de agosto de 2026, com `main` em `b6b88eb`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2 e iniciativa 3.1 concluídos; a próxima prioridade é a iniciativa 3.2.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2 e iniciativas 3.1 e 3.2 concluídas; a próxima prioridade é a iniciativa 3.3.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `14df46f` — "feat: adicionar avaliacoes e reputacao verificadas" (#44).
+- **Branch:** `main` → commit `b6b88eb` — "fix: fetch profile template with explicit request" (#48).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -258,6 +258,15 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Versão `23d2a343-7bdf-4c86-b75f-482051ff514b` publicada e validada com health check, página de busca e ordenação por reputação respondendo `200`.
 - Risco residual: a estrutura de auditoria contempla moderação, mas a operação administrativa depende da futura definição de um papel de moderador e do fluxo de contestação.
 
+### Fase 3.2 — concluída
+- Integrada pelo PR #47 com a rota canônica `/fotografo/:slug`, SSR leve no Worker e conteúdo essencial obtido somente de perfis publicados no D1.
+- O HTML de origem inclui título, descrição, canonical, Open Graph e JSON-LD `ProfilePage`/`Person`; a URL legada redireciona com `301` e perfis indisponíveis respondem `404` com `noindex`.
+- A hidratação no navegador, os links da busca e da central da conta foram adaptados à URL amigável, preservando compatibilidade com o formato legado.
+- O smoke de produção detectou corpo HTML vazio no primeiro deploy. O PR #48 corrigiu a leitura do template pelo binding ASSETS com uma requisição `GET` explícita.
+- Validada com 146 testes, build do Wrangler, CI obrigatório, reprodução local e smoke de produção somente leitura.
+- Versão `4346265f-e8b3-4c1e-b1c8-11ae43e8ce8d` publicada e validada com health check `200`, perfil indexável `200`, redirecionamento `301` e perfil ausente `404`.
+- Nenhuma migration ou dado do D1 foi alterado.
+
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD.
 - Cache via `caches.default` para assets e respostas imutáveis.
@@ -273,8 +282,8 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Fase 3.2] SEO técnico dos perfis públicos       ← próxima evolução de produto
-2. [Fase 3.3] Mensagens cliente–fotógrafo           ← após indexação e reputação
+1. [Fase 3.3] Mensagens cliente–fotógrafo           ← próxima evolução de produto
+2. [Fase 3.4] Sitemap dinâmico e robots.txt         ← complemento de SEO após o SSR
 3. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
 ```
 
@@ -283,8 +292,8 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - A iniciativa 1.2 criou a cobertura de regressão necessária antes das mudanças de rate limiting e health check.
 - A iniciativa 1.3 foi concluída com uma arquitetura híbrida e rollback documentado.
 - A iniciativa 1.4 foi concluída com migration remota, health check e smoke test de produção; a Fase 1 está encerrada.
-- O marco estrutural do roteador, as quatro iniciativas da Fase 2 e a reputação verificada da Fase 3.1 foram concluídos e validados em produção.
-- A Fase 3.2 aproveita os perfis públicos e a reputação agora existentes para melhorar indexação, compartilhamento e aquisição orgânica.
+- O marco estrutural do roteador, as quatro iniciativas da Fase 2, a reputação verificada da Fase 3.1 e o SSR indexável da Fase 3.2 foram concluídos e validados em produção.
+- A Fase 3.3 aproveita contas, perfis públicos, reputação e observabilidade para introduzir conversas persistentes com controles contra abuso.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
 ---
@@ -318,7 +327,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (até a Fase 3.1 concluída; Fase 3.2 é o próximo passo).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (até a Fase 3.2 concluída; Fase 3.3 é o próximo passo).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.

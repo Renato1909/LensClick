@@ -169,12 +169,14 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 3.2 SEO tecnico: paginas de perfil indexaveis
 
+> **Status:** concluido pelos PRs #47 e #48 e validado em producao em 31 de agosto de 2026. A versao `4346265f-e8b3-4c1e-b1c8-11ae43e8ce8d` foi publicada com 146 testes aprovados, sem migration ou alteracao de dados no D1.
+
 1. **Nome da iniciativa**: Renderizacao server-side de perfis publicos para indexacao.
 2. **Objetivo**: Que cada perfil publico (`/fotografo/:slug`) seja indexavel pelo Google com metadados ricos (Open Graph, JSON-LD).
-3. **Problema resolvido**: Hoje `perfil.html` e uma shell que carrega dados via `fetch('/api/photographers/:slug')` - o Google ve HTML vazio. Perfis nao aparecem em buscas organicas.
+3. **Problema resolvido**: A pagina publica era uma shell que carregava dados apenas via `fetch('/api/photographers/:slug')`; o HTML inicial nao continha o perfil para indexacao ou compartilhamento rico.
 4. **Impacto esperado**: Trafego organico de long-tail ("fotografo de casamento em Sao Paulo"); CAC reduzido.
-5. **Complexidade**: Media - interceptar `/fotografo/:slug` no `handleRequest` e renderizar HTML com dados do D1 injetados (SSR leve no Worker) antes do JS hidratar.
-6. **Riscos**: Duplicacao de logica de renderizacao (server vs client). Mitigacao: o server injeta apenas metadados + conteudo essencial; o client hidrata interatividade.
+5. **Implementacao entregue**: Rota `/fotografo/:slug` atendida pelo Worker; consulta parametrizada somente a perfis publicados; HTML essencial com canonical, Open Graph e JSON-LD; hidratacao preservada; redirecionamento `301` da URL legada; `404` com `noindex`; cache publico de 60 segundos; normalizacao da rota nos logs.
+6. **Risco residual**: O SSR e a hidratacao possuem responsabilidades parcialmente sobrepostas. A cobertura automatizada, o escaping centralizado e o smoke do HTML de origem reduzem o risco de divergencia e injecao.
 7. **Dependencias**: 1.1 (observabilidade para medir indexacao).
 8. **Agentes envolvidos**: Engenheiro Backend (Responsavel pela interceptacao da rota, consulta ao D1, geracao do HTML essencial, injecao de metadados, resposta HTTP, tratamento de erros, cache e seguranca do SSR), Engenheiro Frontend (Responsavel pela hidratacao, interatividade, consistencia visual, preservacao do conteudo essencial, prevencao de layout shift e comportamento progressivo caso o JavaScript falhe), Especialista em SEO e Performance (Responsavel por title, meta description tecnica, canonical, Open Graph, JSON-LD, indexabilidade, Core Web Vitals e validacao de conteudo servido ao crawler), Especialista em Marketing para Fotografia (Consultado sobre copy, proposta de valor, linguagem do snippet e mensagem exibida em compartilhamentos).
 9. **Ordem recomendada**: **10a** - alto ROI de aquisicao, independe de avaliacoes.
