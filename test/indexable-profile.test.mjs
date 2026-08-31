@@ -80,9 +80,13 @@ test('a URL legada redireciona permanentemente para a rota canonica', async () =
 });
 
 test('a rota amigavel publicada responde HTML indexavel com cabecalhos de seguranca', async () => {
+  let assetRequest;
   const env = {
     DB: { prepare: () => ({ bind: () => ({ first: async () => profile() }) }) },
-    ASSETS: { fetch: async () => new Response(template, { headers: { 'Content-Type': 'text/html' } }) }
+    ASSETS: { fetch: async (request) => {
+      assetRequest = request;
+      return new Response(template, { headers: { 'Content-Type': 'text/html' } });
+    } }
   };
   const response = await worker.fetch(
     new Request('https://lensclick.example/fotografo/ana-luz'),
@@ -92,6 +96,8 @@ test('a rota amigavel publicada responde HTML indexavel com cabecalhos de segura
   const html = await response.text();
 
   assert.equal(response.status, 200);
+  assert.equal(assetRequest.method, 'GET');
+  assert.equal(new URL(assetRequest.url).pathname, '/fotografo.html');
   assert.equal(response.headers.get('Cache-Control'), 'public, max-age=60');
   assert.match(response.headers.get('Content-Security-Policy'), /default-src 'self'/);
   assert.match(html, /<link rel="canonical" href="https:\/\/lensclick\.example\/fotografo\/ana-luz">/);
