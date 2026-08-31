@@ -68,6 +68,7 @@
       }).format(p.startingPriceCents / 100));
     }
     if (p.serviceRadiusKm != null) detailParts.push(`${p.serviceRadiusKm} km`);
+    if (p.ratingAverage != null) detailParts.push(`★ ${Number(p.ratingAverage).toFixed(1)} (${p.reviewCount})`);
     details.textContent = detailParts.join(' · ');
     details.hidden = detailParts.length === 0;
     const specialties = document.createElement('div');

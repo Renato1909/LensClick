@@ -35,7 +35,12 @@ test('API de busca de fotógrafos funciona com filtros e paginação', async (t)
   }
 
   // cliente (não-fotógrafo)
-  DB.prepare(`INSERT INTO users (name, email, phone, password_hash, role, created_at, updated_at) VALUES (?, ?, ?, ?, 'client', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`).bind('Cliente Teste', 'cliente@test.com', '(00)00000-1111', 'pbkdf2-sha256$100000$dummy$hash').run();
+  const clientResult = DB.prepare(`INSERT INTO users (name, email, phone, password_hash, role, created_at, updated_at) VALUES (?, ?, ?, ?, 'client', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`).bind('Cliente Teste', 'cliente@test.com', '(00)00000-1111', 'pbkdf2-sha256$100000$dummy$hash').run();
+  const carlaId = DB.prepare('SELECT id FROM users WHERE email = ?').bind('carla@test.com').first('id');
+  const reviewRequest = DB.prepare(`INSERT INTO review_requests (client_user_id, photographer_user_id, message, status, confirmed_at) VALUES (?, ?, ?, 'confirmed', CURRENT_TIMESTAMP)`)
+    .bind(clientResult.meta.last_row_id, carlaId, 'Contato confirmado para ordenar a reputacao na busca.').run();
+  DB.prepare(`INSERT INTO reviews (request_id, client_user_id, photographer_user_id, rating, comment) VALUES (?, ?, ?, 5, ?)`)
+    .bind(reviewRequest.meta.last_row_id, clientResult.meta.last_row_id, carlaId, 'Experiencia excelente para validar a ordenacao por avaliacao.').run();
 
   // Testes básicos
   const list = await request('/api/photographers');
@@ -77,6 +82,11 @@ test('API de busca de fotógrafos funciona com filtros e paginação', async (t)
 
   const radiusDescending = await request('/api/photographers?sort=radius_desc');
   assert.deepEqual(radiusDescending.json.photographers.map(p => p.name), ['Bruno Costa', 'Ana Silva', 'Carla Dias']);
+
+  const ratingDescending = await request('/api/photographers?sort=rating_desc');
+  assert.equal(ratingDescending.json.photographers[0].name, 'Carla Dias');
+  assert.equal(ratingDescending.json.photographers[0].ratingAverage, 5);
+  assert.equal(ratingDescending.json.photographers[0].reviewCount, 1);
 
   const invalidAdvancedFilters = await request('/api/photographers?minPrice=invalid&maxPrice=-1&minRadius=1001&sort=DROP%20TABLE');
   assert.equal(invalidAdvancedFilters.response.status, 200);

@@ -216,6 +216,8 @@ function professionalProfile(row, ownerView = false) {
     serviceRadiusKm: row.service_radius_km == null ? null : Number(row.service_radius_km),
     startingPriceCents: row.starting_price_cents == null ? null : Number(row.starting_price_cents),
     availability: row.availability || 'available',
+    ratingAverage: row.rating_average == null ? null : Number(row.rating_average),
+    reviewCount: Number(row.review_count || 0),
     instagram: row.instagram || '',
     website: row.website || '',
     isPublished: Boolean(row.is_published)
@@ -251,6 +253,31 @@ function portfolioItem(row, slug = '') {
       ? `/api/photographers/${encodeURIComponent(slug)}/portfolio/${id}?v=${encodeURIComponent(row.updated_at || '')}`
       : `/api/account/portfolio/${id}/image?v=${encodeURIComponent(row.updated_at || '')}`
   };
+}
+
+function publicReview(row) {
+  return {
+    id: Number(row.id),
+    rating: Number(row.rating),
+    comment: row.comment || '',
+    clientName: row.client_name || '',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function accountReviewRequest(row, role) {
+  const base = {
+    id: Number(row.id), message: row.message, status: row.status,
+    createdAt: row.created_at, confirmedAt: row.confirmed_at || null,
+    review: row.review_id ? {
+      id: Number(row.review_id), rating: Number(row.review_rating),
+      comment: row.review_comment || '', status: row.review_status
+    } : null
+  };
+  return role === 'photographer'
+    ? { ...base, clientName: row.client_name }
+    : { ...base, photographerName: row.photographer_name, photographerSlug: row.photographer_slug };
 }
 
 async function portfolioUpload(request) {
@@ -563,7 +590,8 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
       recent: 'p.updated_at DESC',
       price_asc: 'p.starting_price_cents IS NULL, p.starting_price_cents ASC, p.updated_at DESC',
       price_desc: 'p.starting_price_cents IS NULL, p.starting_price_cents DESC, p.updated_at DESC',
-      radius_desc: 'p.service_radius_km IS NULL, p.service_radius_km DESC, p.updated_at DESC'
+      radius_desc: 'p.service_radius_km IS NULL, p.service_radius_km DESC, p.updated_at DESC',
+      rating_desc: 'rating_average IS NULL, rating_average DESC, review_count DESC, p.updated_at DESC'
     };
     const selectedSort = Object.hasOwn(orderBy, sort) ? sort : 'recommended';
     const whereClauses = ['p.is_published = 1', 'u.role = \'photographer\''];
@@ -610,7 +638,9 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     const total = Number(totalResult?.total || 0);
 
     const profiles = await env.DB.prepare(`
-      SELECT p.*, u.name, u.profile_pic_key, u.updated_at AS user_updated_at
+      SELECT p.*, u.name, u.profile_pic_key, u.updated_at AS user_updated_at,
+        (SELECT ROUND(AVG(r.rating), 2) FROM reviews r WHERE r.photographer_user_id = p.user_id AND r.status = 'active') AS rating_average,
+        (SELECT COUNT(*) FROM reviews r WHERE r.photographer_user_id = p.user_id AND r.status = 'active') AS review_count
       FROM professional_profiles p
       JOIN users u ON u.id = p.user_id
       WHERE ${whereSql}
@@ -660,10 +690,63 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     );
   }
 
+  if (routeId === 'photographers.reviews') {
+    const [slug] = params;
+    const photographer = await env.DB.prepare(`
+      SELECT p.user_id FROM professional_profiles p JOIN users u ON u.id = p.user_id
+      WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
+    `).bind(slug).first();
+    if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.' });
+    const summary = await env.DB.prepare(`
+      SELECT COUNT(*) AS total, ROUND(AVG(rating), 2) AS average
+      FROM reviews WHERE photographer_user_id = ? AND status = 'active'
+    `).bind(photographer.user_id).first();
+    const reviews = await env.DB.prepare(`
+      SELECT r.id, r.rating, r.comment, r.created_at, r.updated_at, u.name AS client_name
+      FROM reviews r JOIN users u ON u.id = r.client_user_id
+      WHERE r.photographer_user_id = ? AND r.status = 'active'
+      ORDER BY r.created_at DESC, r.id DESC LIMIT 50
+    `).bind(photographer.user_id).all();
+    return json(200, {
+      summary: { total: Number(summary?.total || 0), average: summary?.average == null ? null : Number(summary.average) },
+      reviews: reviews.results.map(publicReview)
+    }, { 'Cache-Control': 'public, max-age=60' });
+  }
+
+  if (routeId === 'photographers.review-request.create') {
+    if (await isRateLimited(request, env, pathname, 10, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
+      return json(429, { error: 'Muitas solicitacoes. Aguarde antes de tentar novamente.' });
+    }
+    const [slug] = params;
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login como cliente para solicitar contato.' });
+    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem solicitar contato para avaliacao.' });
+    const photographer = await env.DB.prepare(`
+      SELECT p.user_id FROM professional_profiles p JOIN users u ON u.id = p.user_id
+      WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
+    `).bind(slug).first();
+    if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.' });
+    if (photographer.user_id === current.id) {
+      return json(403, { error: 'Nao e permitido solicitar avaliacao do proprio perfil.' });
+    }
+    const body = await readJson(request);
+    const message = cleanText(body.message, 1000);
+    if (message.length < 10) return json(400, { error: 'Descreva o contato em pelo menos 10 caracteres.' });
+    const pending = await env.DB.prepare(`
+      SELECT id FROM review_requests WHERE client_user_id = ? AND photographer_user_id = ? AND status = 'pending'
+    `).bind(current.id, photographer.user_id).first();
+    if (pending) return json(409, { error: 'Ja existe uma solicitacao aguardando confirmacao deste fotografo.' });
+    const result = await env.DB.prepare(`INSERT INTO review_requests (client_user_id, photographer_user_id, message) VALUES (?, ?, ?)`)
+      .bind(current.id, photographer.user_id, message).run();
+    return json(201, { request: { id: Number(result.meta.last_row_id), status: 'pending' }, message: 'Solicitacao enviada ao fotografo.' });
+  }
+
   if (routeId === 'photographers.detail') {
     const [slug] = params;
     const profile = await env.DB.prepare(`
-      SELECT p.*, u.name, u.profile_pic_key, u.updated_at AS user_updated_at
+      SELECT p.*, u.name, u.profile_pic_key, u.updated_at AS user_updated_at,
+        (SELECT ROUND(AVG(r.rating), 2) FROM reviews r WHERE r.photographer_user_id = p.user_id AND r.status = 'active') AS rating_average,
+        (SELECT COUNT(*) FROM reviews r WHERE r.photographer_user_id = p.user_id AND r.status = 'active') AS review_count
       FROM professional_profiles p
       JOIN users u ON u.id = p.user_id
       WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
@@ -676,6 +759,122 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(200, {
       profile: { ...professionalProfile(profile), portfolio: portfolio.results.map((item) => portfolioItem(item, profile.slug)) }
     }, { 'Cache-Control': 'public, max-age=60' });
+  }
+
+  if (routeId === 'account.review-requests.list') {
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const query = current.role === 'photographer' ? `
+      SELECT q.*, u.name AS client_name, r.id AS review_id, r.rating AS review_rating,
+        r.comment AS review_comment, r.status AS review_status
+      FROM review_requests q JOIN users u ON u.id = q.client_user_id
+      LEFT JOIN reviews r ON r.request_id = q.id
+      WHERE q.photographer_user_id = ? ORDER BY q.created_at DESC, q.id DESC
+    ` : `
+      SELECT q.*, u.name AS photographer_name, p.slug AS photographer_slug,
+        r.id AS review_id, r.rating AS review_rating, r.comment AS review_comment, r.status AS review_status
+      FROM review_requests q JOIN users u ON u.id = q.photographer_user_id
+      JOIN professional_profiles p ON p.user_id = q.photographer_user_id
+      LEFT JOIN reviews r ON r.request_id = q.id
+      WHERE q.client_user_id = ? ORDER BY q.created_at DESC, q.id DESC
+    `;
+    const result = await env.DB.prepare(query).bind(current.id).all();
+    return json(200, { role: current.role, requests: result.results.map((row) => accountReviewRequest(row, current.role)) });
+  }
+
+  if (routeId === 'account.review-requests.update') {
+    if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000, env.ACCOUNT_RATE_LIMITER)) {
+      return json(429, { error: 'Muitas alteracoes. Aguarde antes de tentar novamente.' });
+    }
+    const [requestId] = params;
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    if (current.role !== 'photographer') return json(403, { error: 'Somente o fotografo pode confirmar este contato.' });
+    const body = await readJson(request);
+    const status = ['confirmed', 'rejected'].includes(body.status) ? body.status : '';
+    if (!status) return json(400, { error: 'Escolha confirmar ou rejeitar a solicitacao.' });
+    const existing = await env.DB.prepare(`SELECT id FROM review_requests WHERE id = ? AND photographer_user_id = ? AND status = 'pending'`)
+      .bind(Number(requestId), current.id).first();
+    if (!existing) return json(404, { error: 'Solicitacao pendente nao encontrada.' });
+    await env.DB.prepare(`
+      UPDATE review_requests SET status = ?, confirmed_at = CASE WHEN ? = 'confirmed' THEN CURRENT_TIMESTAMP ELSE NULL END,
+        updated_at = CURRENT_TIMESTAMP WHERE id = ? AND photographer_user_id = ?
+    `).bind(status, status, Number(requestId), current.id).run();
+    return json(200, { message: status === 'confirmed' ? 'Contato confirmado. O cliente ja pode avaliar.' : 'Solicitacao rejeitada.' });
+  }
+
+  if (routeId === 'account.reviews.create') {
+    if (await isRateLimited(request, env, pathname, 8, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
+      return json(429, { error: 'Muitas avaliacoes. Aguarde antes de tentar novamente.' });
+    }
+    const [requestId] = params;
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem avaliar fotografos.' });
+    const eligibility = await env.DB.prepare(`
+      SELECT q.photographer_user_id, r.id AS review_id FROM review_requests q
+      LEFT JOIN reviews r ON r.request_id = q.id
+      WHERE q.id = ? AND q.client_user_id = ? AND q.status = 'confirmed'
+    `).bind(Number(requestId), current.id).first();
+    if (!eligibility) return json(403, { error: 'Este contato ainda nao esta confirmado para avaliacao.' });
+    if (eligibility.review_id) return json(409, { error: 'Este contato ja possui uma avaliacao.' });
+    const body = await readJson(request);
+    const rating = Number(body.rating);
+    const comment = cleanText(body.comment, 1000);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5 || comment.length < 10) {
+      return json(400, { error: 'Informe uma nota de 1 a 5 e um comentario com pelo menos 10 caracteres.' });
+    }
+    const inserted = await env.DB.prepare(`
+      INSERT INTO reviews (request_id, client_user_id, photographer_user_id, rating, comment) VALUES (?, ?, ?, ?, ?)
+    `).bind(Number(requestId), current.id, eligibility.photographer_user_id, rating, comment).run();
+    const reviewId = Number(inserted.meta.last_row_id);
+    await env.DB.prepare(`INSERT INTO review_audit (review_id, actor_user_id, action, rating, comment) VALUES (?, ?, 'created', ?, ?)`)
+      .bind(reviewId, current.id, rating, comment).run();
+    return json(201, { review: { id: reviewId, rating, comment, status: 'active' }, message: 'Avaliacao publicada.' });
+  }
+
+  if (routeId === 'account.reviews.update') {
+    if (await isRateLimited(request, env, pathname, 12, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
+      return json(429, { error: 'Muitas alteracoes de avaliacao. Aguarde antes de tentar novamente.' });
+    }
+    const [reviewId] = params;
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const existing = await env.DB.prepare(`SELECT id FROM reviews WHERE id = ? AND client_user_id = ? AND status = 'active'`)
+      .bind(Number(reviewId), current.id).first();
+    if (!existing) return json(404, { error: 'Avaliacao ativa nao encontrada.' });
+    const body = await readJson(request);
+    const rating = Number(body.rating);
+    const comment = cleanText(body.comment, 1000);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5 || comment.length < 10) {
+      return json(400, { error: 'Informe uma nota de 1 a 5 e um comentario com pelo menos 10 caracteres.' });
+    }
+    await env.DB.batch([
+      env.DB.prepare(`UPDATE reviews SET rating = ?, comment = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND client_user_id = ?`)
+        .bind(rating, comment, Number(reviewId), current.id),
+      env.DB.prepare(`INSERT INTO review_audit (review_id, actor_user_id, action, rating, comment) VALUES (?, ?, 'updated', ?, ?)`)
+        .bind(Number(reviewId), current.id, rating, comment)
+    ]);
+    return json(200, { review: { id: Number(reviewId), rating, comment, status: 'active' }, message: 'Avaliacao atualizada.' });
+  }
+
+  if (routeId === 'account.reviews.delete') {
+    if (await isRateLimited(request, env, pathname, 8, 60 * 60 * 1000, env.SENSITIVE_RATE_LIMITER)) {
+      return json(429, { error: 'Muitas exclusoes. Aguarde antes de tentar novamente.' });
+    }
+    const [reviewId] = params;
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const existing = await env.DB.prepare(`SELECT rating, comment FROM reviews WHERE id = ? AND client_user_id = ? AND status = 'active'`)
+      .bind(Number(reviewId), current.id).first();
+    if (!existing) return json(404, { error: 'Avaliacao ativa nao encontrada.' });
+    await env.DB.batch([
+      env.DB.prepare(`UPDATE reviews SET status = 'deleted', deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND client_user_id = ?`)
+        .bind(Number(reviewId), current.id),
+      env.DB.prepare(`INSERT INTO review_audit (review_id, actor_user_id, action, rating, comment) VALUES (?, ?, 'deleted', ?, ?)`)
+        .bind(Number(reviewId), current.id, existing.rating, existing.comment)
+    ]);
+    return json(200, { message: 'Avaliacao removida e acao registrada.' });
   }
 
   if (routeId === 'account.portfolio.list') {

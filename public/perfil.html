@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="refinements.css">
   <link rel="stylesheet" href="account.css">
+  <link rel="stylesheet" href="reputation.css">
 </head>
 <body class="profile-page">
   <header class="account-topbar">
@@ -368,6 +369,15 @@
       </section>
     </section>
 
+    <section class="settings-card reputation-dashboard" id="reputationDashboard" aria-labelledby="reputationDashboardTitle">
+      <p class="professional-eyebrow" data-i18n="reputation.dashboard.kicker">Contatos e avaliações</p>
+      <h2 id="reputationDashboardTitle" data-i18n="reputation.dashboard.title">Reputação da conta</h2>
+      <p data-i18n="reputation.dashboard.lead">Acompanhe solicitações, confirme contatos e gerencie avaliações verificadas.</p>
+      <p id="reputationDashboardMsg" class="feedback-message" role="status" aria-live="polite" hidden></p>
+      <div id="reputationRequestList" class="reputation-request-list"></div>
+      <p id="reputationDashboardEmpty" class="field-note" hidden data-i18n="reputation.dashboard.empty">Nenhuma solicitação de contato por enquanto.</p>
+    </section>
+
     <section class="danger-zone" aria-labelledby="dangerZoneTitle">
       <div class="danger-zone-copy">
         <span class="danger-zone-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span>
@@ -432,5 +442,6 @@
   <script src="lang.js"></script>
   <script src="ux.js"></script>
   <script src="profile-api.js"></script>
+  <script src="reputation.js"></script>
 </body>
 </html>
