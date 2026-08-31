@@ -110,7 +110,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 3. **Problema resolvido**: `search.js` enviava apenas `city`, `state`, `specialty`, `availability`. A entrega adicionou ordenacao, faixa de preco e uso do raio de servico (`service_radius_km`) na busca.
 4. **Impacto esperado**: Resultados mais relevantes; maior taxa de contato; diferenciacao competitiva.
 5. **Implementacao entregue**: Query params e clausulas SQL parametrizadas, ordenacao em allowlist, UI responsiva e bilingue, exibicao de preco/raio nos cards e limpeza dos filtros.
-6. **Risco residual**: Distancia geografica real e avaliacao dependem de coordenadas e reputacao, dados ainda nao existentes; nao foram simuladas. Os planos de preco e raio possuem testes com `EXPLAIN`.
+6. **Risco residual**: Distancia geografica real ainda depende de coordenadas, dados nao existentes; nao foi simulada. A ordenacao por avaliacao foi entregue na iniciativa 3.1. Os planos de preco e raio possuem testes com `EXPLAIN`.
 7. **Dependencias**: 1.4 (indices), 1.2 (testes).
 8. **Agentes envolvidos**: Engenheiro Backend, Engenheiro Frontend, Engenheiro de Banco de Dados, Especialista em Marketing para Fotografia (consultado sobre relevancia dos filtros para o cliente).
 9. **Ordem recomendada**: **6a** - naturalmente apos onboarding (mais perfis publicados = mais valor na busca).
@@ -154,12 +154,14 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 3.1 Sistema de avaliacoes e reputacao
 
+> **Status:** concluido pelo PR #44 e validado em producao em 31 de agosto de 2026. A migration `0007` foi aplicada no D1 remoto e a versao `23d2a343-7bdf-4c86-b75f-482051ff514b` foi publicada com 138 testes aprovados.
+
 1. **Nome da iniciativa**: Avaliacoes de clientes sobre fotografos.
 2. **Objetivo**: Permitir que clientes logados deixem nota (1-5) e comentario apos contato confirmado.
 3. **Problema resolvido**: Sem reputacao, a decisao de contratacao depende apenas do portfolio e preco - baixa conversao e sem diferencial competitivo entre profissionais.
 4. **Impacto esperado**: Maior confianca; melhor ordenacao na busca (por avaliacao); engajamento de retorno de clientes.
-5. **Complexidade**: Alta - nova tabela `reviews` (migration `0006`), validacao de que o cliente realmente contatou, moderacao anti-spam, media calculada.
-6. **Riscos**: Avaliacoes falsas (spam); necessidade de moderacao. Mitigacao: so permite avaliar quem tem sessao + token de contato; rate limit por review; controles antiavaliacao falsa.
+5. **Implementacao entregue**: Tabelas `review_requests`, `reviews` e `review_audit`; solicitacao e confirmacao de contato; nota e comentario editaveis; exclusao logica; media e contagem publicas; ordenacao por reputacao; UI bilingue para os dois papeis.
+6. **Risco residual**: A operacao de moderacao e o fluxo de contestacao dependem da definicao futura de um papel administrativo. A base de auditoria ja aceita eventos de moderacao; spam e fraude sao mitigados por sessao, contato confirmado, unicidade, papeis e rate limiting.
 7. **Dependencias**: 1.2 (testes), 1.4 (indices para query de media por fotografo).
 8. **Agentes envolvidos**: Engenheiro Backend, Engenheiro de Banco de Dados, Especialista em Seguranca (Responsavel por fraude, spam, abuso, manipulacao, rate limiting e controles antiavaliacao falsa), Engenheiro Frontend, Especialista em Marketing para Fotografia (Responsavel por apresentacao da reputacao, linguagem, percepcao de confianca, copy, conversao e comunicacao de avaliacoes ao fotografo e ao cliente).
 9. **Ordem recomendada**: **9a** - e a funcionalidade de maior valor de marketplace, mas exige a fundacao pronta.
