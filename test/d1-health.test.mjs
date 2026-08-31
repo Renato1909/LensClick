@@ -15,7 +15,8 @@ function migratedDatabase() {
     'migrations/0003_professional_profiles.sql',
     'migrations/0004_portfolio_items.sql',
     'migrations/0005_search_indexes.sql',
-    'migrations/0006_search_price_radius_indexes.sql'
+    'migrations/0006_search_price_radius_indexes.sql',
+    'migrations/0007_reviews_and_reputation.sql'
   ]) {
     database.exec(read(migration));
   }
@@ -28,7 +29,7 @@ function queryPlan(database, sql, values) {
 
 test('migrations de busca alinham os indices aos filtros e a ordenacao', () => {
   const database = migratedDatabase();
-  assert.match(read('db/schema.ts'), /schemaVersion = 6/);
+  assert.match(read('db/schema.ts'), /schemaVersion = 7/);
   const base = `
     SELECT p.user_id
     FROM professional_profiles p

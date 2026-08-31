@@ -47,6 +47,10 @@ test('classificacao HTTP usa somente info, warn e error com outcomes estaveis', 
 test('rotas dinamicas e desconhecidas sao normalizadas com baixa cardinalidade', () => {
   assert.equal(normalizeRoute('https://lensclick.test/api/photographers/ana-silva-72?email=secret@example.test'), '/api/photographers/:slug');
   assert.equal(normalizeRoute('/api/photographers/ana-silva-72/portfolio/918'), '/api/photographers/:slug/portfolio/:id');
+  assert.equal(normalizeRoute('/api/photographers/ana-silva-72/reviews'), '/api/photographers/:slug/reviews');
+  assert.equal(normalizeRoute('/api/photographers/ana-silva-72/review-requests'), '/api/photographers/:slug/review-requests');
+  assert.equal(normalizeRoute('/api/account/review-requests/42/review'), '/api/account/review-requests/:id/review');
+  assert.equal(normalizeRoute('/api/account/reviews/42'), '/api/account/reviews/:id');
   assert.equal(normalizeRoute('/api/account/portfolio/918/image'), '/api/account/portfolio/:id/image');
   assert.equal(normalizeRoute('/api/profile-picture/12345'), '/api/profile-picture/:id');
   assert.equal(normalizeRoute('/api/private/TOKEN_SECRET'), '/api/unknown');

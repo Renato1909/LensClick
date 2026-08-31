@@ -25,6 +25,7 @@ const STATIC_API_ROUTES = new Set([
   '/api/health',
   '/api/photographers',
   '/api/account/portfolio',
+  '/api/account/review-requests',
   '/api/account/professional-profile',
   '/api/profile',
   '/api/account/password',
@@ -77,7 +78,12 @@ export function normalizeRoute(input) {
   if (STATIC_API_ROUTES.has(pathname)) return pathname;
   if (/^\/api\/photographers\/[^/]+\/photo$/.test(pathname)) return '/api/photographers/:slug/photo';
   if (/^\/api\/photographers\/[^/]+\/portfolio\/[^/]+$/.test(pathname)) return '/api/photographers/:slug/portfolio/:id';
+  if (/^\/api\/photographers\/[^/]+\/reviews$/.test(pathname)) return '/api/photographers/:slug/reviews';
+  if (/^\/api\/photographers\/[^/]+\/review-requests$/.test(pathname)) return '/api/photographers/:slug/review-requests';
   if (/^\/api\/photographers\/[^/]+$/.test(pathname)) return '/api/photographers/:slug';
+  if (/^\/api\/account\/review-requests\/[^/]+\/review$/.test(pathname)) return '/api/account/review-requests/:id/review';
+  if (/^\/api\/account\/review-requests\/[^/]+$/.test(pathname)) return '/api/account/review-requests/:id';
+  if (/^\/api\/account\/reviews\/[^/]+$/.test(pathname)) return '/api/account/reviews/:id';
   if (/^\/api\/account\/portfolio\/[^/]+\/image$/.test(pathname)) return '/api/account/portfolio/:id/image';
   if (/^\/api\/account\/portfolio\/[^/]+$/.test(pathname)) return '/api/account/portfolio/:id';
   if (/^\/api\/profile-picture\/[^/]+$/.test(pathname)) return '/api/profile-picture/:id';

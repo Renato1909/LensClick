@@ -1,0 +1,14 @@
+.reputation-section, .reputation-dashboard { margin-top: var(--lc-space-6); }
+.reviews-summary { color: var(--public-text); font-weight: 700; }
+.reviews-list, .reputation-request-list { display: grid; gap: var(--lc-space-4); }
+.review-card, .reputation-request-card { padding: var(--lc-space-5); border: 1px solid var(--lc-color-line); border-radius: var(--lc-radius-lg); background: var(--lc-color-surface-soft); }
+.review-card header, .reputation-request-card header { display: flex; justify-content: space-between; gap: var(--lc-space-3); align-items: center; }
+.review-stars { color: var(--lc-color-brand-primary); letter-spacing: .12em; }
+.review-card p, .reputation-request-card p { margin-bottom: 0; }
+.review-request-form { display: grid; gap: var(--lc-space-3); margin-top: var(--lc-space-5); padding-top: var(--lc-space-5); border-top: 1px solid var(--lc-color-line); }
+.review-request-form textarea, .review-editor textarea { min-height: 110px; resize: vertical; }
+.reputation-actions { display: flex; flex-wrap: wrap; gap: var(--lc-space-2); margin-top: var(--lc-space-4); }
+.reputation-actions button { min-height: 42px; }
+.review-editor { display: grid; gap: var(--lc-space-3); margin-top: var(--lc-space-4); }
+.review-editor select { min-height: var(--lc-control-height); }
+@media (max-width: 640px) { .review-card header, .reputation-request-card header { align-items: flex-start; flex-direction: column; } }
