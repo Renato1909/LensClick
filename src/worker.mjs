@@ -367,6 +367,35 @@ function accountReviewRequest(row, role) {
     : { ...base, photographerName: row.photographer_name, photographerSlug: row.photographer_slug };
 }
 
+function conversationSummary(row, currentUserId) {
+  const isClient = Number(row.client_user_id) === Number(currentUserId);
+  return {
+    id: Number(row.id),
+    status: row.status,
+    lastMessageAt: row.last_message_at,
+    updatedAt: row.updated_at,
+    unreadCount: Number(row.unread_count || 0),
+    lastMessage: row.last_message || '',
+    counterpart: {
+      id: Number(isClient ? row.photographer_user_id : row.client_user_id),
+      name: isClient ? row.photographer_name : row.client_name,
+      role: isClient ? 'photographer' : 'client',
+      slug: isClient ? row.photographer_slug || '' : ''
+    }
+  };
+}
+
+function accountMessage(row) {
+  return {
+    id: Number(row.id),
+    conversationId: Number(row.conversation_id),
+    senderUserId: Number(row.sender_user_id),
+    body: row.body,
+    readAt: row.read_at || null,
+    createdAt: row.created_at
+  };
+}
+
 async function portfolioUpload(request) {
   const contentType = String(request.headers.get('Content-Type') || '').toLowerCase();
   if (!contentType.startsWith('multipart/form-data')) {
@@ -846,6 +875,144 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(200, {
       profile: { ...professionalProfile(profile), portfolio: portfolio.results.map((item) => portfolioItem(item, profile.slug)) }
     }, { 'Cache-Control': 'public, max-age=60' });
+  }
+
+  if (routeId === 'photographers.conversations.create') {
+    if (await isRateLimited(request, env, pathname, 12, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
+      return json(429, { error: 'Limite de mensagens atingido. Tente mais tarde.' });
+    }
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem iniciar conversas.' });
+    const [slug] = params;
+    const photographer = await env.DB.prepare(`
+      SELECT p.user_id, p.slug FROM professional_profiles p
+      JOIN users u ON u.id = p.user_id
+      WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
+    `).bind(slug).first();
+    if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.' });
+    const body = String((await readJson(request)).message ?? '').trim();
+    if (!body) return json(400, { error: 'Escreva uma mensagem para iniciar a conversa.' });
+    if (body.length > 2000) return json(400, { error: 'A mensagem deve ter no maximo 2000 caracteres.' });
+
+    const existing = await env.DB.prepare(`
+      SELECT id, status FROM conversations WHERE client_user_id = ? AND photographer_user_id = ?
+    `).bind(current.id, photographer.user_id).first();
+    if (existing?.status === 'closed') return json(409, { error: 'Esta conversa esta encerrada.' });
+    const creationResults = await env.DB.batch([
+      env.DB.prepare(`
+        INSERT INTO conversations (client_user_id, photographer_user_id)
+        VALUES (?, ?) ON CONFLICT(client_user_id, photographer_user_id) DO NOTHING
+      `).bind(current.id, photographer.user_id),
+      env.DB.prepare(`
+        INSERT INTO messages (conversation_id, sender_user_id, body)
+        SELECT id, ?, ? FROM conversations WHERE client_user_id = ? AND photographer_user_id = ? AND status = 'active'
+      `).bind(current.id, body, current.id, photographer.user_id),
+      env.DB.prepare(`
+        UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+        WHERE client_user_id = ? AND photographer_user_id = ? AND status = 'active'
+      `).bind(current.id, photographer.user_id)
+    ]);
+    if (Number(creationResults[1]?.meta?.changes || 0) !== 1) {
+      return json(409, { error: 'Nao foi possivel iniciar esta conversa.' });
+    }
+    const conversation = await env.DB.prepare(`
+      SELECT id FROM conversations WHERE client_user_id = ? AND photographer_user_id = ?
+    `).bind(current.id, photographer.user_id).first();
+    return json(existing ? 200 : 201, { conversation: { id: Number(conversation.id) } });
+  }
+
+  if (routeId === 'account.conversations.list') {
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const page = Math.max(1, Number(url.searchParams.get('page')) || 1);
+    const pageSize = Math.min(50, Math.max(1, Number(url.searchParams.get('pageSize')) || 20));
+    const offset = (page - 1) * pageSize;
+    const total = Number((await env.DB.prepare(`
+      SELECT COUNT(*) AS total FROM conversations WHERE client_user_id = ? OR photographer_user_id = ?
+    `).bind(current.id, current.id).first())?.total || 0);
+    const result = await env.DB.prepare(`
+      SELECT c.*, client.name AS client_name, photographer.name AS photographer_name, p.slug AS photographer_slug,
+        (SELECT body FROM messages WHERE conversation_id = c.id ORDER BY id DESC LIMIT 1) AS last_message,
+        (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND sender_user_id <> ? AND read_at IS NULL) AS unread_count
+      FROM conversations c
+      JOIN users client ON client.id = c.client_user_id
+      JOIN users photographer ON photographer.id = c.photographer_user_id
+      LEFT JOIN professional_profiles p ON p.user_id = c.photographer_user_id
+      WHERE c.client_user_id = ? OR c.photographer_user_id = ?
+      ORDER BY c.last_message_at DESC, c.id DESC LIMIT ? OFFSET ?
+    `).bind(current.id, current.id, current.id, pageSize, offset).all();
+    return json(200, {
+      conversations: result.results.map((row) => conversationSummary(row, current.id)),
+      pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) }
+    });
+  }
+
+  if (routeId === 'account.conversations.messages') {
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const conversationId = Number(params[0]);
+    const conversation = await env.DB.prepare(`
+      SELECT id FROM conversations WHERE id = ? AND (client_user_id = ? OR photographer_user_id = ?)
+    `).bind(conversationId, current.id, current.id).first();
+    if (!conversation) return json(404, { error: 'Conversa nao encontrada.' });
+    const before = Math.max(0, Number(url.searchParams.get('before')) || 0);
+    const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get('pageSize')) || 50));
+    const result = await env.DB.prepare(`
+      SELECT id, conversation_id, sender_user_id, body, read_at, created_at FROM messages
+      WHERE conversation_id = ? AND (? = 0 OR id < ?)
+      ORDER BY id DESC LIMIT ?
+    `).bind(conversationId, before, before, pageSize + 1).all();
+    const rows = result.results;
+    const hasMore = rows.length > pageSize;
+    const visible = rows.slice(0, pageSize);
+    return json(200, {
+      messages: visible.reverse().map(accountMessage),
+      pagination: { hasMore, nextBefore: hasMore ? Number(visible[0].id) : null }
+    });
+  }
+
+  if (routeId === 'account.conversations.messages.create') {
+    if (await isRateLimited(request, env, pathname, 30, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
+      return json(429, { error: 'Limite de mensagens atingido. Tente mais tarde.' });
+    }
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const conversationId = Number(params[0]);
+    const conversation = await env.DB.prepare(`
+      SELECT id, status FROM conversations WHERE id = ? AND (client_user_id = ? OR photographer_user_id = ?)
+    `).bind(conversationId, current.id, current.id).first();
+    if (!conversation) return json(404, { error: 'Conversa nao encontrada.' });
+    if (conversation.status !== 'active') return json(409, { error: 'Esta conversa esta encerrada.' });
+    const body = String((await readJson(request)).message ?? '').trim();
+    if (!body) return json(400, { error: 'Escreva uma mensagem antes de enviar.' });
+    if (body.length > 2000) return json(400, { error: 'A mensagem deve ter no maximo 2000 caracteres.' });
+    const results = await env.DB.batch([
+      env.DB.prepare('INSERT INTO messages (conversation_id, sender_user_id, body) VALUES (?, ?, ?)')
+        .bind(conversationId, current.id, body),
+      env.DB.prepare('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+        .bind(conversationId)
+    ]);
+    const messageId = Number(results[0]?.meta?.last_row_id || 0);
+    const message = await env.DB.prepare(`
+      SELECT id, conversation_id, sender_user_id, body, read_at, created_at FROM messages WHERE id = ?
+    `).bind(messageId).first();
+    return json(201, { message: accountMessage(message) });
+  }
+
+  if (routeId === 'account.conversations.read') {
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const conversationId = Number(params[0]);
+    const conversation = await env.DB.prepare(`
+      SELECT id FROM conversations WHERE id = ? AND (client_user_id = ? OR photographer_user_id = ?)
+    `).bind(conversationId, current.id, current.id).first();
+    if (!conversation) return json(404, { error: 'Conversa nao encontrada.' });
+    const result = await env.DB.prepare(`
+      UPDATE messages SET read_at = CURRENT_TIMESTAMP
+      WHERE conversation_id = ? AND sender_user_id <> ? AND read_at IS NULL
+    `).bind(conversationId, current.id).run();
+    return json(200, { ok: true, updated: Number(result.meta?.changes || 0) });
   }
 
   if (routeId === 'account.review-requests.list') {
