@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 28 de agosto de 2026, com `main` em `4e2b52d`.
+> **Data de referência:** 31 de agosto de 2026, com `main` em `14df46f`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição e Fase 2 concluídos; a próxima prioridade é a iniciativa 3.1.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2 e iniciativa 3.1 concluídos; a próxima prioridade é a iniciativa 3.2.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `4e2b52d` — "feat: add catalog-based internationalization" (#42).
+- **Branch:** `main` → commit `14df46f` — "feat: adicionar avaliacoes e reputacao verificadas" (#44).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -156,6 +156,8 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #40 | `d5ce86a` | feat: add responsive portfolio gallery |
 | #41 | `11c078f` | docs: close responsive portfolio initiative |
 | #42 | `4e2b52d` | feat: add catalog-based internationalization |
+| #43 | `bc1a14b` | docs: close catalog internationalization phase |
+| #44 | `14df46f` | feat: adicionar avaliacoes e reputacao verificadas |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -248,6 +250,14 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Validada com 134 testes, build do Wrangler, CI, revisão visual desktop/mobile e smoke de produção somente leitura.
 - Versão `a840abe4-6245-4616-8b06-1814587a7991` publicada sem necessidade de rollback; banco, migrations e contratos da API permaneceram intactos.
 
+### Fase 3.1 — concluída
+- Integrada pelo PR #44 com solicitação de contato pelo cliente, confirmação ou rejeição pelo fotógrafo e uma avaliação verificada de 1 a 5 estrelas por contato confirmado.
+- Avaliações podem ser editadas ou excluídas logicamente pelo autor; criação, edição e exclusão possuem trilha de auditoria. Duplicidades, perfis não publicados, papéis incorretos e autoavaliação são bloqueados.
+- A reputação aparece no perfil público e na busca, que agora pode ser ordenada pela média e quantidade de avaliações. A central da conta e todos os novos textos são bilíngues.
+- Validada com 138 testes, build do Wrangler, CI, smoke HTTP local e smoke de produção. A migration remota `0007_reviews_and_reputation.sql` foi aplicada.
+- Versão `23d2a343-7bdf-4c86-b75f-482051ff514b` publicada e validada com health check, página de busca e ordenação por reputação respondendo `200`.
+- Risco residual: a estrutura de auditoria contempla moderação, mas a operação administrativa depende da futura definição de um papel de moderador e do fluxo de contestação.
+
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD.
 - Cache via `caches.default` para assets e respostas imutáveis.
@@ -263,8 +273,8 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Fase 3.1] Avaliações e reputação                ← próxima evolução de produto
-2. [P4] SEO: sitemap, robots, OG, JSON-LD, cache    ← após as melhorias centrais de experiência
+1. [Fase 3.2] SEO técnico dos perfis públicos       ← próxima evolução de produto
+2. [Fase 3.3] Mensagens cliente–fotógrafo           ← após indexação e reputação
 3. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
 ```
 
@@ -273,8 +283,8 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - A iniciativa 1.2 criou a cobertura de regressão necessária antes das mudanças de rate limiting e health check.
 - A iniciativa 1.3 foi concluída com uma arquitetura híbrida e rollback documentado.
 - A iniciativa 1.4 foi concluída com migration remota, health check e smoke test de produção; a Fase 1 está encerrada.
-- O marco estrutural do roteador e as quatro iniciativas da Fase 2 foram concluídos e validados em produção; a evolução de produto segue pela iniciativa 3.1.
-- P4 (SEO) é independente e pode ocorrer depois do marco de transição.
+- O marco estrutural do roteador, as quatro iniciativas da Fase 2 e a reputação verificada da Fase 3.1 foram concluídos e validados em produção.
+- A Fase 3.2 aproveita os perfis públicos e a reputação agora existentes para melhorar indexação, compartilhamento e aquisição orgânica.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
 ---
@@ -308,7 +318,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 1, marco de transição e Fase 2 concluídos; Fase 3.1 é o próximo passo).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (até a Fase 3.1 concluída; Fase 3.2 é o próximo passo).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
