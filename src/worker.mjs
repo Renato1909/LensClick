@@ -568,7 +568,7 @@ const photographerHandlers = createPhotographerHandlers({
   json, cleanText, professionalProfile, portfolioItem,
   professionalSpecialties: PROFESSIONAL_SPECIALTIES, publicReview, storedImageResponse,
   isRateLimited, authenticatedUser, readJson, slugify,
-  normalizeEmail, isValidEmail, normalizeWebsite, parseSpecialties
+  normalizeEmail, isValidEmail, normalizeWebsite, parseSpecialties, accountReviewRequest
 });
 
 // Route matching lives in router.mjs. Domain handlers receive dependencies explicitly
@@ -602,6 +602,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'photographers.conversations.create') return photographerHandlers.conversationCreate({ params, request, env, pathname });
   if (routeId === 'account.professional-profile.read') return photographerHandlers.professionalProfileRead({ request, env });
   if (routeId === 'account.professional-profile.update') return photographerHandlers.professionalProfileUpdate({ request, env, pathname });
+  if (routeId === 'account.review-requests.list') return photographerHandlers.reviewRequestsList({ request, env });
 
   if (routeId === 'account.conversations.list') {
     const current = await authenticatedUser(request, env);
@@ -696,7 +697,8 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(200, { ok: true, updated: Number(result.meta?.changes || 0) });
   }
 
-  if (routeId === 'account.review-requests.list') {
+  // Kept disabled while the extracted handler above owns this route.
+  if (false && routeId === 'account.review-requests.list') {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
     const query = current.role === 'photographer' ? `
