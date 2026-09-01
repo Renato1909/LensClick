@@ -572,7 +572,7 @@ const photographerHandlers = createPhotographerHandlers({
   isRateLimited, authenticatedUser, readJson, slugify,
   normalizeEmail, isValidEmail, normalizeWebsite, parseSpecialties, accountReviewRequest
 });
-const accountHandlers = createAccountHandlers({ json, authenticatedUser, isRateLimited, readJson, conversationSummary, accountMessage });
+const accountHandlers = createAccountHandlers({ json, authenticatedUser, isRateLimited, readJson, conversationSummary, accountMessage, portfolioItem });
 const publicInputHandlers = createPublicInputHandlers({ json, isRateLimited, readJson, cleanText, normalizeEmail, isValidEmail });
 
 // Route matching lives in router.mjs. Domain handlers receive dependencies explicitly
@@ -615,6 +615,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'account.conversations.messages') return accountHandlers.messages({ params, request, env, url });
   if (routeId === 'account.conversations.messages.create') return accountHandlers.createMessage({ params, request, env, pathname });
   if (routeId === 'account.conversations.read') return accountHandlers.markRead({ params, request, env });
+  if (routeId === 'account.portfolio.list') return accountHandlers.portfolioList({ request, env });
   if (routeId === 'contact.create') return publicInputHandlers.contact({ request, env, pathname });
   if (routeId === 'newsletter.create') return publicInputHandlers.newsletter({ request, env, pathname });
 
@@ -834,7 +835,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(200, { message: 'Avaliacao removida e acao registrada.' });
   }
 
-  if (routeId === 'account.portfolio.list') {
+  if (false && routeId === 'account.portfolio.list') {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
     const portfolio = await env.DB.prepare(`
