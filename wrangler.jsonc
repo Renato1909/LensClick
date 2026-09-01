@@ -30,6 +30,9 @@
       "bucket_name": "lensclick-profile-images"
     }
   ],
+  "images": {
+    "binding": "IMAGES"
+  },
   "ratelimits": [
     {
       "name": "AUTH_RATE_LIMITER",
