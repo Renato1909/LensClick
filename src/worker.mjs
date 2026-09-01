@@ -1531,7 +1531,7 @@ async function handleAssetRequest(request, env) {
       SELECT p.slug, p.updated_at AS updated_at FROM professional_profiles p
       JOIN users u ON u.id = p.user_id
       WHERE p.is_published = 1 AND u.role = 'photographer'
-      ORDER BY p.updated_at DESC, p.id DESC LIMIT 50000
+      ORDER BY p.updated_at DESC, p.user_id DESC LIMIT 50000
     `).all();
     const urls = [
       { loc: new URL('/', url).toString() },
