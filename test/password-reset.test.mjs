@@ -9,6 +9,7 @@ test('recuperacao de senha possui telas bilingues e integracao segura', () => {
   const confirmPage = readFileSync('public/redefinir-senha.html', 'utf8');
   const translations = readCatalogs();
   const worker = readFileSync('src/worker.mjs', 'utf8');
+  const auth = readFileSync('src/auth.mjs', 'utf8');
 
   assert.match(login, /href="recuperar-senha\.html"/);
   assert.match(requestPage, /\/api\/auth\/password-reset\/request/);
@@ -19,6 +20,6 @@ test('recuperacao de senha possui telas bilingues e integracao segura', () => {
   assert.ok(translations['en-US']['recovery.confirm.title']);
   assert.match(worker, /PASSWORD_RESET_TTL_MS = 30 \* 60 \* 1000/);
   assert.match(worker, /DELETE FROM sessions WHERE user_id = \?/);
-  assert.match(worker, /Se o e-mail estiver cadastrado/);
+  assert.match(auth, /Se o e-mail estiver cadastrado/);
   assert.doesNotMatch(worker, /password_reset_tokens \([^)]*token[^_]/);
 });
