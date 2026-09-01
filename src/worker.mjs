@@ -11,6 +11,7 @@ import { createPhotographerHandlers } from './photographers.mjs';
 import { createAccountHandlers } from './account.mjs';
 import { createPublicInputHandlers } from './public-input.mjs';
 import { createPortfolioHandlers } from './portfolio.mjs';
+import { createAccountSecurityHandlers } from './account-security.mjs';
 
 const SESSION_COOKIE = 'lensclick_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -576,6 +577,7 @@ const photographerHandlers = createPhotographerHandlers({
 const accountHandlers = createAccountHandlers({ json, authenticatedUser, isRateLimited, readJson, conversationSummary, accountMessage, portfolioItem });
 const publicInputHandlers = createPublicInputHandlers({ json, isRateLimited, readJson, cleanText, normalizeEmail, isValidEmail });
 const portfolioHandlers = createPortfolioHandlers({ json, cleanText, authenticatedUser, isRateLimited, readJson, portfolioItem, storedImageResponse });
+const accountSecurityHandlers = createAccountSecurityHandlers({ json, cleanText, normalizeEmail, isValidEmail, authenticatedUser, readJson, verifyPassword, decodeProfilePicture, isValidPassword, hashPassword, publicUser, storedImageResponse, sessionCookie, isRateLimited, reportOperationalError, authRateLimit: [8, 15 * 60 * 1000], sensitiveRateLimit: [5, 60 * 60 * 1000] });
 
 // Route matching lives in router.mjs. Domain handlers receive dependencies explicitly
 // so extraction does not change business logic or request-scoped state.
@@ -622,6 +624,11 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'account.portfolio.update') return portfolioHandlers.update({ request, env });
   if (routeId === 'account.portfolio.image') return portfolioHandlers.image({ params, request, env });
   if (routeId === 'account.portfolio.delete') return portfolioHandlers.remove({ params, request, env });
+  if (routeId === 'account.profile.update') return accountSecurityHandlers.profileUpdate({ request, env, requestContext });
+  if (routeId === 'account.password.update') return accountSecurityHandlers.passwordUpdate({ request, env, pathname });
+  if (routeId === 'account.photo.delete') return accountSecurityHandlers.photoDelete({ request, env });
+  if (routeId === 'account.delete') return accountSecurityHandlers.accountDelete({ request, env, pathname });
+  if (routeId === 'account.profile-picture') return accountSecurityHandlers.profilePicture({ params, request, env });
   if (routeId === 'contact.create') return publicInputHandlers.contact({ request, env, pathname });
   if (routeId === 'newsletter.create') return publicInputHandlers.newsletter({ request, env, pathname });
 
@@ -999,7 +1006,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(200, { profile: professionalProfile(profile, true), message: isPublished ? 'Perfil profissional publicado.' : 'Perfil profissional salvo.' });
   }
 
-  if (routeId === 'account.profile.update') {
+  if (false && routeId === 'account.profile.update') {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
     const body = await readJson(request);
@@ -1070,7 +1077,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(200, { user: publicUser(user) });
   }
 
-  if (routeId === 'account.password.update') {
+  if (false && routeId === 'account.password.update') {
     if (await isRateLimited(request, env, pathname, 8, 15 * 60 * 1000, env.AUTH_RATE_LIMITER)) {
       return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });
     }
@@ -1098,7 +1105,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(200, { message: 'Senha alterada com sucesso. As outras sessoes foram encerradas.' });
   }
 
-  if (routeId === 'account.photo.delete') {
+  if (false && routeId === 'account.photo.delete') {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
     if (current.profile_pic_key) await env.PROFILE_IMAGES.delete(current.profile_pic_key);
@@ -1110,7 +1117,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(200, { user: publicUser(user), message: 'Foto removida com sucesso.' });
   }
 
-  if (routeId === 'account.delete') {
+  if (false && routeId === 'account.delete') {
     if (await isRateLimited(request, env, pathname, 5, 60 * 60 * 1000, env.SENSITIVE_RATE_LIMITER)) {
       return json(429, { error: 'Muitas tentativas. Aguarde antes de tentar novamente.' });
     }
@@ -1142,7 +1149,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     });
   }
 
-  if (routeId === 'account.profile-picture') {
+  if (false && routeId === 'account.profile-picture') {
     const [userId] = params;
     const current = await authenticatedUser(request, env);
     if (!current || Number(userId) !== Number(current.id) || !current.profile_pic_key) {
