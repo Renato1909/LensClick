@@ -13,7 +13,8 @@ export function createPhotographerHandlers({
   normalizeEmail,
   isValidEmail,
   normalizeWebsite,
-  parseSpecialties
+  parseSpecialties,
+  accountReviewRequest
 }) {
   async function list({ request, env }) {
     const url = new URL(request.url);
@@ -221,5 +222,13 @@ export function createPhotographerHandlers({
     return json(200, { profile: professionalProfile(profile, true), message: isPublished ? 'Perfil profissional publicado.' : 'Perfil profissional salvo.' });
   }
 
-  return { list, detail, photo, portfolioImage, reviews, reviewRequestCreate, conversationCreate, professionalProfileRead, professionalProfileUpdate };
+  async function reviewRequestsList({ request, env }) {
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const query = current.role === 'photographer' ? `SELECT q.*, u.name AS client_name, r.id AS review_id, r.rating AS review_rating, r.comment AS review_comment, r.status AS review_status FROM review_requests q JOIN users u ON u.id = q.client_user_id LEFT JOIN reviews r ON r.request_id = q.id WHERE q.photographer_user_id = ? ORDER BY q.created_at DESC, q.id DESC` : `SELECT q.*, u.name AS photographer_name, p.slug AS photographer_slug, r.id AS review_id, r.rating AS review_rating, r.comment AS review_comment, r.status AS review_status FROM review_requests q JOIN users u ON u.id = q.photographer_user_id JOIN professional_profiles p ON p.user_id = q.photographer_user_id LEFT JOIN reviews r ON r.request_id = q.id WHERE q.client_user_id = ? ORDER BY q.created_at DESC, q.id DESC`;
+    const result = await env.DB.prepare(query).bind(current.id).all();
+    return json(200, { role: current.role, requests: result.results.map((row) => accountReviewRequest(row, current.role)) });
+  }
+
+  return { list, detail, photo, portfolioImage, reviews, reviewRequestCreate, conversationCreate, professionalProfileRead, professionalProfileUpdate, reviewRequestsList };
 }
