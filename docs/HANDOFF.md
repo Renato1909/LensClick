@@ -289,12 +289,15 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Validada com 159 testes, build do Wrangler, CI obrigatório e smoke de produção somente leitura: duas buscas `200`, `Cache-Control: public, max-age=60` e segunda resposta com `CF-Cache-Status: HIT`.
 - Versão `9f33b94f-92bf-439b-b4b1-465fdee65cc5` publicada em produção; nenhuma migration ou dado do D1 foi alterado.
 
-### Fase 4.2 — em andamento (primeira entrega concluída)
+### Fase 4.2 — em andamento (segunda entrega concluída)
 - O PR #59 extraiu cadastro, login, logout, sessão atual e recuperação de senha para `src/auth.mjs`.
 - O módulo recebe dependências explicitamente, sem estado mutável por requisição; roteamento, contratos HTTP, sessões e políticas de segurança foram preservados.
 - Validada com 159 testes, build do Wrangler, CI obrigatório e smoke de produção: health `200` e sessão anônima `401`.
 - Versão `44b195dd-c36a-41c1-b1a4-4118e3684948` publicada em produção; nenhuma migration ou dado do D1 foi alterado.
-- Próximas entregas da Fase 4.2: extrair os domínios de fotógrafos, conta e entradas públicas, sempre em PRs independentes.
+- O PR #61 extraiu listagem e detalhe públicos de fotógrafos para `src/photographers.mjs`, preservando filtros, paginação, portfólio, cache e contratos HTTP.
+- Validada com 159 testes, build do Wrangler, CI obrigatório e smoke de produção: health `200` e busca pública `200`.
+- Versão `7c8d6917-a36b-42aa-9287-5d6eef812fcc` publicada em produção; nenhuma migration ou dado do D1 foi alterado.
+- Próximas entregas da Fase 4.2: extrair mutações restantes de fotógrafos, conta e entradas públicas, sempre em PRs independentes.
 
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - Open Graph e JSON-LD (sitemap e robots já concluídos na Fase 3.4).
@@ -374,4 +377,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 1º de setembro de 2026, com `main` em `a6fe1a1`; a autenticação foi extraída na Fase 4.2 e publicada na versão `44b195dd-c36a-41c1-b1a4-4118e3684948`, validada com health `200` e sessão anônima `401`.
+**Última atualização deste handoff:** 1º de setembro de 2026, com `main` em `b581001`; autenticação e leituras públicas de fotógrafos foram extraídas na Fase 4.2 e publicadas nas versões `44b195dd-c36a-41c1-b1a4-4118e3684948` e `7c8d6917-a36b-42aa-9287-5d6eef812fcc`.
