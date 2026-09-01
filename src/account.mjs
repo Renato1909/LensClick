@@ -1,4 +1,4 @@
-export function createAccountHandlers({ json, authenticatedUser, isRateLimited, readJson, conversationSummary, accountMessage }) {
+export function createAccountHandlers({ json, authenticatedUser, isRateLimited, readJson, conversationSummary, accountMessage, portfolioItem }) {
   async function listConversations({ request, env, url }) {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
@@ -25,5 +25,6 @@ export function createAccountHandlers({ json, authenticatedUser, isRateLimited, 
     const message = await env.DB.prepare('SELECT id, conversation_id, sender_user_id, body, read_at, created_at FROM messages WHERE id = ?').bind(Number(results[0]?.meta?.last_row_id || 0)).first(); return json(201, { message: accountMessage(message) });
   }
   async function markRead({ params, request, env }) { const current = await authenticatedUser(request, env); if (!current) return json(401, { error: 'Faca login novamente.' }); const id = Number(params[0]); const conversation = await env.DB.prepare('SELECT id FROM conversations WHERE id = ? AND (client_user_id = ? OR photographer_user_id = ?)').bind(id, current.id, current.id).first(); if (!conversation) return json(404, { error: 'Conversa nao encontrada.' }); const result = await env.DB.prepare('UPDATE messages SET read_at = CURRENT_TIMESTAMP WHERE conversation_id = ? AND sender_user_id <> ? AND read_at IS NULL').bind(id, current.id).run(); return json(200, { ok: true, updated: Number(result.meta?.changes || 0) }); }
-  return { listConversations, messages, createMessage, markRead };
+  async function portfolioList({ request, env }) { const current = await authenticatedUser(request, env); if (!current) return json(401, { error: 'Faca login novamente.' }); const portfolio = await env.DB.prepare('SELECT id, caption, alt_text, position, updated_at FROM portfolio_items WHERE user_id = ? ORDER BY position, id').bind(current.id).all(); return json(200, { portfolio: portfolio.results.map((item) => portfolioItem(item)) }); }
+  return { listConversations, messages, createMessage, markRead, portfolioList };
 }
