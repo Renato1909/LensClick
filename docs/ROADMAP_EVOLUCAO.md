@@ -198,12 +198,14 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 3.4 Sitemap dinamico e robots.txt
 
+> **Status:** concluído pelos PRs #53, #54 e #55 e validado em produção em 1º de setembro de 2026. A versão `09def67b-f875-4384-9805-e839a7a718f7` está publicada com 157 testes aprovados.
+
 1. **Nome da iniciativa**: Sitemap.xml gerado dinamicamente a partir de perfis publicados.
 2. **Objetivo**: Ajudar o Google a descobrir todos os perfis publicados.
-3. **Problema resolvido**: Nao ha `sitemap.xml` nem `robots.txt` - a descoberta depende de crawling do HTML estatico.
+3. **Problema resolvido**: a descoberta dependia apenas do crawling do HTML estático, sem `sitemap.xml` nem `robots.txt` explícitos.
 4. **Impacto esperado**: Indexacao mais rapida e completa; complementa 3.2.
-5. **Complexidade**: Baixa - rota `/sitemap.xml` que consulta perfis publicados e gera XML; `/robots.txt` estatico.
-6. **Riscos**: Nenhum significativo.
+5. **Implementação entregue**: rota `/sitemap.xml` consulta somente perfis publicados, gera XML com `<lastmod>` e limite de 50.000 URLs; `/robots.txt` define diretivas de rastreamento e aponta para o sitemap. Ambas aceitam `GET` e `HEAD`, com cache público de 1 hora.
+6. **Riscos residuais**: o limite de 50.000 URLs atende o volume atual; crescimento além do limite exigirá sitemap index. O smoke de produção também levou aos PRs #54 e #55 para corrigir uma ambiguidade SQL e uma coluna inexistente na ordenação.
 7. **Dependencias**: 3.2 (SSR de perfis) para maximo efeito.
 8. **Agentes envolvidos**: Engenheiro Backend, Engenheiro DevOps, Especialista em SEO e Performance (Responsavel por estrutura do sitemap e diretivas do robots.txt).
 9. **Ordem recomendada**: **12a** - complemento barato de SEO, logo apos 3.2.
