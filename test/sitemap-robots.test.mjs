@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker from '../src/worker.mjs';
 import { normalizeRoute } from '../src/observability.mjs';
+import { readFileSync } from 'node:fs';
 
 function environment(rows = []) {
   return {
@@ -29,6 +30,7 @@ test('sitemap lista a pagina inicial, busca e somente perfis publicados', async 
   assert.match(xml, /<loc>https:\/\/lensclick\.example\/fotografo\/joao-fotografo<\/loc>/);
   assert.doesNotMatch(xml, /perfil\.html|\/api\//);
   assert.equal(normalizeRoute('https://lensclick.example/sitemap.xml'), '/sitemap.xml');
+  assert.match(readFileSync('src/worker.mjs', 'utf8'), /SELECT p\.slug, p\.updated_at AS updated_at FROM professional_profiles p/);
 });
 
 test('robots.txt permite paginas publicas, bloqueia areas privadas e aponta para sitemap', async () => {
