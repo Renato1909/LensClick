@@ -16,6 +16,14 @@ export function createPhotographerHandlers({
   parseSpecialties,
   accountReviewRequest
 }) {
+  async function responsiveImage(object, request, env) {
+    const width = Number(new URL(request.url).searchParams.get('width'));
+    if (!object || !env.IMAGES || ![320, 640, 1280].includes(width)) return storedImageResponse(object, request, 'public, max-age=300, must-revalidate');
+    const transformed = (await env.IMAGES.input(object.body).transform({ width }).output({ format: 'image/webp', quality: 82 })).response();
+    const headers = new Headers(transformed.headers);
+    headers.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=86400');
+    return new Response(transformed.body, { status: transformed.status, headers });
+  }
   async function list({ request, env }) {
     const url = new URL(request.url);
     const city = cleanText(url.searchParams.get('city'), 80);
@@ -99,7 +107,7 @@ export function createPhotographerHandlers({
       WHERE p.slug = ? AND i.id = ? AND p.is_published = 1 AND u.role = 'photographer'
     `).bind(slug, Number(itemId)).first();
     if (!item) return json(404, { error: 'Imagem nao encontrada.' });
-    return storedImageResponse(await env.PROFILE_IMAGES.get(item.object_key), request, 'public, max-age=300, must-revalidate');
+    return responsiveImage(await env.PROFILE_IMAGES.get(item.object_key), request, env);
   }
 
   async function reviews({ params, env }) {
