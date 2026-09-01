@@ -30,7 +30,7 @@ test('sitemap lista a pagina inicial, busca e somente perfis publicados', async 
   assert.match(xml, /<loc>https:\/\/lensclick\.example\/fotografo\/joao-fotografo<\/loc>/);
   assert.doesNotMatch(xml, /perfil\.html|\/api\//);
   assert.equal(normalizeRoute('https://lensclick.example/sitemap.xml'), '/sitemap.xml');
-  assert.match(readFileSync('src/worker.mjs', 'utf8'), /SELECT p\.slug, p\.updated_at AS updated_at FROM professional_profiles p/);
+  assert.match(readFileSync('src/worker.mjs', 'utf8'), /ORDER BY p\.updated_at DESC, p\.user_id DESC LIMIT 50000/);
 });
 
 test('robots.txt permite paginas publicas, bloqueia areas privadas e aponta para sitemap', async () => {
