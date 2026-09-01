@@ -303,7 +303,9 @@
       card.className = 'portfolio-item';
       card.dataset.id = String(item.id);
       const image = document.createElement('img');
-      image.src = item.imageUrl;
+      image.srcset = [320, 640, 1280].map((width) => `${item.imageUrl}&width=${width} ${width}w`).join(', ');
+      image.sizes = '(max-width: 720px) 100vw, 320px';
+      image.src = `${item.imageUrl}&width=640`;
       image.alt = item.altText;
 
       const fields = document.createElement('div');

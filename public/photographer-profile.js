@@ -47,7 +47,7 @@
   }
 
   function responsiveImageSources(imageUrl) {
-    return `${imageUrl} 1200w`;
+    return [320, 640, 1280].map((width) => `${imageUrl}&width=${width} ${width}w`).join(', ');
   }
 
   function renderPortfolioItem(item, index) {
