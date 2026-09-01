@@ -9,7 +9,11 @@ export function createPhotographerHandlers({
   isRateLimited,
   authenticatedUser,
   readJson,
-  slugify
+  slugify,
+  normalizeEmail,
+  isValidEmail,
+  normalizeWebsite,
+  parseSpecialties
 }) {
   async function list({ request, env }) {
     const url = new URL(request.url);
@@ -191,5 +195,31 @@ export function createPhotographerHandlers({
     });
   }
 
-  return { list, detail, photo, portfolioImage, reviews, reviewRequestCreate, conversationCreate, professionalProfileRead };
+  async function professionalProfileUpdate({ request, env, pathname }) {
+    if (await isRateLimited(request, env, pathname, 30, 60 * 60 * 1000, env.ACCOUNT_RATE_LIMITER)) return json(429, { error: 'Muitas alteracoes. Aguarde antes de tentar novamente.' });
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    if (current.role !== 'photographer') return json(403, { error: 'Selecione o perfil de fotografo nos dados pessoais para continuar.' });
+    const body = await readJson(request);
+    const bio = cleanText(body.bio, 1200), specialties = parseSpecialties(body.specialties), city = cleanText(body.city, 80);
+    const state = cleanText(body.state, 2).toUpperCase();
+    const availability = ['available', 'limited', 'unavailable'].includes(body.availability) ? body.availability : 'available';
+    const serviceRadiusKm = body.serviceRadiusKm === '' || body.serviceRadiusKm == null ? null : Number(body.serviceRadiusKm);
+    const startingPriceCents = body.startingPriceCents === '' || body.startingPriceCents == null ? null : Number(body.startingPriceCents);
+    const publicEmail = normalizeEmail(body.publicEmail), publicPhone = cleanText(body.publicPhone, 30);
+    const instagram = cleanText(body.instagram, 30).replace(/^@/, ''), submittedWebsite = cleanText(body.website, 300);
+    const website = normalizeWebsite(submittedWebsite), showEmail = body.showEmail === true && Boolean(publicEmail), showPhone = body.showPhone === true && Boolean(publicPhone), isPublished = body.isPublished === true;
+    const invalidDraft = (state && !/^[A-Z]{2}$/.test(state)) || (serviceRadiusKm !== null && (!Number.isInteger(serviceRadiusKm) || serviceRadiusKm < 0 || serviceRadiusKm > 1000)) || (startingPriceCents !== null && (!Number.isInteger(startingPriceCents) || startingPriceCents < 0 || startingPriceCents > 100_000_000)) || (publicEmail && !isValidEmail(publicEmail)) || (publicPhone && publicPhone.length < 8) || (instagram && !/^[A-Za-z0-9._]{1,30}$/.test(instagram)) || (submittedWebsite && !website);
+    if (invalidDraft) return json(400, { error: 'Revise os dados profissionais informados.' });
+    const hasPublicContact = showEmail || showPhone || Boolean(instagram) || Boolean(website);
+    const publishable = bio.length >= 60 && specialties.length > 0 && city.length >= 2 && /^[A-Z]{2}$/.test(state) && Boolean(current.profile_pic_key) && hasPublicContact;
+    if (isPublished && !publishable) return json(400, { error: 'Para publicar, adicione foto, apresentacao, especialidade, localizacao e ao menos um contato profissional.' });
+    const existing = await env.DB.prepare('SELECT slug FROM professional_profiles WHERE user_id = ?').bind(current.id).first();
+    const slug = existing?.slug || `${slugify(current.name)}-${current.id}`;
+    await env.DB.prepare(`INSERT INTO professional_profiles (user_id, slug, bio, specialties, city, state, service_radius_km, starting_price_cents, availability, public_email, public_phone, instagram, website, show_email, show_phone, is_published) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET bio = excluded.bio, specialties = excluded.specialties, city = excluded.city, state = excluded.state, service_radius_km = excluded.service_radius_km, starting_price_cents = excluded.starting_price_cents, availability = excluded.availability, public_email = excluded.public_email, public_phone = excluded.public_phone, instagram = excluded.instagram, website = excluded.website, show_email = excluded.show_email, show_phone = excluded.show_phone, is_published = excluded.is_published, updated_at = CURRENT_TIMESTAMP`).bind(current.id, slug, bio, JSON.stringify(specialties), city, state, serviceRadiusKm, startingPriceCents, availability, publicEmail, publicPhone, instagram, website, Number(showEmail), Number(showPhone), Number(isPublished)).run();
+    const profile = await env.DB.prepare('SELECT * FROM professional_profiles WHERE user_id = ?').bind(current.id).first();
+    return json(200, { profile: professionalProfile(profile, true), message: isPublished ? 'Perfil profissional publicado.' : 'Perfil profissional salvo.' });
+  }
+
+  return { list, detail, photo, portfolioImage, reviews, reviewRequestCreate, conversationCreate, professionalProfileRead, professionalProfileUpdate };
 }

@@ -567,7 +567,8 @@ const authHandlers = createAuthHandlers({
 const photographerHandlers = createPhotographerHandlers({
   json, cleanText, professionalProfile, portfolioItem,
   professionalSpecialties: PROFESSIONAL_SPECIALTIES, publicReview, storedImageResponse,
-  isRateLimited, authenticatedUser, readJson, slugify
+  isRateLimited, authenticatedUser, readJson, slugify,
+  normalizeEmail, isValidEmail, normalizeWebsite, parseSpecialties
 });
 
 // Route matching lives in router.mjs. Domain handlers receive dependencies explicitly
@@ -600,6 +601,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'photographers.review-request.create') return photographerHandlers.reviewRequestCreate({ params, request, env, pathname });
   if (routeId === 'photographers.conversations.create') return photographerHandlers.conversationCreate({ params, request, env, pathname });
   if (routeId === 'account.professional-profile.read') return photographerHandlers.professionalProfileRead({ request, env });
+  if (routeId === 'account.professional-profile.update') return photographerHandlers.professionalProfileUpdate({ request, env, pathname });
 
   if (routeId === 'account.conversations.list') {
     const current = await authenticatedUser(request, env);
@@ -907,7 +909,8 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(200, { message: 'Imagem removida permanentemente.' });
   }
 
-  if (routeId === 'account.professional-profile.update') {
+  // Kept disabled while the extracted handler above owns this route.
+  if (false && routeId === 'account.professional-profile.update') {
     if (await isRateLimited(request, env, pathname, 30, 60 * 60 * 1000, env.ACCOUNT_RATE_LIMITER)) {
       return json(429, { error: 'Muitas alteracoes. Aguarde antes de tentar novamente.' });
     }
