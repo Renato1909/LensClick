@@ -115,3 +115,23 @@ O rollback não altera D1, R2, migrations ou dados de usuários.
 - usar `request_id` em incidentes sem pedir credenciais;
 - revisar retenção e amostragem trimestralmente;
 - nunca copiar dados pessoais dos logs para issues ou PRs.
+
+## 9. SLOs e alertas da Fase 4.4
+
+Os objetivos iniciais são avaliados sobre uma janela móvel de 30 dias, excluindo respostas 4xx causadas por entrada ou autenticação do usuário:
+
+| Sinal | Objetivo | Alerta inicial |
+|---|---:|---:|
+| Disponibilidade das rotas HTTP | ≥ 99,9% | < 99,5% em 15 min |
+| Latência P95 das rotas API | < 300 ms | ≥ 300 ms em 15 min |
+| Taxa de respostas 5xx | < 0,1% | ≥ 0,5% em 10 min |
+
+Consultas-base no Query Builder:
+
+- disponibilidade: `event = "http.request.completed" AND status < 500`;
+- latência: `event = "http.request.completed" AND route starts_with "/api/"` com `P95(duration_ms)` agrupado por `route`;
+- erros: `event = "http.request.completed" AND status >= 500`.
+
+Os limiares são deliberadamente conservadores para o baixo volume atual. Antes de automatizar notificações, coletar pelo menos sete dias de dados para calibrar falsos positivos. O alerta deve apontar para o runbook deste documento e incluir janela, rota e valor observado, nunca dados de usuários.
+
+O painel de Workers Observability é a fonte operacional; a configuração de notificações é feita no dashboard da conta Cloudflare e não altera o Worker, D1 ou R2.
