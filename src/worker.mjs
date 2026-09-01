@@ -1592,6 +1592,42 @@ const router = createRequestRouter({
   notFoundResponse: () => json(404, { error: 'Endpoint nao encontrado.' })
 });
 
+const EDGE_CACHE_ROUTES = new Set([
+  '/api/photographers',
+]);
+
+function edgeCacheKey(request) {
+  const url = new URL(request.url);
+  return new Request(url.toString(), { method: 'GET' });
+}
+
+function isEdgeCacheable(request, response) {
+  if (request.method.toUpperCase() !== 'GET' || response.status !== 200) return false;
+  const url = new URL(request.url);
+  const isList = EDGE_CACHE_ROUTES.has(url.pathname);
+  const isProfile = /^\/api\/photographers\/[a-z0-9-]{3,80}$/.test(url.pathname);
+  if (!isList && !isProfile) return false;
+  const cacheControl = response.headers.get('Cache-Control') || '';
+  return /(?:^|,\s*)public(?:,|$)/i.test(cacheControl)
+    && !/(?:^|,\s*)(?:private|no-store)(?:,|$)/i.test(cacheControl)
+    && !response.headers.has('Set-Cookie');
+}
+
+async function readEdgeCache(request) {
+  if (!globalThis.caches?.default) return null;
+  try {
+    return await globalThis.caches.default.match(edgeCacheKey(request));
+  } catch {
+    return null;
+  }
+}
+
+function writeEdgeCache(request, response, context) {
+  if (!isEdgeCacheable(request, response) || !globalThis.caches?.default) return;
+  const operation = globalThis.caches.default.put(edgeCacheKey(request), response.clone()).catch(() => undefined);
+  if (context?.waitUntil) context.waitUntil(operation);
+}
+
 export default {
   async fetch(request, env, context) {
     const requestContext = createRequestContext(request, {
@@ -1600,7 +1636,11 @@ export default {
     let response;
     let errorCategory;
     try {
-      response = await router.handleRequest(request, env, context, requestContext);
+      response = await readEdgeCache(request);
+      if (!response) {
+        response = await router.handleRequest(request, env, context, requestContext);
+        writeEdgeCache(request, response, context);
+      }
     } catch (error) {
       const status = Number(error?.status) || 500;
       errorCategory = errorCategoryForStatus(status);
