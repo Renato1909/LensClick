@@ -19,9 +19,12 @@ export function createPhotographerHandlers({
   async function responsiveImage(object, request, env) {
     const width = Number(new URL(request.url).searchParams.get('width'));
     if (!object || !env.IMAGES || ![320, 640, 1280].includes(width)) return storedImageResponse(object, request, 'public, max-age=300, must-revalidate');
-    const transformed = (await env.IMAGES.input(object.body).transform({ width }).output({ format: 'image/webp', quality: 82 })).response();
+    const acceptsAvif = String(request.headers.get('Accept') || '').includes('image/avif');
+    const format = acceptsAvif ? 'image/avif' : 'image/webp';
+    const transformed = (await env.IMAGES.input(object.body).transform({ width }).output({ format, quality: 82 })).response();
     const headers = new Headers(transformed.headers);
     headers.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=86400');
+    headers.set('Vary', 'Accept');
     return new Response(transformed.body, { status: transformed.status, headers });
   }
   async function list({ request, env }) {
