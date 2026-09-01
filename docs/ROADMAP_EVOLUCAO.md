@@ -2,7 +2,7 @@
 
 > **Premissa**: evoluir sem quebrar. Cada iniciativa e aditiva e reversivel. Nenhuma recomenda reescrita completa - o monolito atual e simples, testavel e adequado ao estadio do produto.
 >
-> **Arquitetura atual**: Worker unico Cloudflare (`src/worker.mjs`, handlers) com catalogo e despacho declarativos em `src/router.mjs` (22 padroes de rota e 25 contratos HTTP) - D1 `lensclick-db` (8 tabelas: `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`) - R2 `lensclick-profile-images` - Frontend HTML/JS/CSS vanilla (23 arquivos em `public/`) - suite automatizada de testes - Rate limiting hibrido (edge + politicas longas no D1) - `GET /api/health` para Worker/D1 - Sessoes por cookie (PBKDF2-SHA256, 100k iteracoes) - CSP rigorosa - Lazy loading nativo ja presente em `photographer-profile.js` (sem `srcset`/variantes) - Sem `sitemap.xml`, `robots.txt`, `caches.default`, OG/JSON-LD/meta description dinamica.
+> **Arquitetura atual**: Worker unico Cloudflare (`src/worker.mjs`, handlers) com catalogo e despacho declarativos em `src/router.mjs` (22 padroes de rota e 25 contratos HTTP) - D1 `lensclick-db` (8 tabelas: `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`) - R2 `lensclick-profile-images` - Frontend HTML/JS/CSS vanilla (23 arquivos em `public/`) - suite automatizada de testes - Rate limiting hibrido (edge + politicas longas no D1) - `GET /api/health` para Worker/D1 - Sessoes por cookie (PBKDF2-SHA256, 100k iteracoes) - CSP rigorosa - Lazy loading nativo ja presente em `photographer-profile.js` (sem `srcset`/variantes) - sitemap/robots dinamicos, cache de edge de 60 segundos para descoberta publica e sem OG/JSON-LD/meta description dinamica adicional.
 >
 > **Agentes disponiveis**: Arquiteto de Software, Engenheiro Frontend, Engenheiro Backend, Engenheiro de Banco de Dados, Engenheiro DevOps, Engenheiro de QA, Designer, Especialista em Seguranca, Especialista em SEO e Performance, Especialista em Marketing para Fotografia, Revisor de Codigo.
 
@@ -218,12 +218,14 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 4.1 Cache de edge para buscas e perfis
 
+> **Status:** concluído pelo PR #57 e validado em produção em 1º de setembro de 2026. A versão `9f33b94f-92bf-439b-b4b1-465fdee65cc5` está publicada e a suíte conta com 159 testes aprovados.
+
 1. **Nome da iniciativa**: Cache HTTP via Cache API do Cloudflare para GETs de leitura.
 2. **Objetivo**: Servir `/api/photographers` e `/api/photographers/:slug` do cache da edge quando possivel.
-3. **Problema resolvido**: Hoje toda busca hita o D1 - em escala, o D1 tem limite de throughput e latencia regional. O `Cache-Control: public, max-age=60` ja e enviado, mas nao ha `caches.default` no Worker para aproveita-lo.
+3. **Problema resolvido**: toda busca e perfil público atingia o D1 mesmo quando a mesma leitura era repetida; o `Cache-Control: public, max-age=60` existia, mas `caches.default` ainda não era utilizado.
 4. **Impacto esperado**: Latencia de busca <50ms para cache hit; reducao de 80%+ de carga no D1 em paginas populares.
-5. **Complexidade**: Media - usar `caches.default.put/get` com chave por query string; invalidacao ao atualizar perfil (cache tag ou TTL curto).
-6. **Riscos**: Conteudo stale se a invalidacao falhar. Mitigacao: TTL de 60s (ja atual) + invalidacao ativa no PUT de perfil.
+5. **Implementação entregue**: `caches.default.match/put` no ponto de entrada do Worker, com chave pela URL completa, somente respostas `200` públicas e TTL de 60 segundos. Falhas do cache são best-effort e não alteram a resposta originada no D1.
+6. **Riscos residuais**: dados públicos podem permanecer desatualizados por até 60 segundos após uma mutação. O TTL curto foi escolhido em vez de invalidadores por padrão, evitando inconsistência entre variantes de filtros; respostas privadas, `HEAD` e mutações não são cacheadas.
 7. **Dependencias**: 1.3 (rate limiting fora do D1 libera headroom), 1.4 (indices).
 8. **Agentes envolvidos**: Engenheiro Backend, Engenheiro DevOps, Especialista em SEO e Performance (consultado sobre TTL e impacto em conteudo stale para SEO).
 9. **Ordem recomendada**: **13a** - so faz sentido quando ha volume para justificar.
