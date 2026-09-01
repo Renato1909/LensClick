@@ -2,6 +2,14 @@ const MAX_PORTFOLIO_IMAGE_BYTES = 4_000_000;
 const MAX_PORTFOLIO_ITEMS = 12;
 
 export function createPortfolioHandlers({ json, cleanText, authenticatedUser, isRateLimited, readJson, portfolioItem, storedImageResponse }) {
+  async function responsiveImage(object, request, env) {
+    const width = Number(new URL(request.url).searchParams.get('width'));
+    if (!object || !env.IMAGES || ![320, 640, 1280].includes(width)) return storedImageResponse(object, request, 'private, max-age=300, must-revalidate');
+    const transformed = (await env.IMAGES.input(object.body).transform({ width }).output({ format: 'image/webp', quality: 82 })).response();
+    const headers = new Headers(transformed.headers);
+    headers.set('Cache-Control', 'private, max-age=300, must-revalidate');
+    return new Response(transformed.body, { status: transformed.status, headers });
+  }
   async function upload(request) {
     const contentType = String(request.headers.get('Content-Type') || '').toLowerCase();
     if (!contentType.startsWith('multipart/form-data')) throw Object.assign(new Error('Envie a imagem como formulario.'), { status: 415 });
@@ -65,7 +73,7 @@ export function createPortfolioHandlers({ json, cleanText, authenticatedUser, is
     if (!current) return json(401, { error: 'Faca login novamente.' });
     const item = await env.DB.prepare('SELECT object_key FROM portfolio_items WHERE id = ? AND user_id = ?').bind(Number(itemId), current.id).first();
     if (!item) return json(404, { error: 'Imagem nao encontrada.' });
-    return storedImageResponse(await env.PROFILE_IMAGES.get(item.object_key), request, 'private, max-age=300, must-revalidate');
+    return responsiveImage(await env.PROFILE_IMAGES.get(item.object_key), request, env);
   }
 
   async function remove({ params, request, env }) {
