@@ -2,9 +2,9 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 1º de setembro de 2026, com `main` em `0295292`.
+> **Data de referência:** 1º de setembro de 2026, com `main` em `0997afb`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2 e iniciativas 3.1–3.4 concluídas; a próxima prioridade é a iniciativa 4.1.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e a Fase 4.1 concluídas; a próxima prioridade é a iniciativa 4.2.
 
 ---
 
@@ -100,7 +100,6 @@ Não há iniciativa em desenvolvimento em uma branch ativa. As quatro iniciativa
 ### Não implementado (gaps identificados)
 
 - Sem Open Graph / JSON-LD (SEO social e dados estruturados).
-- Sem cache via `caches.default`.
 - Sem 2FA / verificação de e-mail.
 - O rate limiting permanece deliberadamente híbrido: escudo de rajada nativo na edge e políticas longas autoritativas no D1.
 - A suíte de contratos cobre os 22 padrões de rota e os 25 contratos HTTP catalogados; testes ponta a ponta com serviços reais permanecem fora do escopo atual.
@@ -203,8 +202,8 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 4. **Hotspots de conflito** — `src/worker.mjs` e os catálogos em `public/locales/` são tocados por muitas features. Alto risco de conflito de merge.
 5. **Sem alertas e SLOs** — os logs estruturados existem, mas a detecção proativa pertence à Fase 4.
 6. **Health check não cobre R2** — decisão deliberada para não gerar operações artificiais; indisponibilidade do bucket é detectada pelos eventos das rotas reais de imagem.
-7. **SEO incompleto** — sem `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD. Impacta indexação e compartilhamento social.
-8. **Sem cache** — `caches.default` não utilizado; toda requisição pode bater no D1/R2.
+7. **SEO incompleto** — sitemap e robots já estão disponíveis; ainda faltam Open Graph e JSON-LD adicionais em páginas que não são perfis SSR. Impacta indexação e compartilhamento social.
+8. **Cache de descoberta com TTL curto** — buscas e perfis públicos usam `caches.default` por 60 segundos; alterações podem permanecer stale por esse intervalo.
 
 ### Legais / Processo
 
@@ -283,6 +282,13 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Versão final `09def67b-f875-4384-9805-e839a7a718f7` publicada em produção, sem alteração de migration ou dados do D1.
 - Limite residual: o sitemap atual atende até 50.000 URLs; se o catálogo crescer além desse limite, será necessário adotar sitemap index.
 
+### Fase 4.1 — concluída
+- O PR #57 adicionou cache de edge via `caches.default` para `GET /api/photographers` e `GET /api/photographers/:slug`, usando a URL completa como chave para separar filtros e perfis.
+- Somente respostas `200` públicas, sem `Set-Cookie`, `private` ou `no-store`, são armazenadas; respostas `HEAD`, mutações, sessões e imagens privadas permanecem fora do cache.
+- O TTL de 60 segundos reaproveita o `Cache-Control` já emitido pela API, limita defasagem de dados e evita invalidadores frágeis; falhas do cache degradam silenciosamente para o D1.
+- Validada com 159 testes, build do Wrangler, CI obrigatório e smoke de produção somente leitura: duas buscas `200`, `Cache-Control: public, max-age=60` e segunda resposta com `CF-Cache-Status: HIT`.
+- Versão `9f33b94f-92bf-439b-b4b1-465fdee65cc5` publicada em produção; nenhuma migration ou dado do D1 foi alterado.
+
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - Open Graph e JSON-LD (sitemap e robots já concluídos na Fase 3.4).
 - Cache via `caches.default` para assets e respostas imutáveis.
@@ -298,7 +304,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Fase 4.1] Cache de edge para buscas e perfis    ← próxima evolução de escala
+1. [Fase 4.2] Modularização do Worker por domínio   ← próxima evolução estrutural
 2. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
 ```
 
@@ -308,7 +314,8 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - A iniciativa 1.3 foi concluída com uma arquitetura híbrida e rollback documentado.
 - A iniciativa 1.4 foi concluída com migration remota, health check e smoke test de produção; a Fase 1 está encerrada.
 - O marco estrutural do roteador, as quatro iniciativas da Fase 2 e as iniciativas 3.1–3.4 foram concluídos e validados em produção.
-- A Fase 3.4 complementou os perfis indexáveis com descoberta automatizada por sitemap e diretivas explícitas para crawlers; a próxima prioridade é o cache de edge da Fase 4.1.
+- A Fase 3.4 complementou os perfis indexáveis com descoberta automatizada por sitemap e diretivas explícitas para crawlers.
+- A Fase 4.1 passou a aproveitar o cache da edge para leituras públicas; a próxima prioridade é a modularização por domínio da Fase 4.2.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
 ---
@@ -342,7 +349,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (até a Fase 3.4 concluída; Fase 4.1 é o próximo passo).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (até a Fase 4.1 concluída; Fase 4.2 é o próximo passo).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
@@ -359,4 +366,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 28 de agosto de 2026, com `main` em `4e2b52d`; Fase 1, marco de transição e Fase 2 concluídos. O PR #42 adicionou internacionalização por catálogos, publicada na versão `a840abe4-6245-4616-8b06-1814587a7991` e validada em produção sem necessidade de rollback.
+**Última atualização deste handoff:** 1º de setembro de 2026, com `main` em `0997afb`; Fase 1, marco de transição, Fase 2, Fase 3 e Fase 4.1 concluídos. O cache de edge foi publicado na versão `9f33b94f-92bf-439b-b4b1-465fdee65cc5` e validado com hit em produção.
