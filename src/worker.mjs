@@ -1528,7 +1528,7 @@ async function handleAssetRequest(request, env) {
   }
   if (['GET', 'HEAD'].includes(request.method) && url.pathname === '/sitemap.xml') {
     const profiles = await env.DB.prepare(`
-      SELECT slug, updated_at FROM professional_profiles p
+      SELECT p.slug, p.updated_at AS updated_at FROM professional_profiles p
       JOIN users u ON u.id = p.user_id
       WHERE p.is_published = 1 AND u.role = 'photographer'
       ORDER BY p.updated_at DESC, p.id DESC LIMIT 50000
