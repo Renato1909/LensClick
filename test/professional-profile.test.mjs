@@ -63,14 +63,16 @@ test('o perfil publico renderiza dados seguros sem HTML fornecido pelo usuario',
   const page = read('public/fotografo.html');
   const script = read('public/photographer-profile.js');
   const worker = read('src/worker.mjs');
+  const photographers = read('src/photographers.mjs');
+  const server = `${worker}\n${photographers}`;
 
   assert.match(page, /id="professionalProfile" hidden/);
   assert.match(page, /id="photographerContacts"/);
   assert.match(script, /textContent = profile\.bio/);
   assert.doesNotMatch(script, /innerHTML\s*=/);
   assert.match(script, /rel = 'noopener noreferrer'/);
-  assert.match(worker, /p\.is_published = 1 AND u\.role = 'photographer'/);
-  assert.match(worker, /contacts:[\s\S]*row\.show_email[\s\S]*row\.show_phone/);
+  assert.match(server, /p\.is_published = 1 AND u\.role = 'photographer'/);
+  assert.match(server, /contacts:[\s\S]*row\.show_email[\s\S]*row\.show_phone/);
   assert.match(worker, /hasPublicContact/);
   assert.match(worker, /UPDATE professional_profiles SET is_published = 0/);
 });
@@ -119,15 +121,17 @@ test('a galeria publica so usa imagens autorizadas e textos seguros', () => {
   const page = read('public/fotografo.html');
   const script = read('public/photographer-profile.js');
   const worker = read('src/worker.mjs');
+  const photographers = read('src/photographers.mjs');
+  const server = `${worker}\n${photographers}`;
   const router = read('src/router.mjs');
   assert.match(page, /id="portfolioSection" hidden/);
   assert.match(script, /image\.alt = item\.altText/);
   assert.match(script, /caption\.textContent = item\.caption/);
   assert.doesNotMatch(script, /innerHTML\s*=/);
-  assert.match(worker, /p\.is_published = 1 AND u\.role = 'photographer'/);
+  assert.match(server, /p\.is_published = 1 AND u\.role = 'photographer'/);
   assert.match(router, /id: 'photographers\.portfolio-image'/);
   assert.match(worker, /routeId === 'photographers\.portfolio-image'/);
-  assert.match(worker, /portfolioItem\(item, profile\.slug\)/);
+  assert.match(server, /portfolioItem\(item, profile\.slug\)/);
   assert.match(worker, /\/api\/photographers\/\$\{encodeURIComponent\(slug\)\}\/portfolio\/\$\{id\}/);
   assert.match(worker, /portfolioObjects/);
 });
