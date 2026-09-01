@@ -5,7 +5,10 @@ export function createPhotographerHandlers({
   portfolioItem,
   professionalSpecialties,
   publicReview,
-  storedImageResponse
+  storedImageResponse,
+  isRateLimited,
+  authenticatedUser,
+  readJson
 }) {
   async function list({ request, env }) {
     const url = new URL(request.url);
@@ -116,5 +119,31 @@ export function createPhotographerHandlers({
     }, { 'Cache-Control': 'public, max-age=60' });
   }
 
-  return { list, detail, photo, portfolioImage, reviews };
+  async function reviewRequestCreate({ params, request, env, pathname }) {
+    if (await isRateLimited(request, env, pathname, 10, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
+      return json(429, { error: 'Muitas solicitacoes. Aguarde antes de tentar novamente.' });
+    }
+    const [slug] = params;
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login como cliente para solicitar contato.' });
+    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem solicitar contato para avaliacao.' });
+    const photographer = await env.DB.prepare(`
+      SELECT p.user_id FROM professional_profiles p JOIN users u ON u.id = p.user_id
+      WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
+    `).bind(slug).first();
+    if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.' });
+    if (photographer.user_id === current.id) return json(403, { error: 'Nao e permitido solicitar avaliacao do proprio perfil.' });
+    const body = await readJson(request);
+    const message = cleanText(body.message, 1000);
+    if (message.length < 10) return json(400, { error: 'Descreva o contato em pelo menos 10 caracteres.' });
+    const pending = await env.DB.prepare(`
+      SELECT id FROM review_requests WHERE client_user_id = ? AND photographer_user_id = ? AND status = 'pending'
+    `).bind(current.id, photographer.user_id).first();
+    if (pending) return json(409, { error: 'Ja existe uma solicitacao aguardando confirmacao deste fotografo.' });
+    const result = await env.DB.prepare('INSERT INTO review_requests (client_user_id, photographer_user_id, message) VALUES (?, ?, ?)')
+      .bind(current.id, photographer.user_id, message).run();
+    return json(201, { request: { id: Number(result.meta.last_row_id), status: 'pending' }, message: 'Solicitacao enviada ao fotografo.' });
+  }
+
+  return { list, detail, photo, portfolioImage, reviews, reviewRequestCreate };
 }
