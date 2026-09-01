@@ -566,7 +566,8 @@ const authHandlers = createAuthHandlers({
 
 const photographerHandlers = createPhotographerHandlers({
   json, cleanText, professionalProfile, portfolioItem,
-  professionalSpecialties: PROFESSIONAL_SPECIALTIES, publicReview, storedImageResponse
+  professionalSpecialties: PROFESSIONAL_SPECIALTIES, publicReview, storedImageResponse,
+  isRateLimited, authenticatedUser, readJson
 });
 
 // Route matching lives in router.mjs. Domain handlers receive dependencies explicitly
@@ -596,34 +597,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'photographers.photo') return photographerHandlers.photo({ params, env, request });
   if (routeId === 'photographers.portfolio-image') return photographerHandlers.portfolioImage({ params, env, request });
   if (routeId === 'photographers.reviews') return photographerHandlers.reviews({ params, env });
-
-  if (routeId === 'photographers.review-request.create') {
-    if (await isRateLimited(request, env, pathname, 10, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
-      return json(429, { error: 'Muitas solicitacoes. Aguarde antes de tentar novamente.' });
-    }
-    const [slug] = params;
-    const current = await authenticatedUser(request, env);
-    if (!current) return json(401, { error: 'Faca login como cliente para solicitar contato.' });
-    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem solicitar contato para avaliacao.' });
-    const photographer = await env.DB.prepare(`
-      SELECT p.user_id FROM professional_profiles p JOIN users u ON u.id = p.user_id
-      WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
-    `).bind(slug).first();
-    if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.' });
-    if (photographer.user_id === current.id) {
-      return json(403, { error: 'Nao e permitido solicitar avaliacao do proprio perfil.' });
-    }
-    const body = await readJson(request);
-    const message = cleanText(body.message, 1000);
-    if (message.length < 10) return json(400, { error: 'Descreva o contato em pelo menos 10 caracteres.' });
-    const pending = await env.DB.prepare(`
-      SELECT id FROM review_requests WHERE client_user_id = ? AND photographer_user_id = ? AND status = 'pending'
-    `).bind(current.id, photographer.user_id).first();
-    if (pending) return json(409, { error: 'Ja existe uma solicitacao aguardando confirmacao deste fotografo.' });
-    const result = await env.DB.prepare(`INSERT INTO review_requests (client_user_id, photographer_user_id, message) VALUES (?, ?, ?)`)
-      .bind(current.id, photographer.user_id, message).run();
-    return json(201, { request: { id: Number(result.meta.last_row_id), status: 'pending' }, message: 'Solicitacao enviada ao fotografo.' });
-  }
+  if (routeId === 'photographers.review-request.create') return photographerHandlers.reviewRequestCreate({ params, request, env, pathname });
 
   if (routeId === 'photographers.conversations.create') {
     if (await isRateLimited(request, env, pathname, 12, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
