@@ -2,9 +2,9 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 1º de setembro de 2026, com `main` em `0997afb`.
+> **Data de referência:** 1º de setembro de 2026, com `main` em `a6fe1a1`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e a Fase 4.1 concluídas; a próxima prioridade é a iniciativa 4.2.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4, Fase 4.1 e a primeira entrega da Fase 4.2 concluídas; a próxima prioridade é completar a modularização por domínio.
 
 ---
 
@@ -289,6 +289,13 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Validada com 159 testes, build do Wrangler, CI obrigatório e smoke de produção somente leitura: duas buscas `200`, `Cache-Control: public, max-age=60` e segunda resposta com `CF-Cache-Status: HIT`.
 - Versão `9f33b94f-92bf-439b-b4b1-465fdee65cc5` publicada em produção; nenhuma migration ou dado do D1 foi alterado.
 
+### Fase 4.2 — em andamento (primeira entrega concluída)
+- O PR #59 extraiu cadastro, login, logout, sessão atual e recuperação de senha para `src/auth.mjs`.
+- O módulo recebe dependências explicitamente, sem estado mutável por requisição; roteamento, contratos HTTP, sessões e políticas de segurança foram preservados.
+- Validada com 159 testes, build do Wrangler, CI obrigatório e smoke de produção: health `200` e sessão anônima `401`.
+- Versão `44b195dd-c36a-41c1-b1a4-4118e3684948` publicada em produção; nenhuma migration ou dado do D1 foi alterado.
+- Próximas entregas da Fase 4.2: extrair os domínios de fotógrafos, conta e entradas públicas, sempre em PRs independentes.
+
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - Open Graph e JSON-LD (sitemap e robots já concluídos na Fase 3.4).
 - Cache via `caches.default` para assets e respostas imutáveis.
@@ -304,7 +311,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Fase 4.2] Modularização do Worker por domínio   ← próxima evolução estrutural
+1. [Fase 4.2] Modularização do Worker por domínio   ← continuar extraindo fotógrafos, conta e entradas
 2. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
 ```
 
@@ -315,7 +322,8 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - A iniciativa 1.4 foi concluída com migration remota, health check e smoke test de produção; a Fase 1 está encerrada.
 - O marco estrutural do roteador, as quatro iniciativas da Fase 2 e as iniciativas 3.1–3.4 foram concluídos e validados em produção.
 - A Fase 3.4 complementou os perfis indexáveis com descoberta automatizada por sitemap e diretivas explícitas para crawlers.
-- A Fase 4.1 passou a aproveitar o cache da edge para leituras públicas; a próxima prioridade é a modularização por domínio da Fase 4.2.
+- A Fase 4.1 passou a aproveitar o cache da edge para leituras públicas.
+- A primeira entrega da Fase 4.2 isolou autenticação; a próxima prioridade é concluir a extração dos demais domínios.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
 ---
@@ -349,7 +357,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (até a Fase 4.1 concluída; Fase 4.2 é o próximo passo).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 4.2 em andamento, com autenticação extraída).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
@@ -366,4 +374,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 1º de setembro de 2026, com `main` em `0997afb`; Fase 1, marco de transição, Fase 2, Fase 3 e Fase 4.1 concluídos. O cache de edge foi publicado na versão `9f33b94f-92bf-439b-b4b1-465fdee65cc5` e validado com hit em produção.
+**Última atualização deste handoff:** 1º de setembro de 2026, com `main` em `a6fe1a1`; a autenticação foi extraída na Fase 4.2 e publicada na versão `44b195dd-c36a-41c1-b1a4-4118e3684948`, validada com health `200` e sessão anônima `401`.
