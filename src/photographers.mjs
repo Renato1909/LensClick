@@ -230,5 +230,20 @@ export function createPhotographerHandlers({
     return json(200, { role: current.role, requests: result.results.map((row) => accountReviewRequest(row, current.role)) });
   }
 
-  return { list, detail, photo, portfolioImage, reviews, reviewRequestCreate, conversationCreate, professionalProfileRead, professionalProfileUpdate, reviewRequestsList };
+  async function reviewRequestUpdate({ params, request, env, pathname }) {
+    if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000, env.ACCOUNT_RATE_LIMITER)) return json(429, { error: 'Muitas alteracoes. Aguarde antes de tentar novamente.' });
+    const [requestId] = params;
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    if (current.role !== 'photographer') return json(403, { error: 'Somente o fotografo pode confirmar este contato.' });
+    const body = await readJson(request);
+    const status = ['confirmed', 'rejected'].includes(body.status) ? body.status : '';
+    if (!status) return json(400, { error: 'Escolha confirmar ou rejeitar a solicitacao.' });
+    const existing = await env.DB.prepare("SELECT id FROM review_requests WHERE id = ? AND photographer_user_id = ? AND status = 'pending'").bind(Number(requestId), current.id).first();
+    if (!existing) return json(404, { error: 'Solicitacao pendente nao encontrada.' });
+    await env.DB.prepare("UPDATE review_requests SET status = ?, confirmed_at = CASE WHEN ? = 'confirmed' THEN CURRENT_TIMESTAMP ELSE NULL END, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND photographer_user_id = ?").bind(status, status, Number(requestId), current.id).run();
+    return json(200, { message: status === 'confirmed' ? 'Contato confirmado. O cliente ja pode avaliar.' : 'Solicitacao rejeitada.' });
+  }
+
+  return { list, detail, photo, portfolioImage, reviews, reviewRequestCreate, conversationCreate, professionalProfileRead, professionalProfileUpdate, reviewRequestsList, reviewRequestUpdate };
 }

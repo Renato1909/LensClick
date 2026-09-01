@@ -603,6 +603,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'account.professional-profile.read') return photographerHandlers.professionalProfileRead({ request, env });
   if (routeId === 'account.professional-profile.update') return photographerHandlers.professionalProfileUpdate({ request, env, pathname });
   if (routeId === 'account.review-requests.list') return photographerHandlers.reviewRequestsList({ request, env });
+  if (routeId === 'account.review-requests.update') return photographerHandlers.reviewRequestUpdate({ params, request, env, pathname });
 
   if (routeId === 'account.conversations.list') {
     const current = await authenticatedUser(request, env);
@@ -719,7 +720,8 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(200, { role: current.role, requests: result.results.map((row) => accountReviewRequest(row, current.role)) });
   }
 
-  if (routeId === 'account.review-requests.update') {
+  // Kept disabled while the extracted handler above owns this route.
+  if (false && routeId === 'account.review-requests.update') {
     if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000, env.ACCOUNT_RATE_LIMITER)) {
       return json(429, { error: 'Muitas alteracoes. Aguarde antes de tentar novamente.' });
     }
