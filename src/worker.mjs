@@ -8,6 +8,7 @@ import {
 import { createRequestRouter } from './router.mjs';
 import { createAuthHandlers } from './auth.mjs';
 import { createPhotographerHandlers } from './photographers.mjs';
+import { createAccountHandlers } from './account.mjs';
 
 const SESSION_COOKIE = 'lensclick_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -570,6 +571,7 @@ const photographerHandlers = createPhotographerHandlers({
   isRateLimited, authenticatedUser, readJson, slugify,
   normalizeEmail, isValidEmail, normalizeWebsite, parseSpecialties, accountReviewRequest
 });
+const accountHandlers = createAccountHandlers({ json, authenticatedUser, isRateLimited, readJson, conversationSummary, accountMessage });
 
 // Route matching lives in router.mjs. Domain handlers receive dependencies explicitly
 // so extraction does not change business logic or request-scoped state.
@@ -607,8 +609,12 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'account.reviews.create') return photographerHandlers.reviewCreate({ params, request, env, pathname });
   if (routeId === 'account.reviews.update') return photographerHandlers.reviewUpdate({ params, request, env, pathname });
   if (routeId === 'account.reviews.delete') return photographerHandlers.reviewDelete({ params, request, env, pathname });
+  if (routeId === 'account.conversations.list') return accountHandlers.listConversations({ request, env, url });
+  if (routeId === 'account.conversations.messages') return accountHandlers.messages({ params, request, env, url });
+  if (routeId === 'account.conversations.messages.create') return accountHandlers.createMessage({ params, request, env, pathname });
+  if (routeId === 'account.conversations.read') return accountHandlers.markRead({ params, request, env });
 
-  if (routeId === 'account.conversations.list') {
+  if (false && routeId === 'account.conversations.list') {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
     const page = Math.max(1, Number(url.searchParams.get('page')) || 1);
@@ -634,7 +640,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     });
   }
 
-  if (routeId === 'account.conversations.messages') {
+  if (false && routeId === 'account.conversations.messages') {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
     const conversationId = Number(params[0]);
@@ -658,7 +664,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     });
   }
 
-  if (routeId === 'account.conversations.messages.create') {
+  if (false && routeId === 'account.conversations.messages.create') {
     if (await isRateLimited(request, env, pathname, 30, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
       return json(429, { error: 'Limite de mensagens atingido. Tente mais tarde.' });
     }
@@ -686,7 +692,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(201, { message: accountMessage(message) });
   }
 
-  if (routeId === 'account.conversations.read') {
+  if (false && routeId === 'account.conversations.read') {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
     const conversationId = Number(params[0]);
