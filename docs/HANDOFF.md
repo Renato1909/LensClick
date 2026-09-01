@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 31 de agosto de 2026, com `main` em `e87d972`.
+> **Data de referência:** 1º de setembro de 2026, com `main` em `0295292`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2 e iniciativas 3.1–3.3 concluídas; a próxima prioridade é a iniciativa 3.4.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2 e iniciativas 3.1–3.4 concluídas; a próxima prioridade é a iniciativa 4.1.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `e87d972` — "feat: add conversation interface" (#51).
+- **Branch:** `main` → commit `0295292` — "fix: order sitemap profiles by user id" (#55).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -99,7 +99,6 @@ Não há iniciativa em desenvolvimento em uma branch ativa. As quatro iniciativa
 
 ### Não implementado (gaps identificados)
 
-- Sem `sitemap.xml` / `robots.txt`.
 - Sem Open Graph / JSON-LD (SEO social e dados estruturados).
 - Sem cache via `caches.default`.
 - Sem 2FA / verificação de e-mail.
@@ -276,8 +275,16 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Versão `08aad6f9-b22b-4680-949d-279076e120e2` publicada; health, assets e páginas responderam `200`, e endpoints privados sem sessão responderam `401`.
 - Notificações externas, moderação administrativa e encerramento manual de conversas permanecem como evoluções futuras; não bloqueiam o chat persistente atual.
 
+### Fase 3.4 — concluída
+- O PR #53 adicionou `/sitemap.xml` dinâmico, limitado a perfis publicados de fotógrafos, e `/robots.txt` com diretivas de rastreamento e referência ao sitemap.
+- O sitemap inclui as rotas públicas estáveis e `<lastmod>` derivado do D1; ambas as rotas aceitam `GET` e `HEAD`, com cache público de 1 hora e normalização de observabilidade.
+- O smoke de produção encontrou uma ambiguidade SQL e, depois, uma coluna inexistente. Os PRs #54 e #55 corrigiram esses defeitos com consultas qualificadas e ordenação pelo `user_id` existente.
+- Validada com 157 testes, build do Wrangler, CI obrigatório e smoke de produção somente leitura: sitemap `200` com 3 URLs publicadas, robots `200` com bloqueio de `/api/` e health `200`.
+- Versão final `09def67b-f875-4384-9805-e839a7a718f7` publicada em produção, sem alteração de migration ou dados do D1.
+- Limite residual: o sitemap atual atende até 50.000 URLs; se o catálogo crescer além desse limite, será necessário adotar sitemap index.
+
 ### P4 — SEO e presença (médio prazo, baixo risco)
-- `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD.
+- Open Graph e JSON-LD (sitemap e robots já concluídos na Fase 3.4).
 - Cache via `caches.default` para assets e respostas imutáveis.
 
 ### P5 — Segurança (médio/longo prazo, alto risco)
@@ -291,7 +298,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Fase 3.4] Sitemap dinâmico e robots.txt         ← próxima evolução de produto
+1. [Fase 4.1] Cache de edge para buscas e perfis    ← próxima evolução de escala
 2. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
 ```
 
@@ -300,8 +307,8 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - A iniciativa 1.2 criou a cobertura de regressão necessária antes das mudanças de rate limiting e health check.
 - A iniciativa 1.3 foi concluída com uma arquitetura híbrida e rollback documentado.
 - A iniciativa 1.4 foi concluída com migration remota, health check e smoke test de produção; a Fase 1 está encerrada.
-- O marco estrutural do roteador, as quatro iniciativas da Fase 2 e as iniciativas 3.1–3.3 foram concluídos e validados em produção.
-- A Fase 3.4 complementa os perfis indexáveis com descoberta automatizada por sitemap e diretivas explícitas para crawlers.
+- O marco estrutural do roteador, as quatro iniciativas da Fase 2 e as iniciativas 3.1–3.4 foram concluídos e validados em produção.
+- A Fase 3.4 complementou os perfis indexáveis com descoberta automatizada por sitemap e diretivas explícitas para crawlers; a próxima prioridade é o cache de edge da Fase 4.1.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
 ---
@@ -335,7 +342,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (até a Fase 3.3 concluída; Fase 3.4 é o próximo passo).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (até a Fase 3.4 concluída; Fase 4.1 é o próximo passo).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
