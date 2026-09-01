@@ -10,6 +10,7 @@ import { createAuthHandlers } from './auth.mjs';
 import { createPhotographerHandlers } from './photographers.mjs';
 import { createAccountHandlers } from './account.mjs';
 import { createPublicInputHandlers } from './public-input.mjs';
+import { createPortfolioHandlers } from './portfolio.mjs';
 
 const SESSION_COOKIE = 'lensclick_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -574,6 +575,7 @@ const photographerHandlers = createPhotographerHandlers({
 });
 const accountHandlers = createAccountHandlers({ json, authenticatedUser, isRateLimited, readJson, conversationSummary, accountMessage, portfolioItem });
 const publicInputHandlers = createPublicInputHandlers({ json, isRateLimited, readJson, cleanText, normalizeEmail, isValidEmail });
+const portfolioHandlers = createPortfolioHandlers({ json, cleanText, authenticatedUser, isRateLimited, readJson, portfolioItem, storedImageResponse });
 
 // Route matching lives in router.mjs. Domain handlers receive dependencies explicitly
 // so extraction does not change business logic or request-scoped state.
@@ -616,6 +618,10 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'account.conversations.messages.create') return accountHandlers.createMessage({ params, request, env, pathname });
   if (routeId === 'account.conversations.read') return accountHandlers.markRead({ params, request, env });
   if (routeId === 'account.portfolio.list') return accountHandlers.portfolioList({ request, env });
+  if (routeId === 'account.portfolio.create') return portfolioHandlers.create({ request, env, pathname });
+  if (routeId === 'account.portfolio.update') return portfolioHandlers.update({ request, env });
+  if (routeId === 'account.portfolio.image') return portfolioHandlers.image({ params, request, env });
+  if (routeId === 'account.portfolio.delete') return portfolioHandlers.remove({ params, request, env });
   if (routeId === 'contact.create') return publicInputHandlers.contact({ request, env, pathname });
   if (routeId === 'newsletter.create') return publicInputHandlers.newsletter({ request, env, pathname });
 
@@ -845,7 +851,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(200, { portfolio: portfolio.results.map((item) => portfolioItem(item)) });
   }
 
-  if (routeId === 'account.portfolio.create') {
+  if (false && routeId === 'account.portfolio.create') {
     if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
       return json(429, { error: 'Muitos envios. Aguarde antes de tentar novamente.' });
     }
@@ -872,7 +878,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     }
   }
 
-  if (routeId === 'account.portfolio.update') {
+  if (false && routeId === 'account.portfolio.update') {
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
     const body = await readJson(request);
@@ -905,7 +911,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(200, { portfolio: portfolio.results.map((item) => portfolioItem(item)), message: 'Portfolio atualizado.' });
   }
 
-  if (routeId === 'account.portfolio.image') {
+  if (false && routeId === 'account.portfolio.image') {
     const [itemId] = params;
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
@@ -915,7 +921,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return storedImageResponse(await env.PROFILE_IMAGES.get(item.object_key), request, 'private, max-age=300, must-revalidate');
   }
 
-  if (routeId === 'account.portfolio.delete') {
+  if (false && routeId === 'account.portfolio.delete') {
     const [portfolioItemId] = params;
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
