@@ -567,7 +567,7 @@ const authHandlers = createAuthHandlers({
 const photographerHandlers = createPhotographerHandlers({
   json, cleanText, professionalProfile, portfolioItem,
   professionalSpecialties: PROFESSIONAL_SPECIALTIES, publicReview, storedImageResponse,
-  isRateLimited, authenticatedUser, readJson
+  isRateLimited, authenticatedUser, readJson, slugify
 });
 
 // Route matching lives in router.mjs. Domain handlers receive dependencies explicitly
@@ -599,6 +599,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'photographers.reviews') return photographerHandlers.reviews({ params, env });
   if (routeId === 'photographers.review-request.create') return photographerHandlers.reviewRequestCreate({ params, request, env, pathname });
   if (routeId === 'photographers.conversations.create') return photographerHandlers.conversationCreate({ params, request, env, pathname });
+  if (routeId === 'account.professional-profile.read') return photographerHandlers.professionalProfileRead({ request, env });
 
   if (routeId === 'account.conversations.list') {
     const current = await authenticatedUser(request, env);
@@ -904,20 +905,6 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     await env.PROFILE_IMAGES.delete(item.object_key);
     await env.DB.prepare('DELETE FROM portfolio_items WHERE id = ? AND user_id = ?').bind(itemId, current.id).run();
     return json(200, { message: 'Imagem removida permanentemente.' });
-  }
-
-  if (routeId === 'account.professional-profile.read') {
-    const current = await authenticatedUser(request, env);
-    if (!current) return json(401, { error: 'Faca login novamente.' });
-    const profile = await env.DB.prepare('SELECT * FROM professional_profiles WHERE user_id = ?').bind(current.id).first();
-    return json(200, {
-      profile: profile ? professionalProfile(profile, true) : {
-        slug: `${slugify(current.name)}-${current.id}`,
-        bio: '', specialties: [], city: '', state: '', serviceRadiusKm: null,
-        startingPriceCents: null, availability: 'available', publicEmail: '', publicPhone: '',
-        instagram: '', website: '', showEmail: false, showPhone: false, isPublished: false
-      }
-    });
   }
 
   if (routeId === 'account.professional-profile.update') {
