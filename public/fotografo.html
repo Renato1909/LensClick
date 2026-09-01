@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="refinements.css">
   <link rel="stylesheet" href="photographer.css">
   <link rel="stylesheet" href="reputation.css">
+  <link rel="stylesheet" href="messaging.css">
 </head>
 <body class="photographer-page">
   <header class="public-topbar">
@@ -90,6 +91,14 @@
           </dl>
           <div class="contact-list" id="photographerContacts"></div>
           <p class="contact-privacy" data-i18n="photographer.contactPrivacy">Os contatos abaixo foram publicados pelo próprio profissional.</p>
+          <form id="conversationStartForm" class="conversation-start-form" hidden>
+            <h3 data-i18n="messaging.start.title">Conversar pela LensClick</h3>
+            <p data-i18n="messaging.start.lead">Envie uma mensagem privada e acompanhe a resposta na sua conta.</p>
+            <label for="conversationStartMessage" data-i18n="messaging.start.label">Sua mensagem</label>
+            <textarea id="conversationStartMessage" minlength="1" maxlength="2000" required></textarea>
+            <p id="conversationStartFeedback" class="feedback-message" role="status" aria-live="polite" hidden></p>
+            <button id="conversationStartButton" class="public-primary" type="submit" data-i18n="messaging.start.submit">Iniciar conversa</button>
+          </form>
           <form id="reviewRequestForm" class="review-request-form" hidden>
             <h3 data-i18n="reputation.request.title">Solicitar contato verificado</h3>
             <p data-i18n="reputation.request.lead">Após o fotógrafo confirmar o contato, você poderá publicar uma avaliação.</p>
@@ -112,5 +121,6 @@
   <script src="ux.js"></script>
   <script src="photographer-profile.js"></script>
   <script src="reputation.js"></script>
+  <script src="messaging.js"></script>
 </body>
 </html>

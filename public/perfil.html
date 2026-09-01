@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="refinements.css">
   <link rel="stylesheet" href="account.css">
   <link rel="stylesheet" href="reputation.css">
+  <link rel="stylesheet" href="messaging.css">
 </head>
 <body class="profile-page">
   <header class="account-topbar">
@@ -369,6 +370,41 @@
       </section>
     </section>
 
+    <section class="settings-card messaging-dashboard" id="messagingDashboard" aria-labelledby="messagingDashboardTitle">
+      <p class="professional-eyebrow" data-i18n="messaging.dashboard.kicker">Mensagens</p>
+      <h2 id="messagingDashboardTitle" data-i18n="messaging.dashboard.title">Suas conversas</h2>
+      <p data-i18n="messaging.dashboard.lead">Converse com segurança e mantenha os detalhes do trabalho em um só lugar.</p>
+      <p id="messagingDashboardFeedback" class="feedback-message" role="status" aria-live="polite" hidden></p>
+      <div class="messaging-layout">
+        <div class="conversation-list-panel">
+          <div id="conversationList" class="conversation-list"></div>
+          <p id="conversationListEmpty" class="conversation-empty" hidden data-i18n="messaging.dashboard.empty">Nenhuma conversa por enquanto.</p>
+        </div>
+        <section id="conversationThread" class="conversation-thread" aria-labelledby="conversationThreadTitle">
+          <div id="conversationPlaceholder" class="conversation-placeholder">
+            <i class="fa-regular fa-comments" aria-hidden="true"></i>
+            <p data-i18n="messaging.dashboard.select">Selecione uma conversa para ver as mensagens.</p>
+          </div>
+          <div id="conversationActive" hidden>
+            <header class="conversation-thread-header">
+              <div>
+                <p data-i18n="messaging.dashboard.conversationWith">Conversa com</p>
+                <h3 id="conversationThreadTitle"></h3>
+              </div>
+              <a id="conversationProfileLink" class="text-button" hidden data-i18n="messaging.dashboard.profile">Ver perfil</a>
+            </header>
+            <button id="loadOlderMessages" class="text-button load-older" type="button" hidden data-i18n="messaging.dashboard.older">Carregar anteriores</button>
+            <div id="messageList" class="message-list" role="log" aria-live="polite"></div>
+            <form id="messageReplyForm" class="message-reply-form">
+              <label class="visually-hidden" for="messageReply" data-i18n="messaging.dashboard.replyLabel">Responder à conversa</label>
+              <textarea id="messageReply" maxlength="2000" required data-i18n-placeholder="messaging.dashboard.replyPlaceholder" placeholder="Escreva sua resposta..."></textarea>
+              <button id="messageReplyButton" class="primary-button" type="submit" data-i18n="messaging.dashboard.send">Enviar</button>
+            </form>
+          </div>
+        </section>
+      </div>
+    </section>
+
     <section class="settings-card reputation-dashboard" id="reputationDashboard" aria-labelledby="reputationDashboardTitle">
       <p class="professional-eyebrow" data-i18n="reputation.dashboard.kicker">Contatos e avaliações</p>
       <h2 id="reputationDashboardTitle" data-i18n="reputation.dashboard.title">Reputação da conta</h2>
@@ -443,5 +479,6 @@
   <script src="ux.js"></script>
   <script src="profile-api.js"></script>
   <script src="reputation.js"></script>
+  <script src="messaging.js"></script>
 </body>
 </html>
