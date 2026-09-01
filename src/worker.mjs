@@ -9,6 +9,7 @@ import { createRequestRouter } from './router.mjs';
 import { createAuthHandlers } from './auth.mjs';
 import { createPhotographerHandlers } from './photographers.mjs';
 import { createAccountHandlers } from './account.mjs';
+import { createPublicInputHandlers } from './public-input.mjs';
 
 const SESSION_COOKIE = 'lensclick_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -572,6 +573,7 @@ const photographerHandlers = createPhotographerHandlers({
   normalizeEmail, isValidEmail, normalizeWebsite, parseSpecialties, accountReviewRequest
 });
 const accountHandlers = createAccountHandlers({ json, authenticatedUser, isRateLimited, readJson, conversationSummary, accountMessage });
+const publicInputHandlers = createPublicInputHandlers({ json, isRateLimited, readJson, cleanText, normalizeEmail, isValidEmail });
 
 // Route matching lives in router.mjs. Domain handlers receive dependencies explicitly
 // so extraction does not change business logic or request-scoped state.
@@ -613,6 +615,8 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'account.conversations.messages') return accountHandlers.messages({ params, request, env, url });
   if (routeId === 'account.conversations.messages.create') return accountHandlers.createMessage({ params, request, env, pathname });
   if (routeId === 'account.conversations.read') return accountHandlers.markRead({ params, request, env });
+  if (routeId === 'contact.create') return publicInputHandlers.contact({ request, env, pathname });
+  if (routeId === 'newsletter.create') return publicInputHandlers.newsletter({ request, env, pathname });
 
   if (false && routeId === 'account.conversations.list') {
     const current = await authenticatedUser(request, env);
@@ -1141,7 +1145,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return storedImageResponse(object, request, 'private, max-age=300, must-revalidate');
   }
 
-  if (routeId === 'contact.create') {
+  if (false && routeId === 'contact.create') {
     if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
       return json(429, { error: 'Limite de mensagens atingido. Tente mais tarde.' });
     }
@@ -1162,7 +1166,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(201, { message: 'Mensagem recebida com sucesso.' });
   }
 
-  if (routeId === 'newsletter.create') {
+  if (false && routeId === 'newsletter.create') {
     if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
       return json(429, { error: 'Limite de inscricoes atingido. Tente mais tarde.' });
     }
