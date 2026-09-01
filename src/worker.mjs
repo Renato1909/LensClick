@@ -598,51 +598,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'photographers.portfolio-image') return photographerHandlers.portfolioImage({ params, env, request });
   if (routeId === 'photographers.reviews') return photographerHandlers.reviews({ params, env });
   if (routeId === 'photographers.review-request.create') return photographerHandlers.reviewRequestCreate({ params, request, env, pathname });
-
-  if (routeId === 'photographers.conversations.create') {
-    if (await isRateLimited(request, env, pathname, 12, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
-      return json(429, { error: 'Limite de mensagens atingido. Tente mais tarde.' });
-    }
-    const current = await authenticatedUser(request, env);
-    if (!current) return json(401, { error: 'Faca login novamente.' });
-    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem iniciar conversas.' });
-    const [slug] = params;
-    const photographer = await env.DB.prepare(`
-      SELECT p.user_id, p.slug FROM professional_profiles p
-      JOIN users u ON u.id = p.user_id
-      WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
-    `).bind(slug).first();
-    if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.' });
-    const body = String((await readJson(request)).message ?? '').trim();
-    if (!body) return json(400, { error: 'Escreva uma mensagem para iniciar a conversa.' });
-    if (body.length > 2000) return json(400, { error: 'A mensagem deve ter no maximo 2000 caracteres.' });
-
-    const existing = await env.DB.prepare(`
-      SELECT id, status FROM conversations WHERE client_user_id = ? AND photographer_user_id = ?
-    `).bind(current.id, photographer.user_id).first();
-    if (existing?.status === 'closed') return json(409, { error: 'Esta conversa esta encerrada.' });
-    const creationResults = await env.DB.batch([
-      env.DB.prepare(`
-        INSERT INTO conversations (client_user_id, photographer_user_id)
-        VALUES (?, ?) ON CONFLICT(client_user_id, photographer_user_id) DO NOTHING
-      `).bind(current.id, photographer.user_id),
-      env.DB.prepare(`
-        INSERT INTO messages (conversation_id, sender_user_id, body)
-        SELECT id, ?, ? FROM conversations WHERE client_user_id = ? AND photographer_user_id = ? AND status = 'active'
-      `).bind(current.id, body, current.id, photographer.user_id),
-      env.DB.prepare(`
-        UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-        WHERE client_user_id = ? AND photographer_user_id = ? AND status = 'active'
-      `).bind(current.id, photographer.user_id)
-    ]);
-    if (Number(creationResults[1]?.meta?.changes || 0) !== 1) {
-      return json(409, { error: 'Nao foi possivel iniciar esta conversa.' });
-    }
-    const conversation = await env.DB.prepare(`
-      SELECT id FROM conversations WHERE client_user_id = ? AND photographer_user_id = ?
-    `).bind(current.id, photographer.user_id).first();
-    return json(existing ? 200 : 201, { conversation: { id: Number(conversation.id) } });
-  }
+  if (routeId === 'photographers.conversations.create') return photographerHandlers.conversationCreate({ params, request, env, pathname });
 
   if (routeId === 'account.conversations.list') {
     const current = await authenticatedUser(request, env);
