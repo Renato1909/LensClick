@@ -232,17 +232,20 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 4.2 Modularizacao do worker por dominio
 
+> **Status:** em andamento. A primeira entrega foi concluída pelo PR #59 e validada em produção em 1º de setembro de 2026; a versão `44b195dd-c36a-41c1-b1a4-4118e3684948` está publicada com 159 testes aprovados.
+
 1. **Nome da iniciativa**: Extrair handlers por dominio em modulos separados.
 2. **Objetivo**: Reduzir o `worker.mjs` (926 linhas) dividindo-o em modulos por dominio (`src/auth.mjs`, `src/photographers.mjs`, `src/account.mjs`, `src/portfolio.mjs`), mantendo o roteador extraido no marco de transicao entre Fase 1 e Fase 2.
-3. **Problema resolvido**: O `worker.mjs` cresceu para 926 linhas com 21 rotas em cadeia de `if` - dificil navegar, dificil testar isoladamente, risco de merge conflitos em equipe.
+3. **Problema resolvido (parcialmente)**: o `worker.mjs` concentrava autenticação e outros domínios em uma cadeia extensa de `if`; a autenticação agora possui módulo próprio e dependências explícitas.
 4. **Impacto esperado**: Manutenibilidade; onboarding de novos devs; testes isolados por modulo.
-5. **Complexidade**: Media - extrair handlers por dominio preservando comportamento; depende do roteador extraido (marco de transicao entre Fase 1 e Fase 2).
-6. **Riscos**: Regressao silenciosa se um handler nao for migrado. Mitigacao: validar todos os testes (1.2) antes e depois de cada extracao; preservar exports e contratos.
+5. **Complexidade**: Média — extração incremental por domínio, preservando comportamento e contratos; a primeira entrega de autenticação foi concluída sem alterações de API.
+6. **Riscos**: regressão silenciosa se um handler não for migrado. Mitigação: validar todos os testes antes e depois de cada extração, manter dependências injetadas e preservar contratos.
 7. **Dependencias**: Marco de transicao entre Fase 1 e Fase 2 (roteador extraido em `src/router.mjs`); 1.2 (cobertura de testes E2E por endpoint para validar antes/depois).
 8. **Agentes envolvidos**: Arquiteto de Software, Engenheiro Backend, Revisor de Codigo (Responsavel por garantir que a extracao preserva comportamento e contratos).
 9. **Ordem recomendada**: **14a** - refatoracao estrutural, so apos a fundacao e quando o time sentir a dor.
 10. **Etapas**:
-    - **Etapa B (modularizacao por dominio)**: extrair handlers para `src/auth.mjs`, `src/photographers.mjs`, `src/account.mjs`, `src/portfolio.mjs`; cada modulo exporta seus handlers; o roteador (ja extraido no marco de transicao) apenas referencia os modulos; validar todos os testes (1.2) antes e depois de cada extracao; preservar exports e contratos.
+    - **Etapa A (concluída — autenticação)**: extrair cadastro, login, logout, sessão e recuperação para `src/auth.mjs`; validar contratos e publicar após CI.
+    - **Etapa B (em andamento)**: extrair os handlers restantes para `src/photographers.mjs`, `src/account.mjs` e `src/public-input.mjs`; cada módulo exporta seus handlers; o roteador (já extraído no marco de transição) apenas referencia os módulos; validar todos os testes antes e depois de cada extração; preservar exports e contratos.
 
 ### 4.3 Estrategia de imagens com R2 + Image Resizing
 
