@@ -245,5 +245,22 @@ export function createPhotographerHandlers({
     return json(200, { message: status === 'confirmed' ? 'Contato confirmado. O cliente ja pode avaliar.' : 'Solicitacao rejeitada.' });
   }
 
-  return { list, detail, photo, portfolioImage, reviews, reviewRequestCreate, conversationCreate, professionalProfileRead, professionalProfileUpdate, reviewRequestsList, reviewRequestUpdate };
+  async function reviewCreate({ params, request, env, pathname }) {
+    if (await isRateLimited(request, env, pathname, 8, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) return json(429, { error: 'Muitas avaliacoes. Aguarde antes de tentar novamente.' });
+    const [requestId] = params, current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem avaliar fotografos.' });
+    const eligibility = await env.DB.prepare('SELECT q.photographer_user_id, r.id AS review_id FROM review_requests q LEFT JOIN reviews r ON r.request_id = q.id WHERE q.id = ? AND q.client_user_id = ? AND q.status = \'confirmed\'').bind(Number(requestId), current.id).first();
+    if (!eligibility) return json(403, { error: 'Este contato ainda nao esta confirmado para avaliacao.' });
+    if (eligibility.review_id) return json(409, { error: 'Este contato ja possui uma avaliacao.' });
+    const body = await readJson(request), rating = Number(body.rating), comment = cleanText(body.comment, 1000);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5 || comment.length < 10) return json(400, { error: 'Informe uma nota de 1 a 5 e um comentario com pelo menos 10 caracteres.' });
+    const [inserted] = await env.DB.batch([
+      env.DB.prepare('INSERT INTO reviews (request_id, client_user_id, photographer_user_id, rating, comment) VALUES (?, ?, ?, ?, ?)').bind(Number(requestId), current.id, eligibility.photographer_user_id, rating, comment),
+      env.DB.prepare("INSERT INTO review_audit (review_id, actor_user_id, action, rating, comment) SELECT id, ?, 'created', ?, ? FROM reviews WHERE request_id = ?").bind(current.id, rating, comment, Number(requestId))
+    ]);
+    return json(201, { review: { id: Number(inserted.meta.last_row_id), rating, comment, status: 'active' }, message: 'Avaliacao publicada.' });
+  }
+
+  return { list, detail, photo, portfolioImage, reviews, reviewRequestCreate, conversationCreate, professionalProfileRead, professionalProfileUpdate, reviewRequestsList, reviewRequestUpdate, reviewCreate };
 }

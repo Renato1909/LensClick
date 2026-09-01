@@ -77,7 +77,7 @@ test('avaliacao exige contato confirmado, preserva autoria e registra auditoria'
 });
 
 test('criacao da avaliacao persiste avaliacao e auditoria no mesmo batch', () => {
-  const source = readFileSync('src/worker.mjs', 'utf8');
+  const source = `${readFileSync('src/worker.mjs', 'utf8')}\n${readFileSync('src/photographers.mjs', 'utf8')}`;
   const creation = source.slice(
     source.indexOf("if (routeId === 'account.reviews.create')"),
     source.indexOf("if (routeId === 'account.reviews.update')")

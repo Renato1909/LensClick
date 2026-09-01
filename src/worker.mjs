@@ -604,6 +604,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'account.professional-profile.update') return photographerHandlers.professionalProfileUpdate({ request, env, pathname });
   if (routeId === 'account.review-requests.list') return photographerHandlers.reviewRequestsList({ request, env });
   if (routeId === 'account.review-requests.update') return photographerHandlers.reviewRequestUpdate({ params, request, env, pathname });
+  if (routeId === 'account.reviews.create') return photographerHandlers.reviewCreate({ params, request, env, pathname });
 
   if (routeId === 'account.conversations.list') {
     const current = await authenticatedUser(request, env);
@@ -742,7 +743,8 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(200, { message: status === 'confirmed' ? 'Contato confirmado. O cliente ja pode avaliar.' : 'Solicitacao rejeitada.' });
   }
 
-  if (routeId === 'account.reviews.create') {
+  // Kept disabled while the extracted handler above owns this route.
+  if (false && routeId === 'account.reviews.create') {
     if (await isRateLimited(request, env, pathname, 8, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
       return json(429, { error: 'Muitas avaliacoes. Aguarde antes de tentar novamente.' });
     }
