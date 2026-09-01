@@ -20,7 +20,8 @@
   async function loadPublicReputation() {
     const list = document.getElementById('publicReviewsList');
     if (!list) return;
-    const slug = new URLSearchParams(window.location.search).get('perfil') || '';
+    const routeMatch = window.location.pathname.match(/^\/fotografo\/([a-z0-9-]{3,80})\/?$/);
+    const slug = routeMatch?.[1] || new URLSearchParams(window.location.search).get('perfil') || '';
     if (!/^[a-z0-9-]{3,80}$/.test(slug)) return;
     const empty = document.getElementById('reviewsEmpty');
     const summaryElement = document.getElementById('reviewsSummary');
