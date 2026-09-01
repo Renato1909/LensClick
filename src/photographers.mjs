@@ -8,7 +8,8 @@ export function createPhotographerHandlers({
   storedImageResponse,
   isRateLimited,
   authenticatedUser,
-  readJson
+  readJson,
+  slugify
 }) {
   async function list({ request, env }) {
     const url = new URL(request.url);
@@ -176,5 +177,19 @@ export function createPhotographerHandlers({
     return json(existing ? 200 : 201, { conversation: { id: Number(conversation.id) } });
   }
 
-  return { list, detail, photo, portfolioImage, reviews, reviewRequestCreate, conversationCreate };
+  async function professionalProfileRead({ request, env }) {
+    const current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const profile = await env.DB.prepare('SELECT * FROM professional_profiles WHERE user_id = ?').bind(current.id).first();
+    return json(200, {
+      profile: profile ? professionalProfile(profile, true) : {
+        slug: `${slugify(current.name)}-${current.id}`,
+        bio: '', specialties: [], city: '', state: '', serviceRadiusKm: null,
+        startingPriceCents: null, availability: 'available', publicEmail: '', publicPhone: '',
+        instagram: '', website: '', showEmail: false, showPhone: false, isPublished: false
+      }
+    });
+  }
+
+  return { list, detail, photo, portfolioImage, reviews, reviewRequestCreate, conversationCreate, professionalProfileRead };
 }
