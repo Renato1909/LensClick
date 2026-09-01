@@ -184,12 +184,14 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 3.3 Mensagens entre cliente e fotografo
 
+> **Status:** concluido pelos PRs #50 e #51 e validado em producao em 31 de agosto de 2026. A migration `0008` foi aplicada no D1 remoto e a versao `08aad6f9-b22b-4680-949d-279076e120e2` foi publicada com 154 testes aprovados.
+
 1. **Nome da iniciativa**: Chat interno no lugar de `contact_messages` one-shot.
 2. **Objetivo**: Permitir conversa persistente cliente-fotografo dentro do LensClick.
-3. **Problema resolvido**: Hoje `/api/contact` cria um registro em `contact_messages` que so o admin le - o fotografo nao recebe nem responde. O contato real acontece fora da plataforma (WhatsApp/email), e o LensClick perde o valor da intermediacao.
+3. **Problema resolvido**: O formulario `/api/contact` criava um registro que o fotografo nao recebia nem respondia; agora clientes e profissionais possuem uma conversa privada e persistente dentro da conta.
 4. **Impacto esperado**: Retencao; dados de conversao; oportunidade futura de comissao.
-5. **Complexidade**: Alta - tabelas `conversations` + `messages`, notificacoes (email ou push), UI de inbox, marcacao de leitura.
-6. **Riscos**: Moderacao de conteudo; spam; custo de notificacoes. Mitigacao: rate limit, filtro de conteudo, opt-in de notificacoes.
+5. **Implementacao entregue**: Tabelas `conversations` e `messages`; cinco contratos autenticados; conversa unica por par; historico paginado; leitura e nao lidas; inbox responsiva; inicio no perfil publico; resposta na conta; UI bilingue e observabilidade normalizada.
+6. **Risco residual**: Moderacao administrativa, notificacoes externas e encerramento manual permanecem futuros. Autorizacao por participante, rate limiting, limite de tamanho, escaping por `textContent` e cascatas de exclusao mitigam os riscos atuais.
 7. **Dependencias**: 3.1 (reputacao) e recomendada antes para qualificar contatos; 1.1 (observabilidade) para monitorar volume.
 8. **Agentes envolvidos**: Engenheiro Backend, Engenheiro de Banco de Dados, Engenheiro Frontend, Especialista em Seguranca, Especialista em Marketing para Fotografia (consultado sobre jornada de conversao e templates de mensagem).
 9. **Ordem recomendada**: **11a** - e a funcionalidade que transforma diretorio em marketplace, mas e a mais complexa da Fase 3.

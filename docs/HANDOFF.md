@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 31 de agosto de 2026, com `main` em `b6b88eb`.
+> **Data de referência:** 31 de agosto de 2026, com `main` em `e87d972`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2 e iniciativas 3.1 e 3.2 concluídas; a próxima prioridade é a iniciativa 3.3.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2 e iniciativas 3.1–3.3 concluídas; a próxima prioridade é a iniciativa 3.4.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `b6b88eb` — "fix: fetch profile template with explicit request" (#48).
+- **Branch:** `main` → commit `e87d972` — "feat: add conversation interface" (#51).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -267,6 +267,15 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Versão `4346265f-e8b3-4c1e-b1c8-11ae43e8ce8d` publicada e validada com health check `200`, perfil indexável `200`, redirecionamento `301` e perfil ausente `404`.
 - Nenhuma migration ou dado do D1 foi alterado.
 
+### Fase 3.3 — concluída
+- O PR #50 adicionou a migration `0008_conversations_and_messages.sql`, uma conversa por par cliente/fotógrafo, histórico paginado, mensagens não lidas, marcação de leitura e cinco contratos autenticados.
+- A API restringe o conteúdo aos participantes, permite início somente por clientes em perfis publicados, usa consultas parametrizadas, batch atômico, limite de 2.000 caracteres e rate limiting.
+- O PR #51 adicionou início de conversa no perfil público e inbox bilíngue na central da conta, com layout responsivo, paginação, resposta, contador de não lidas e link para o fotógrafo.
+- A revisão visual real em desktop/mobile corrigiu a semântica dos botões da inbox e a reformatação de datas na troca PT/EN; o console permaneceu sem erros.
+- Validada com 154 testes, build do Wrangler, CI obrigatório e smoke de produção somente leitura.
+- Versão `08aad6f9-b22b-4680-949d-279076e120e2` publicada; health, assets e páginas responderam `200`, e endpoints privados sem sessão responderam `401`.
+- Notificações externas, moderação administrativa e encerramento manual de conversas permanecem como evoluções futuras; não bloqueiam o chat persistente atual.
+
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD.
 - Cache via `caches.default` para assets e respostas imutáveis.
@@ -282,9 +291,8 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Fase 3.3] Mensagens cliente–fotógrafo           ← próxima evolução de produto
-2. [Fase 3.4] Sitemap dinâmico e robots.txt         ← complemento de SEO após o SSR
-3. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
+1. [Fase 3.4] Sitemap dinâmico e robots.txt         ← próxima evolução de produto
+2. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
 ```
 
 **Justificativa da ordem:**
@@ -292,8 +300,8 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - A iniciativa 1.2 criou a cobertura de regressão necessária antes das mudanças de rate limiting e health check.
 - A iniciativa 1.3 foi concluída com uma arquitetura híbrida e rollback documentado.
 - A iniciativa 1.4 foi concluída com migration remota, health check e smoke test de produção; a Fase 1 está encerrada.
-- O marco estrutural do roteador, as quatro iniciativas da Fase 2, a reputação verificada da Fase 3.1 e o SSR indexável da Fase 3.2 foram concluídos e validados em produção.
-- A Fase 3.3 aproveita contas, perfis públicos, reputação e observabilidade para introduzir conversas persistentes com controles contra abuso.
+- O marco estrutural do roteador, as quatro iniciativas da Fase 2 e as iniciativas 3.1–3.3 foram concluídos e validados em produção.
+- A Fase 3.4 complementa os perfis indexáveis com descoberta automatizada por sitemap e diretivas explícitas para crawlers.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
 ---
@@ -327,7 +335,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (até a Fase 3.2 concluída; Fase 3.3 é o próximo passo).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (até a Fase 3.3 concluída; Fase 3.4 é o próximo passo).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
