@@ -605,6 +605,8 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'account.review-requests.list') return photographerHandlers.reviewRequestsList({ request, env });
   if (routeId === 'account.review-requests.update') return photographerHandlers.reviewRequestUpdate({ params, request, env, pathname });
   if (routeId === 'account.reviews.create') return photographerHandlers.reviewCreate({ params, request, env, pathname });
+  if (routeId === 'account.reviews.update') return photographerHandlers.reviewUpdate({ params, request, env, pathname });
+  if (routeId === 'account.reviews.delete') return photographerHandlers.reviewDelete({ params, request, env, pathname });
 
   if (routeId === 'account.conversations.list') {
     const current = await authenticatedUser(request, env);
@@ -778,7 +780,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(201, { review: { id: reviewId, rating, comment, status: 'active' }, message: 'Avaliacao publicada.' });
   }
 
-  if (routeId === 'account.reviews.update') {
+  if (false && routeId === 'account.reviews.update') {
     if (await isRateLimited(request, env, pathname, 12, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
       return json(429, { error: 'Muitas alteracoes de avaliacao. Aguarde antes de tentar novamente.' });
     }
@@ -803,7 +805,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(200, { review: { id: Number(reviewId), rating, comment, status: 'active' }, message: 'Avaliacao atualizada.' });
   }
 
-  if (routeId === 'account.reviews.delete') {
+  if (false && routeId === 'account.reviews.delete') {
     if (await isRateLimited(request, env, pathname, 8, 60 * 60 * 1000, env.SENSITIVE_RATE_LIMITER)) {
       return json(429, { error: 'Muitas exclusoes. Aguarde antes de tentar novamente.' });
     }

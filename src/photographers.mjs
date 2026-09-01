@@ -262,5 +262,33 @@ export function createPhotographerHandlers({
     return json(201, { review: { id: Number(inserted.meta.last_row_id), rating, comment, status: 'active' }, message: 'Avaliacao publicada.' });
   }
 
-  return { list, detail, photo, portfolioImage, reviews, reviewRequestCreate, conversationCreate, professionalProfileRead, professionalProfileUpdate, reviewRequestsList, reviewRequestUpdate, reviewCreate };
+  async function reviewUpdate({ params, request, env, pathname }) {
+    if (await isRateLimited(request, env, pathname, 12, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) return json(429, { error: 'Muitas alteracoes de avaliacao. Aguarde antes de tentar novamente.' });
+    const [reviewId] = params, current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const existing = await env.DB.prepare("SELECT id FROM reviews WHERE id = ? AND client_user_id = ? AND status = 'active'").bind(Number(reviewId), current.id).first();
+    if (!existing) return json(404, { error: 'Avaliacao ativa nao encontrada.' });
+    const body = await readJson(request), rating = Number(body.rating), comment = cleanText(body.comment, 1000);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5 || comment.length < 10) return json(400, { error: 'Informe uma nota de 1 a 5 e um comentario com pelo menos 10 caracteres.' });
+    await env.DB.batch([
+      env.DB.prepare('UPDATE reviews SET rating = ?, comment = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND client_user_id = ?').bind(rating, comment, Number(reviewId), current.id),
+      env.DB.prepare("INSERT INTO review_audit (review_id, actor_user_id, action, rating, comment) VALUES (?, ?, 'updated', ?, ?)").bind(Number(reviewId), current.id, rating, comment)
+    ]);
+    return json(200, { review: { id: Number(reviewId), rating, comment, status: 'active' }, message: 'Avaliacao atualizada.' });
+  }
+
+  async function reviewDelete({ params, request, env, pathname }) {
+    if (await isRateLimited(request, env, pathname, 8, 60 * 60 * 1000, env.SENSITIVE_RATE_LIMITER)) return json(429, { error: 'Muitas exclusoes. Aguarde antes de tentar novamente.' });
+    const [reviewId] = params, current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    const existing = await env.DB.prepare("SELECT rating, comment FROM reviews WHERE id = ? AND client_user_id = ? AND status = 'active'").bind(Number(reviewId), current.id).first();
+    if (!existing) return json(404, { error: 'Avaliacao ativa nao encontrada.' });
+    await env.DB.batch([
+      env.DB.prepare("UPDATE reviews SET status = 'deleted', deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND client_user_id = ?").bind(Number(reviewId), current.id),
+      env.DB.prepare("INSERT INTO review_audit (review_id, actor_user_id, action, rating, comment) VALUES (?, ?, 'deleted', ?, ?)").bind(Number(reviewId), current.id, existing.rating, existing.comment)
+    ]);
+    return json(200, { message: 'Avaliacao removida e acao registrada.' });
+  }
+
+  return { list, detail, photo, portfolioImage, reviews, reviewRequestCreate, conversationCreate, professionalProfileRead, professionalProfileUpdate, reviewRequestsList, reviewRequestUpdate, reviewCreate, reviewUpdate, reviewDelete };
 }
