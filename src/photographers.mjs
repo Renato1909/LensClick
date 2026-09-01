@@ -3,7 +3,9 @@ export function createPhotographerHandlers({
   cleanText,
   professionalProfile,
   portfolioItem,
-  professionalSpecialties
+  professionalSpecialties,
+  publicReview,
+  storedImageResponse
 }) {
   async function list({ request, env }) {
     const url = new URL(request.url);
@@ -67,5 +69,52 @@ export function createPhotographerHandlers({
     const portfolio = await env.DB.prepare('SELECT id, caption, alt_text, position, updated_at FROM portfolio_items WHERE user_id = ? ORDER BY position, id').bind(profile.user_id).all();
     return json(200, { profile: { ...professionalProfile(profile), portfolio: portfolio.results.map((item) => portfolioItem(item, profile.slug)) } }, { 'Cache-Control': 'public, max-age=60' });
   }
-  return { list, detail };
+
+  async function photo({ params, env, request }) {
+    const [slug] = params;
+    const profile = await env.DB.prepare(`
+      SELECT p.slug, u.profile_pic_key FROM professional_profiles p
+      JOIN users u ON u.id = p.user_id
+      WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
+    `).bind(slug).first();
+    if (!profile?.profile_pic_key) return json(404, { error: 'Imagem nao encontrada.' });
+    return storedImageResponse(await env.PROFILE_IMAGES.get(profile.profile_pic_key), request, 'public, max-age=300, must-revalidate');
+  }
+
+  async function portfolioImage({ params, env, request }) {
+    const [slug, itemId] = params;
+    const item = await env.DB.prepare(`
+      SELECT i.object_key FROM portfolio_items i
+      JOIN professional_profiles p ON p.user_id = i.user_id
+      JOIN users u ON u.id = i.user_id
+      WHERE p.slug = ? AND i.id = ? AND p.is_published = 1 AND u.role = 'photographer'
+    `).bind(slug, Number(itemId)).first();
+    if (!item) return json(404, { error: 'Imagem nao encontrada.' });
+    return storedImageResponse(await env.PROFILE_IMAGES.get(item.object_key), request, 'public, max-age=300, must-revalidate');
+  }
+
+  async function reviews({ params, env }) {
+    const [slug] = params;
+    const photographer = await env.DB.prepare(`
+      SELECT p.user_id FROM professional_profiles p JOIN users u ON u.id = p.user_id
+      WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
+    `).bind(slug).first();
+    if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.' });
+    const summary = await env.DB.prepare(`
+      SELECT COUNT(*) AS total, ROUND(AVG(rating), 2) AS average
+      FROM reviews WHERE photographer_user_id = ? AND status = 'active'
+    `).bind(photographer.user_id).first();
+    const reviewRows = await env.DB.prepare(`
+      SELECT r.id, r.rating, r.comment, r.created_at, r.updated_at, u.name AS client_name
+      FROM reviews r JOIN users u ON u.id = r.client_user_id
+      WHERE r.photographer_user_id = ? AND r.status = 'active'
+      ORDER BY r.created_at DESC, r.id DESC LIMIT 50
+    `).bind(photographer.user_id).all();
+    return json(200, {
+      summary: { total: Number(summary?.total || 0), average: summary?.average == null ? null : Number(summary.average) },
+      reviews: reviewRows.results.map(publicReview)
+    }, { 'Cache-Control': 'public, max-age=60' });
+  }
+
+  return { list, detail, photo, portfolioImage, reviews };
 }

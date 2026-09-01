@@ -566,7 +566,7 @@ const authHandlers = createAuthHandlers({
 
 const photographerHandlers = createPhotographerHandlers({
   json, cleanText, professionalProfile, portfolioItem,
-  professionalSpecialties: PROFESSIONAL_SPECIALTIES
+  professionalSpecialties: PROFESSIONAL_SPECIALTIES, publicReview, storedImageResponse
 });
 
 // Route matching lives in router.mjs. Domain handlers receive dependencies explicitly
@@ -593,57 +593,9 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'auth.me') return authHandlers.me({ request, env });
   if (routeId === 'photographers.list') return photographerHandlers.list({ request, env });
   if (routeId === 'photographers.detail') return photographerHandlers.detail({ params, env });
-
-  if (routeId === 'photographers.photo') {
-    const [slug] = params;
-    const profile = await env.DB.prepare(`
-      SELECT p.slug, u.profile_pic_key FROM professional_profiles p
-      JOIN users u ON u.id = p.user_id
-      WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
-    `).bind(slug).first();
-    if (!profile?.profile_pic_key) return json(404, { error: 'Imagem nao encontrada.' });
-    const object = await env.PROFILE_IMAGES.get(profile.profile_pic_key);
-    return storedImageResponse(object, request, 'public, max-age=300, must-revalidate');
-  }
-
-  if (routeId === 'photographers.portfolio-image') {
-    const [slug, itemId] = params;
-    const item = await env.DB.prepare(`
-      SELECT i.object_key FROM portfolio_items i
-      JOIN professional_profiles p ON p.user_id = i.user_id
-      JOIN users u ON u.id = i.user_id
-      WHERE p.slug = ? AND i.id = ? AND p.is_published = 1 AND u.role = 'photographer'
-    `).bind(slug, Number(itemId)).first();
-    if (!item) return json(404, { error: 'Imagem nao encontrada.' });
-    return storedImageResponse(
-      await env.PROFILE_IMAGES.get(item.object_key),
-      request,
-      'public, max-age=300, must-revalidate'
-    );
-  }
-
-  if (routeId === 'photographers.reviews') {
-    const [slug] = params;
-    const photographer = await env.DB.prepare(`
-      SELECT p.user_id FROM professional_profiles p JOIN users u ON u.id = p.user_id
-      WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
-    `).bind(slug).first();
-    if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.' });
-    const summary = await env.DB.prepare(`
-      SELECT COUNT(*) AS total, ROUND(AVG(rating), 2) AS average
-      FROM reviews WHERE photographer_user_id = ? AND status = 'active'
-    `).bind(photographer.user_id).first();
-    const reviews = await env.DB.prepare(`
-      SELECT r.id, r.rating, r.comment, r.created_at, r.updated_at, u.name AS client_name
-      FROM reviews r JOIN users u ON u.id = r.client_user_id
-      WHERE r.photographer_user_id = ? AND r.status = 'active'
-      ORDER BY r.created_at DESC, r.id DESC LIMIT 50
-    `).bind(photographer.user_id).all();
-    return json(200, {
-      summary: { total: Number(summary?.total || 0), average: summary?.average == null ? null : Number(summary.average) },
-      reviews: reviews.results.map(publicReview)
-    }, { 'Cache-Control': 'public, max-age=60' });
-  }
+  if (routeId === 'photographers.photo') return photographerHandlers.photo({ params, env, request });
+  if (routeId === 'photographers.portfolio-image') return photographerHandlers.portfolioImage({ params, env, request });
+  if (routeId === 'photographers.reviews') return photographerHandlers.reviews({ params, env });
 
   if (routeId === 'photographers.review-request.create') {
     if (await isRateLimited(request, env, pathname, 10, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
