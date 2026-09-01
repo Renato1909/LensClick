@@ -92,6 +92,8 @@ export function normalizeRoute(input) {
   if (/^\/api\/account\/portfolio\/[^/]+$/.test(pathname)) return '/api/account/portfolio/:id';
   if (/^\/api\/profile-picture\/[^/]+$/.test(pathname)) return '/api/profile-picture/:id';
   if (pathname.startsWith('/api/')) return '/api/unknown';
+  if (pathname === '/sitemap.xml') return '/sitemap.xml';
+  if (pathname === '/robots.txt') return '/robots.txt';
   if (/^\/fotografo\/[^/]+\/?$/.test(pathname)) return '/fotografo/:slug';
   if (STATIC_HTML_ROUTES.has(pathname)) return pathname;
   if (pathname.endsWith('.html')) return '/*.html';

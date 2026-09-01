@@ -88,6 +88,15 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
+function escapeXml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
 function escapeJsonForHtml(value) {
   return JSON.stringify(value)
     .replace(/&/g, '\\u0026')
@@ -1499,6 +1508,44 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
 
 async function handleAssetRequest(request, env) {
   const url = new URL(request.url);
+  if (['GET', 'HEAD'].includes(request.method) && url.pathname === '/robots.txt') {
+    const body = [
+      'User-agent: *',
+      'Allow: /',
+      'Disallow: /api/',
+      'Disallow: /perfil',
+      'Disallow: /perfil.html',
+      'Disallow: /login.html',
+      'Disallow: /cadastro.html',
+      'Disallow: /recuperar-senha.html',
+      'Disallow: /redefinir-senha.html',
+      `Sitemap: ${new URL('/sitemap.xml', url).toString()}`,
+      ''
+    ].join('\n');
+    return new Response(request.method === 'HEAD' ? null : body, {
+      headers: new Headers({ ...responseHeaders({ 'Cache-Control': 'public, max-age=3600' }), 'Content-Type': 'text/plain; charset=UTF-8' })
+    });
+  }
+  if (['GET', 'HEAD'].includes(request.method) && url.pathname === '/sitemap.xml') {
+    const profiles = await env.DB.prepare(`
+      SELECT slug, updated_at FROM professional_profiles p
+      JOIN users u ON u.id = p.user_id
+      WHERE p.is_published = 1 AND u.role = 'photographer'
+      ORDER BY p.updated_at DESC, p.id DESC LIMIT 50000
+    `).all();
+    const urls = [
+      { loc: new URL('/', url).toString() },
+      { loc: new URL('/busca.html', url).toString() },
+      ...(profiles.results || []).map((profile) => ({
+        loc: new URL(`/fotografo/${encodeURIComponent(profile.slug)}`, url).toString(),
+        lastmod: profile.updated_at
+      }))
+    ];
+    const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(({ loc, lastmod }) => `  <url><loc>${escapeXml(loc)}</loc>${lastmod ? `<lastmod>${escapeXml(lastmod.replace(' ', 'T') + 'Z')}</lastmod>` : ''}</url>`).join('\n')}\n</urlset>\n`;
+    return new Response(request.method === 'HEAD' ? null : body, {
+      headers: new Headers({ ...responseHeaders({ 'Cache-Control': 'public, max-age=3600' }), 'Content-Type': 'application/xml; charset=UTF-8' })
+    });
+  }
   const legacySlug = url.pathname === '/fotografo.html' ? url.searchParams.get('perfil') : '';
   if (['GET', 'HEAD'].includes(request.method) && /^[a-z0-9-]{3,80}$/.test(legacySlug || '')) {
     return Response.redirect(new URL(`/fotografo/${encodeURIComponent(legacySlug)}`, url), 301);
