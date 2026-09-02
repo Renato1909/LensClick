@@ -2,9 +2,9 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 1º de setembro de 2026, com `main` em `a6fe1a1`.
+> **Data de referência:** 1º de setembro de 2026, com `main` em `f9d8e53`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4, Fase 4.1 e a primeira entrega da Fase 4.2 concluídas; a próxima prioridade é completar a modularização por domínio.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4, Fase 4.1 e a Fase 4.2 concluídas — todos os handlers de domínio extraídos e os blocos legados removidos no PR #82; próximas prioridades: concluir a 4.3 (variantes de imagem) e a 4.4 (alertas automatizados).
 
 ---
 
@@ -76,7 +76,7 @@ A limpeza controlada foi concluída após comparar a árvore de cada branch obso
 
 ## 3. Funcionalidades em desenvolvimento
 
-Não há iniciativa em desenvolvimento em uma branch ativa. As quatro iniciativas da Fase 1 e o marco de transição estão integrados e validados em produção. O catálogo e o despacho HTTP agora ficam em `src/router.mjs`; os handlers permanecem em `src/worker.mjs` até a modularização por domínio da iniciativa 4.2. As funcionalidades de produto abaixo já estão em `main` e em produção:
+Não há iniciativa em desenvolvimento em uma branch ativa. As quatro iniciativas da Fase 1, o marco de transição e a Fase 4.2 estão integrados e validados em produção. O catálogo e o despacho HTTP ficam em `src/router.mjs`; os handlers de domínio vivem em módulos próprios (`src/auth.mjs`, `photographers.mjs`, `account.mjs`, `account-security.mjs`, `portfolio.mjs`, `public-input.mjs`, `observability.mjs`) e o `worker.mjs` permanece como ponto de composição (782 linhas após o PR #82). As funcionalidades de produto abaixo já estão em `main` e em produção:
 
 ### Funcionalidades entregues
 
@@ -289,7 +289,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Validada com 159 testes, build do Wrangler, CI obrigatório e smoke de produção somente leitura: duas buscas `200`, `Cache-Control: public, max-age=60` e segunda resposta com `CF-Cache-Status: HIT`.
 - Versão `9f33b94f-92bf-439b-b4b1-465fdee65cc5` publicada em produção; nenhuma migration ou dado do D1 foi alterado.
 
-### Fase 4.2 — em andamento (terceira entrega concluída)
+### Fase 4.2 — concluída
 - O PR #59 extraiu cadastro, login, logout, sessão atual e recuperação de senha para `src/auth.mjs`.
 - O módulo recebe dependências explicitamente, sem estado mutável por requisição; roteamento, contratos HTTP, sessões e políticas de segurança foram preservados.
 - Validada com 159 testes, build do Wrangler, CI obrigatório e smoke de produção: health `200` e sessão anônima `401`.
@@ -300,7 +300,9 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - O PR #63 extraiu foto de perfil, imagem de portfólio e avaliações públicas para `src/photographers.mjs`, concluindo as leituras públicas do domínio.
 - Validada com 159 testes, build do Wrangler, CI obrigatório e smoke de produção: health, listagem, detalhe e avaliações com `200`.
 - Versão `74e839d7-869d-4f41-aa34-534a60f1da58` publicada em produção; nenhuma migration ou dado do D1 foi alterado.
-- Próximas entregas da Fase 4.2: extrair mutações autenticadas de fotógrafos, conta e entradas públicas, sempre em PRs independentes.
+- As entregas seguintes concluíram a extração: leituras e mutações de fotógrafos (perfil profissional, review-requests, avaliações e conversas), entradas públicas, listing e mutações de portfolio, e segurança da conta (#76, #77).
+- O PR #82 removeu os 22 blocos `if (false && ...)` herdados das extrações e realinhou três suítes que assertavam sobre o texto do `worker.mjs` para os módulos donos; `worker.mjs` ficou com 782 linhas, sem nenhuma mudança de contrato.
+- Validação final: 159 testes aprovados, build do Wrangler e CI obrigatório; nenhuma migration ou dado do D1 foi alterado.
 
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - Open Graph e JSON-LD (sitemap e robots já concluídos na Fase 3.4).
@@ -317,7 +319,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Fase 4.2] Modularização do Worker por domínio   ← continuar extraindo fotógrafos, conta e entradas
+1. [Fase 4.3/4.4] Concluir variantes de imagem e alertas automatizados   ← 4.2 concluída no PR #82
 2. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
 ```
 
@@ -329,7 +331,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - O marco estrutural do roteador, as quatro iniciativas da Fase 2 e as iniciativas 3.1–3.4 foram concluídos e validados em produção.
 - A Fase 3.4 complementou os perfis indexáveis com descoberta automatizada por sitemap e diretivas explícitas para crawlers.
 - A Fase 4.1 passou a aproveitar o cache da edge para leituras públicas.
-- A primeira entrega da Fase 4.2 isolou autenticação; a próxima prioridade é concluir a extração dos demais domínios.
+- A Fase 4.2 foi concluída: todos os handlers de domínio foram extraídos e os blocos legados removidos no PR #82.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
 ---
@@ -338,13 +340,12 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 
 ### Ambiente (Windows)
 
-- **`safe.directory` obrigatório:** ao trabalhar neste repositório no Windows, rodar primeiro:
+- **`safe.directory` ao mover a pasta:** se o git reportar `fatal: detected dubious ownership` (típico após mover/copiar o repositório), registrar o caminho atual:
   ```
-  git config --global --add safe.directory 'D:/LensClick - Hoje'
+  git config --global --add safe.directory 'C:/Users/renat/Desktop/LensClick - Hoje'
   ```
-  Sem isso, o git falha com "fatal: detected dubious ownership".
 - **PowerShell, não bash:** este ambiente usa PowerShell 5.1. Sintaxe bash (loops `for`, `&&`) não funciona. Usar `foreach`, `;` para encadear, e `Select-Object`/`Where-Object` em vez de pipes unix.
-- **Auth do git remoto quebrada neste ambiente:** `git ls-remote`, `git fetch` e operações de rede podem falhar com erro de autenticação (token/password não suportado). Para push/pull/PR, usar o GitHub via navegador ou outro terminal com credenciais configuradas.
+- **Auth do git remoto:** o `gh` está autenticado via keyring nesta máquina e push/pull/PR via HTTPS funcionam (validado em 01/09/2026 no fluxo do PR #82).
 
 ### Convenções do projeto
 
@@ -363,7 +364,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 4.2 em andamento, com autenticação extraída).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 4.2 concluída; próximas: 4.3 e 4.4).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
@@ -380,4 +381,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 1º de setembro de 2026, com `main` em `9df8b7e`; autenticação e todas as leituras públicas de fotógrafos foram extraídas na Fase 4.2 e publicadas nas versões `44b195dd-c36a-41c1-b1a4-4118e3684948`, `7c8d6917-a36b-42aa-9287-5d6eef812fcc` e `74e839d7-869d-4f41-aa34-534a60f1da58`.
+**Última atualização deste handoff:** 1º de setembro de 2026, com `main` em `f9d8e53`; a Fase 4.2 foi concluída — extração completa dos handlers de domínio e remoção dos blocos legados no PR #82 (`worker.mjs` de 1.344 para 782 linhas).

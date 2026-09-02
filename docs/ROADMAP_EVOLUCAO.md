@@ -232,11 +232,11 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 4.2 Modularizacao do worker por dominio
 
-> **Status:** em andamento. A terceira entrega foi concluída pelo PR #63 e validada em produção em 1º de setembro de 2026; a versão `74e839d7-869d-4f41-aa34-534a60f1da58` está publicada com 159 testes aprovados.
+> **Status:** implementação concluída e validada em produção em 1º de setembro de 2026. Todas as entregas foram publicadas com 159 testes aprovados — autenticação (PR #59), leituras públicas (PRs #61 e #63), demais handlers até a segurança da conta (#76, #77) — culminando no PR #82, que removeu os 22 blocos desabilitados herdados e deixou o `worker.mjs` com 782 linhas.
 
 1. **Nome da iniciativa**: Extrair handlers por dominio em modulos separados.
 2. **Objetivo**: Reduzir o `worker.mjs` (926 linhas) dividindo-o em modulos por dominio (`src/auth.mjs`, `src/photographers.mjs`, `src/account.mjs`, `src/portfolio.mjs`), mantendo o roteador extraido no marco de transicao entre Fase 1 e Fase 2.
-3. **Problema resolvido (parcialmente)**: o `worker.mjs` concentrava autenticação e outros domínios em uma cadeia extensa de `if`; autenticação e todas as leituras públicas de fotógrafos agora possuem módulos próprios e dependências explícitas.
+3. **Problema resolvido**: o `worker.mjs` concentrava todos os domínios em uma cadeia extensa de `if`; todos os handlers de domínio agora possuem módulos próprios com dependências explícitas, e os blocos desabilitados herdados foram removidos.
 4. **Impacto esperado**: Manutenibilidade; onboarding de novos devs; testes isolados por modulo.
 5. **Complexidade**: Média — extração incremental por domínio, preservando comportamento e contratos; a primeira entrega de autenticação foi concluída sem alterações de API.
 6. **Riscos**: regressão silenciosa se um handler não for migrado. Mitigação: validar todos os testes antes e depois de cada extração, manter dependências injetadas e preservar contratos.
@@ -245,7 +245,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 9. **Ordem recomendada**: **14a** - refatoracao estrutural, so apos a fundacao e quando o time sentir a dor.
 10. **Etapas**:
     - **Etapa A (concluída — autenticação)**: extrair cadastro, login, logout, sessão e recuperação para `src/auth.mjs`; validar contratos e publicar após CI.
-    - **Etapa B (em andamento)**: extrair os handlers restantes para `src/photographers.mjs`, `src/account.mjs` e `src/public-input.mjs`; todas as leituras públicas de fotógrafos já foram extraídas no PR #63; cada módulo exporta seus handlers; validar todos os testes antes e depois de cada extração; preservar exports e contratos.
+    - **Etapa B (concluída)**: todos os handlers restantes foram extraídos — leituras e mutações de fotógrafos, review-requests e avaliações (`photographers.mjs`), conversas e listing de portfolio (`account.mjs`), mutações de portfolio (`portfolio.mjs`), entradas públicas (`public-input.mjs`) e segurança da conta (`account-security.mjs`); blocos desabilitados removidos no PR #82; exports e contratos preservados.
 
 ### 4.3 Estrategia de imagens com R2 + Image Resizing
 
