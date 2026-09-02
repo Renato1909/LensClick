@@ -4,7 +4,7 @@
 >
 > **Data de referência:** 1º de setembro de 2026, com `main` em `f9d8e53`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4, Fase 4.1 e a Fase 4.2 concluídas — todos os handlers de domínio extraídos e os blocos legados removidos no PR #82; próximas prioridades: concluir a 4.3 (variantes de imagem) e a 4.4 (alertas automatizados).
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4, Fase 4.1, Fase 4.2 e a Fase 4.3 concluídas — handlers de domínio extraídos, blocos legados removidos (#82) e variantes de imagem on-demand completas (#78–#80, #84; deploy de produção pendente); próxima prioridade: 4.4 (alertas automatizados).
 
 ---
 
@@ -76,7 +76,7 @@ A limpeza controlada foi concluída após comparar a árvore de cada branch obso
 
 ## 3. Funcionalidades em desenvolvimento
 
-Não há iniciativa em desenvolvimento em uma branch ativa. As quatro iniciativas da Fase 1, o marco de transição e a Fase 4.2 estão integrados e validados em produção. O catálogo e o despacho HTTP ficam em `src/router.mjs`; os handlers de domínio vivem em módulos próprios (`src/auth.mjs`, `photographers.mjs`, `account.mjs`, `account-security.mjs`, `portfolio.mjs`, `public-input.mjs`, `observability.mjs`) e o `worker.mjs` permanece como ponto de composição (782 linhas após o PR #82). As funcionalidades de produto abaixo já estão em `main` e em produção:
+Não há iniciativa em desenvolvimento em uma branch ativa. As quatro iniciativas da Fase 1, o marco de transição, a Fase 4.2 e a Fase 4.3 estão integrados em `main`; a 4.3 aguarda deploy de produção. O catálogo e o despacho HTTP ficam em `src/router.mjs`; os handlers de domínio vivem em módulos próprios (`src/auth.mjs`, `photographers.mjs`, `account.mjs`, `account-security.mjs`, `portfolio.mjs`, `public-input.mjs`, `observability.mjs`) e o `worker.mjs` permanece como ponto de composição (782 linhas após o PR #82). As funcionalidades de produto abaixo já estão em `main` e em produção:
 
 ### Funcionalidades entregues
 
@@ -304,6 +304,13 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - O PR #82 removeu os 22 blocos `if (false && ...)` herdados das extrações e realinhou três suítes que assertavam sobre o texto do `worker.mjs` para os módulos donos; `worker.mjs` ficou com 782 linhas, sem nenhuma mudança de contrato.
 - Validação final: 159 testes aprovados, build do Wrangler e CI obrigatório; nenhuma migration ou dado do D1 foi alterado.
 
+### Fase 4.3 — concluída (aguardando deploy de produção)
+- A estratégia adotada foi transformação on-demand via binding `IMAGES` (Cloudflare Images) em vez do pipeline de variantes no upload previsto no roadmap — formalizada como Decisão 15 em `docs/DECISOES_TECNICAS.md`.
+- Os PRs #78, #79 e #80 adicionaram a transformação responsiva das imagens de portfólio (`?width=` em 320/640/1280, AVIF/WebP quality 82), integraram o `srcset`/`sizes` na galeria e na central da conta e finalizaram a política de cache (`stale-while-revalidate` + `Vary: Accept`).
+- O PR #84 estendeu as variantes às fotos de perfil (`GET /api/photographers/:slug/photo` e `GET /api/profile-picture/:id`), adicionou `srcset`/`sizes` ao avatar do perfil público e aos cards da busca e centralizou o helper duplicado em `src/images.mjs`.
+- A invalidação de variantes é resolvida por versionamento de URL (`?v=updated_at`), sem purge.
+- Validada com 160 testes, build do Wrangler e CI obrigatório; nenhuma migration ou dado do D1 foi alterado. Deploy de produção pendente (fluxo manual).
+
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - Open Graph e JSON-LD (sitemap e robots já concluídos na Fase 3.4).
 - Cache via `caches.default` para assets e respostas imutáveis.
@@ -319,7 +326,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Fase 4.3/4.4] Concluir variantes de imagem e alertas automatizados   ← 4.2 concluída no PR #82
+1. [Fase 4.4] Alertas automatizados   ← 4.3 concluída nos PRs #78–#80 e #84
 2. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
 ```
 
@@ -332,6 +339,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - A Fase 3.4 complementou os perfis indexáveis com descoberta automatizada por sitemap e diretivas explícitas para crawlers.
 - A Fase 4.1 passou a aproveitar o cache da edge para leituras públicas.
 - A Fase 4.2 foi concluída: todos os handlers de domínio foram extraídos e os blocos legados removidos no PR #82.
+- A Fase 4.3 foi concluída com transformação on-demand (Decisão 15); o deploy da entrega #84 aguarda publicação manual.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
 ---
@@ -381,4 +389,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 1º de setembro de 2026, com `main` em `f9d8e53`; a Fase 4.2 foi concluída — extração completa dos handlers de domínio e remoção dos blocos legados no PR #82 (`worker.mjs` de 1.344 para 782 linhas).
+**Última atualização deste handoff:** 1º de setembro de 2026, com `main` em `e0e83a7`; a Fase 4.2 foi concluída no PR #82 (`worker.mjs` de 1.344 para 782 linhas) e a Fase 4.3 no PR #84 (variantes on-demand para foto de perfil; Decisão 15 registrada).

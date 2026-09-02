@@ -48,7 +48,7 @@ flowchart LR
 - Backend e frontend compartilham o **mesmo domínio** (sem CORS entre origens).
 - Configuração de bindings: `wrangler.jsonc`.
 
-Decisões arquiteturais documentadas (14 decisões em um único documento): `docs/DECISOES_TECNICAS.md`.
+Decisões arquiteturais documentadas (15 decisões em um único documento): `docs/DECISOES_TECNICAS.md`.
 
 ---
 
