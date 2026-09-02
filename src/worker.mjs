@@ -12,6 +12,7 @@ import { createAccountHandlers } from './account.mjs';
 import { createPublicInputHandlers } from './public-input.mjs';
 import { createPortfolioHandlers } from './portfolio.mjs';
 import { createAccountSecurityHandlers } from './account-security.mjs';
+import { createImageService } from './images.mjs';
 
 const SESSION_COOKIE = 'lensclick_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -568,16 +569,18 @@ const authHandlers = createAuthHandlers({
   sessionCookieName: SESSION_COOKIE, passwordResetTtlMs: PASSWORD_RESET_TTL_MS
 });
 
+const imageService = createImageService({ storedImageResponse });
+
 const photographerHandlers = createPhotographerHandlers({
   json, cleanText, professionalProfile, portfolioItem,
-  professionalSpecialties: PROFESSIONAL_SPECIALTIES, publicReview, storedImageResponse,
+  professionalSpecialties: PROFESSIONAL_SPECIALTIES, publicReview, responsiveImage: imageService.responsiveImage,
   isRateLimited, authenticatedUser, readJson, slugify,
   normalizeEmail, isValidEmail, normalizeWebsite, parseSpecialties, accountReviewRequest
 });
 const accountHandlers = createAccountHandlers({ json, authenticatedUser, isRateLimited, readJson, conversationSummary, accountMessage, portfolioItem });
 const publicInputHandlers = createPublicInputHandlers({ json, isRateLimited, readJson, cleanText, normalizeEmail, isValidEmail });
-const portfolioHandlers = createPortfolioHandlers({ json, cleanText, authenticatedUser, isRateLimited, readJson, portfolioItem, storedImageResponse });
-const accountSecurityHandlers = createAccountSecurityHandlers({ json, cleanText, normalizeEmail, isValidEmail, authenticatedUser, readJson, verifyPassword, decodeProfilePicture, isValidPassword, hashPassword, publicUser, storedImageResponse, sessionCookie, isRateLimited, reportOperationalError, authRateLimit: [8, 15 * 60 * 1000], sensitiveRateLimit: [5, 60 * 60 * 1000] });
+const portfolioHandlers = createPortfolioHandlers({ json, cleanText, authenticatedUser, isRateLimited, readJson, portfolioItem, responsiveImage: imageService.responsiveImage });
+const accountSecurityHandlers = createAccountSecurityHandlers({ json, cleanText, normalizeEmail, isValidEmail, authenticatedUser, readJson, verifyPassword, decodeProfilePicture, isValidPassword, hashPassword, publicUser, responsiveImage: imageService.responsiveImage, sessionCookie, isRateLimited, reportOperationalError, authRateLimit: [8, 15 * 60 * 1000], sensitiveRateLimit: [5, 60 * 60 * 1000] });
 
 // Route matching lives in router.mjs. Domain handlers receive dependencies explicitly
 // so extraction does not change business logic or request-scoped state.
