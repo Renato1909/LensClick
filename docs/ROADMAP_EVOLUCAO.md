@@ -249,7 +249,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 4.3 Estrategia de imagens com R2 + Image Resizing
 
-> **Status:** implementação concluída e validada em CI em 1º de setembro de 2026, com abordagem adaptada: variantes geradas on-demand via binding `IMAGES` (Cloudflare Images) em vez de pipeline no upload — formalizada como Decisão 15 em `docs/DECISOES_TECNICAS.md`. Entregas: #78 (transformações opcionais), #79 (integração `srcset`), #80 (política de cache) e #84 (foto de perfil + centralização do helper). Deploy de produção pendente (fluxo manual).
+> **Status:** implementação concluída e validada em CI em 1º de setembro de 2026, com abordagem adaptada: variantes geradas on-demand via binding `IMAGES` (Cloudflare Images) em vez de pipeline no upload — formalizada como Decisão 15 em `docs/DECISOES_TECNICAS.md`. Entregas: #78 (transformações opcionais), #79 (integração `srcset`), #80 (política de cache) e #84 (foto de perfil + centralização do helper). Publicada em produção na versão `e271e165-8768-461d-a746-f3b66587b4c5` em 1º de setembro de 2026.
 
 1. **Nome da iniciativa**: Geracao de variantes responsivas no upload.
 2. **Objetivo**: Servir imagens de portfolio em tamanhos otimizados (thumbnail, medio, full) via R2 + Cloudflare Image Resizing, integrando-se ao markup preparado na 2.3.
