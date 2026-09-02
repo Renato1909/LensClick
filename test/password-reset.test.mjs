@@ -19,7 +19,7 @@ test('recuperacao de senha possui telas bilingues e integracao segura', () => {
   assert.ok(translations['pt-BR']['recovery.confirm.title']);
   assert.ok(translations['en-US']['recovery.confirm.title']);
   assert.match(worker, /PASSWORD_RESET_TTL_MS = 30 \* 60 \* 1000/);
-  assert.match(worker, /DELETE FROM sessions WHERE user_id = \?/);
+  assert.match(auth, /DELETE FROM sessions WHERE user_id = \?/);
   assert.match(auth, /Se o e-mail estiver cadastrado/);
   assert.doesNotMatch(worker, /password_reset_tokens \([^)]*token[^_]/);
 });

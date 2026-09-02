@@ -64,6 +64,7 @@ test('o perfil publico renderiza dados seguros sem HTML fornecido pelo usuario',
   const script = read('public/photographer-profile.js');
   const worker = read('src/worker.mjs');
   const photographers = read('src/photographers.mjs');
+  const accountSecurity = read('src/account-security.mjs');
   const server = `${worker}\n${photographers}`;
 
   assert.match(page, /id="professionalProfile" hidden/);
@@ -73,8 +74,8 @@ test('o perfil publico renderiza dados seguros sem HTML fornecido pelo usuario',
   assert.match(script, /rel = 'noopener noreferrer'/);
   assert.match(server, /p\.is_published = 1 AND u\.role = 'photographer'/);
   assert.match(server, /contacts:[\s\S]*row\.show_email[\s\S]*row\.show_phone/);
-  assert.match(worker, /hasPublicContact/);
-  assert.match(worker, /UPDATE professional_profiles SET is_published = 0/);
+  assert.match(photographers, /hasPublicContact/);
+  assert.match(accountSecurity, /UPDATE professional_profiles SET is_published = 0/);
 });
 
 test('a experiencia profissional e bilingue em edicao e visualizacao publica', () => {
@@ -122,6 +123,7 @@ test('a galeria publica so usa imagens autorizadas e textos seguros', () => {
   const script = read('public/photographer-profile.js');
   const worker = read('src/worker.mjs');
   const photographers = read('src/photographers.mjs');
+  const accountSecurity = read('src/account-security.mjs');
   const server = `${worker}\n${photographers}`;
   const router = read('src/router.mjs');
   assert.match(page, /id="portfolioSection" hidden/);
@@ -133,5 +135,5 @@ test('a galeria publica so usa imagens autorizadas e textos seguros', () => {
   assert.match(worker, /routeId === 'photographers\.portfolio-image'/);
   assert.match(server, /portfolioItem\(item, profile\.slug\)/);
   assert.match(worker, /\/api\/photographers\/\$\{encodeURIComponent\(slug\)\}\/portfolio\/\$\{id\}/);
-  assert.match(worker, /portfolioObjects/);
+  assert.match(accountSecurity, /portfolioObjects/);
 });
