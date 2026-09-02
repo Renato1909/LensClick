@@ -90,6 +90,8 @@
     imageElement.hidden = !profile.profilePic;
     initialsElement.hidden = Boolean(profile.profilePic);
     if (profile.profilePic) {
+      imageElement.srcset = responsiveImageSources(profile.profilePic);
+      imageElement.sizes = '150px';
       imageElement.src = profile.profilePic;
       imageElement.alt = UX.t('photographer.portraitAlt', { name: profile.name }, `Retrato de ${profile.name}`);
     }

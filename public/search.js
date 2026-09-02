@@ -46,7 +46,11 @@
     const img = document.createElement('img');
     img.alt = '';
     img.hidden = !p.profilePic;
-    if (p.profilePic) img.src = p.profilePic;
+    if (p.profilePic) {
+      img.sizes = '(max-width: 720px) 100vw, 104px';
+      img.srcset = [320, 640, 1280].map((width) => `${p.profilePic}&width=${width} ${width}w`).join(', ');
+      img.src = p.profilePic;
+    }
     const initials = document.createElement('span');
     initials.className = 'avatar-initials';
     initials.textContent = (p.name || 'LC').split(/\s+/).slice(0,2).map(s=>s[0]||'').join('').toUpperCase();

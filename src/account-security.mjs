@@ -1,4 +1,5 @@
-export function createAccountSecurityHandlers({ json, cleanText, normalizeEmail, isValidEmail, authenticatedUser, readJson, verifyPassword, decodeProfilePicture, isValidPassword, hashPassword, publicUser, storedImageResponse, sessionCookie, isRateLimited, reportOperationalError, sensitiveRateLimit, authRateLimit }) {
+export function createAccountSecurityHandlers({ json, cleanText, normalizeEmail, isValidEmail, authenticatedUser, readJson, verifyPassword, decodeProfilePicture, isValidPassword, hashPassword, publicUser, responsiveImage, sessionCookie, isRateLimited, reportOperationalError, sensitiveRateLimit, authRateLimit }) {
+  const PRIVATE_IMAGE_CACHE = { storedCacheControl: 'private, max-age=300, must-revalidate', transformedCacheControl: 'private, max-age=300, must-revalidate' };
   async function profileUpdate({ request, env, requestContext }) {
     const current = await authenticatedUser(request, env); if (!current) return json(401, { error: 'Faca login novamente.' });
     const body = await readJson(request), name = cleanText(body.name, 100), email = normalizeEmail(body.email), phone = cleanText(body.phone, 30);
@@ -41,6 +42,6 @@ export function createAccountSecurityHandlers({ json, cleanText, normalizeEmail,
     await env.DB.batch([env.DB.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').bind(current.id), env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(current.id), env.DB.prepare('DELETE FROM users WHERE id = ?').bind(current.id)]);
     return json(200, { message: 'Conta e dados controlados por ela excluidos permanentemente.' }, { 'Set-Cookie': sessionCookie('', request, 0) });
   }
-  async function profilePicture({ params, request, env }) { const [userId] = params, current = await authenticatedUser(request, env); if (!current || Number(userId) !== Number(current.id) || !current.profile_pic_key) return json(404, { error: 'Imagem nao encontrada.' }); return storedImageResponse(await env.PROFILE_IMAGES.get(current.profile_pic_key), request, 'private, max-age=300, must-revalidate'); }
+  async function profilePicture({ params, request, env }) { const [userId] = params, current = await authenticatedUser(request, env); if (!current || Number(userId) !== Number(current.id) || !current.profile_pic_key) return json(404, { error: 'Imagem nao encontrada.' }); return responsiveImage(await env.PROFILE_IMAGES.get(current.profile_pic_key), request, env, PRIVATE_IMAGE_CACHE); }
   return { profileUpdate, passwordUpdate, photoDelete, accountDelete, profilePicture };
 }

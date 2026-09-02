@@ -30,3 +30,23 @@ test('a galeria publica reserva espaco e prepara imagens responsivas com carrega
   assert.ok(translations['pt-BR']['photographer.imageUnavailable']);
   assert.ok(translations['en-US']['photographer.imageUnavailable']);
 });
+
+test('a foto do perfil do fotografo usa variantes responsivas nas rotas e no frontend', () => {
+  const heroScript = read('public/photographer-profile.js');
+  const searchScript = read('public/search.js');
+  const photographers = read('src/photographers.mjs');
+  const accountSecurity = read('src/account-security.mjs');
+  const portfolio = read('src/portfolio.mjs');
+  const imagesModule = read('src/images.mjs');
+
+  assert.match(heroScript, /imageElement\.srcset = responsiveImageSources\(profile\.profilePic\)/);
+  assert.match(heroScript, /imageElement\.sizes = '150px'/);
+  assert.match(searchScript, /img\.sizes = '\(max-width: 720px\) 100vw, 104px'/);
+  assert.match(searchScript, /&width=\$\{width\} \$\{width\}w/);
+  assert.match(imagesModule, /320, 640, 1280/);
+  assert.match(photographers, /responsiveImage\(await env\.PROFILE_IMAGES\.get\(profile\.profile_pic_key\), request, env, PUBLIC_IMAGE_CACHE\)/);
+  assert.match(accountSecurity, /responsiveImage\(await env\.PROFILE_IMAGES\.get\(current\.profile_pic_key\), request, env, PRIVATE_IMAGE_CACHE\)/);
+  assert.match(portfolio, /responsiveImage\(await env\.PROFILE_IMAGES\.get\(item\.object_key\), request, env, PRIVATE_IMAGE_CACHE\)/);
+  assert.doesNotMatch(photographers, /async function responsiveImage/);
+  assert.doesNotMatch(portfolio, /async function responsiveImage/);
+});
