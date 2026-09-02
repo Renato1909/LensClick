@@ -13,6 +13,7 @@ import { createPublicInputHandlers } from './public-input.mjs';
 import { createPortfolioHandlers } from './portfolio.mjs';
 import { createAccountSecurityHandlers } from './account-security.mjs';
 import { createImageService } from './images.mjs';
+import { createMonitoringHandlers } from './monitoring.mjs';
 
 const SESSION_COOKIE = 'lensclick_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -570,6 +571,7 @@ const authHandlers = createAuthHandlers({
 });
 
 const imageService = createImageService({ storedImageResponse });
+const monitoring = createMonitoringHandlers({ reportOperationalError });
 
 const photographerHandlers = createPhotographerHandlers({
   json, cleanText, professionalProfile, portfolioItem,
@@ -781,5 +783,20 @@ export default {
     const instrumentedResponse = responseWithRequestId(response, requestContext.requestId);
     completeRequest(requestContext, instrumentedResponse.status, { errorCategory });
     return instrumentedResponse;
+  },
+  async scheduled(event, env, context) {
+    const requestContext = createRequestContext(new Request(new URL('https://lensclick.workers.dev/__scheduled')));
+    try {
+      await monitoring.runAvailabilityCheck({
+        env,
+        requestContext,
+        probe: async (e) => {
+          const check = await e.DB.prepare('SELECT 1 AS ok').first('ok');
+          if (Number(check) !== 1) throw new Error('D1 health check returned an unexpected result.');
+        }
+      });
+    } catch (error) {
+      console.error('Monitoring probe failed:', error?.message || error);
+    }
   }
 };
