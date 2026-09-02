@@ -613,6 +613,49 @@ O roadmap técnico é formalizado em `docs/ROADMAP_EVOLUCAO.md` como **documento
 
 ---
 
+## Decisão 15 — Variantes de imagem por transformação on-demand (Cloudflare Images)
+
+### Contexto
+
+A iniciativa 4.3 do roadmap previa servir imagens de portfólio em tamanhos otimizados (thumbnail, médio, full), com duas abordagens possíveis: gerar três variantes fixas no upload — evitando o custo do Image Resizing — ou transformar on-demand. Até então, a foto original (até 4 MB no portfólio e 450 KB no perfil) era entregue integralmente em qualquer contexto — galeria, card, perfil — desperdiçando banda e degradando o LCP em mobile.
+
+### Decisão tomada
+
+As variantes são geradas **on-demand** pelo binding nativo `IMAGES` (Cloudflare Images), não no upload:
+
+- O R2 armazena **apenas o original**; nenhuma variante é persistida.
+- As rotas de imagem aceitam `?width=` com allowlist fechada (320, 640, 1280); fora da allowlist, o original é servido.
+- Formato de saída AVIF quando o navegador anuncia suporte (`Accept`), senão WebP; quality 82.
+- `Vary: Accept` separa as entradas de cache por formato; `Cache-Control` público (`max-age=300, stale-while-revalidate=86400`) para imagens públicas e privado (`max-age=300, must-revalidate`) para imagens autenticadas.
+- A invalidação é resolvida por **versionamento de URL** (`?v=updated_at` embutido nos URLs emitidos pela API), sem purge.
+- O helper é centralizado em `src/images.mjs` (`createImageService`), com dependências injetadas no padrão dos demais módulos; sem `env.IMAGES`, o comportamento cai no `storedImageResponse` original — reversível por construção.
+- O frontend consome via `srcset`/`sizes` na galeria pública (2.3), na central da conta, no avatar do perfil público e nos cards da busca.
+
+### Motivo da escolha
+
+- **Simplicidade operacional**: um único objeto por imagem no R2, sem pipeline de upload, sem chaves de variante e sem invalidação coordenada entre chaves.
+- **Custo já assumido**: o binding Cloudflare Images está habilitado no `wrangler.jsonc`; gerar no upload não eliminaria o serviço, apenas deslocaria o gasto.
+- **Cache de borda compensa**: `stale-while-revalidate=86400` faz a primeira requisição pagar a transformação e as demais serem servidas da edge.
+- **Reversibilidade**: allowlist fechada e fallback preservam o comportamento anterior quando o serviço está ausente.
+
+### Alternativas consideradas
+
+- **Pipeline de variantes no upload (4.3.a do roadmap)**: rejeitada nesta etapa — triplicaria o armazenamento no R2 e exigiria invalidação coordenada entre chaves antes de o volume justificar; pode ser revisada se o custo on-demand crescer.
+- **Servir imagens por URL pública do R2**: rejeitada — contraria a Decisão 13 (R2 privado, sempre via Worker).
+- **Redimensionamento próprio no Worker**: rejeitada — o binding nativo é gerenciado, mais rápido e sem dependência adicional.
+
+### Consequências
+
+- **Benefícios:** banda e LCP otimizados; armazenamento mínimo; código único para todos os tipos de imagem (portfólio e perfil).
+- **Limitações:** custo por transformação on-demand (mitigado pela allowlist e pelo cache); latência adicional apenas na primeira requisição de cada variante.
+- **Pontos futuros:** avaliar geração no upload se o volume justificar; monitorar o consumo do Cloudflare Images.
+
+### Status
+
+**Ativa.** Implementada nos PRs #78, #79, #80 e #84.
+
+---
+
 ## Resumo
 
 | # | Decisão | Status |
@@ -631,6 +674,7 @@ O roadmap técnico é formalizado em `docs/ROADMAP_EVOLUCAO.md` como **documento
 | 12 | Agentes especializados do Copilot | Ativa |
 | 13 | Segurança: R2 privado, validação, proteção de dados | Ativa (revisável para HSTS/2FA) |
 | 14 | Roadmap técnico como documento vivo | Ativa (revisável trimestralmente) |
+| 15 | Variantes de imagem on-demand (Cloudflare Images) | Ativa |
 
 ---
 
@@ -656,5 +700,4 @@ Estes pontos **não são decisões tomadas** — são candidatos a formalizaçã
 - **HSTS e headers adicionais**: o roadmap recomenda HSTS e padronização de headers; a decisão sobre os valores exatos ainda não está formalizada.
 - **Papéis como autorização**: hoje `client` e `photographer` são dados de perfil, não autorizam áreas; a decisão sobre como papéis passarão a autorizar ainda não foi tomada.
 - **Domínio personalizado**: listado como prioridade média; a decisão sobre o domínio e a configuração ainda não está formalizada.
-- **Estratégia de imagens com Image Resizing**: recomendada na Fase 4; a decisão sobre como integrar o Image Resizing ao R2 ainda não foi tomada.
 - **Atualização do `db/schema.ts`**: débito técnico conhecido (desatualizado para 6 tabelas); a decisão sobre como manter o `schema.ts` sincronizado com as migrações ainda não está formalizada como processo.

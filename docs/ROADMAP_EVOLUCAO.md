@@ -249,6 +249,8 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 4.3 Estrategia de imagens com R2 + Image Resizing
 
+> **Status:** implementação concluída e validada em CI em 1º de setembro de 2026, com abordagem adaptada: variantes geradas on-demand via binding `IMAGES` (Cloudflare Images) em vez de pipeline no upload — formalizada como Decisão 15 em `docs/DECISOES_TECNICAS.md`. Entregas: #78 (transformações opcionais), #79 (integração `srcset`), #80 (política de cache) e #84 (foto de perfil + centralização do helper). Deploy de produção pendente (fluxo manual).
+
 1. **Nome da iniciativa**: Geracao de variantes responsivas no upload.
 2. **Objetivo**: Servir imagens de portfolio em tamanhos otimizados (thumbnail, medio, full) via R2 + Cloudflare Image Resizing, integrando-se ao markup preparado na 2.3.
 3. **Problema resolvido**: Hoje a foto original (ate 4MB) e servida em qualquer contexto - galeria, card, perfil. Banda desperdicada e LCP degradado em mobile.
@@ -259,9 +261,9 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 8. **Agentes envolvidos**: Engenheiro Backend, Engenheiro DevOps, Engenheiro Frontend, Especialista em SEO e Performance (Responsavel por tamanhos otimizados e Core Web Vitals).
 9. **Ordem recomendada**: **15a** - so quando o volume de portfolios justificar o custo.
 10. **Subtarefas**:
-    - 4.3.a: Gerar thumbnails, variante media e variante completa no upload; armazenar no R2 com prefixo de chave.
-    - 4.3.b: Adotar formatos modernos (WebP/AVIF) e compressao; definir politica de invalidacao de variantes.
-    - 4.3.c: Integracao final com o markup `srcset`/`sizes` preparado na 2.3.
+    - 4.3.a (adaptada - Decisao 15): o original e armazenado no R2 e as variantes (320/640/1280, AVIF/WebP) sao geradas on-demand via binding `IMAGES`, com cache de borda; sem armazenamento extra de variantes.
+    - 4.3.b (concluida): AVIF/WebP com quality 82 on-demand, `Vary: Accept` e invalidacao por versionamento de URL (`?v=updated_at`), sem purge.
+    - 4.3.c (concluida): `srcset`/`sizes` na galeria publica (2.3), na central da conta, no avatar do perfil publico e nos cards da busca.
 
 ### 4.4 Alertas e SLOs
 
