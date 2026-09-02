@@ -241,7 +241,7 @@ Use o agente adequado à natureza da tarefa. Para mudanças transversais, comece
 Pontos que exigem atenção especial ou estão em débito técnico conhecido:
 
 - **`db/schema.ts` desatualizado** — lista 6 tabelas, faltam `professional_profiles` e `portfolio_items`. Débito P1. As **migrações** são a fonte de verdade.
-- **Handlers ainda centralizados em `src/worker.mjs`** — o roteador já foi extraído, mas a separação dos handlers por domínio permanece como iniciativa 4.2.
+- **Helpers compartilhados permanecem em `src/worker.mjs`** — a iniciativa 4.2 extraiu todos os handlers de domínio (blocos legados removidos no PR #82); o worker mantém formatters, sessão, rate limiting, cache de edge e SSR como ponto de composição.
 - **Aliases visuais legados** (`--accent-1`, `--text`, `--radius`, `--shadow`) — devem ser migrados para `--lc-*`.
 - **`docs/CONTEXTO_PROJETO.md` não rastreado no git** — débito P2.
 - **Termos de Uso e Política de Privacidade** — pendentes de revisão institucional antes de publicação comercial.
