@@ -135,3 +135,15 @@ Consultas-base no Query Builder:
 Os limiares são deliberadamente conservadores para o baixo volume atual. Antes de automatizar notificações, coletar pelo menos sete dias de dados para calibrar falsos positivos. O alerta deve apontar para o runbook deste documento e incluir janela, rota e valor observado, nunca dados de usuários.
 
 O painel de Workers Observability é a fonte operacional; a configuração de notificações é feita no dashboard da conta Cloudflare e não altera o Worker, D1 ou R2.
+
+## 9.1 Automação in-repo (PR #87)
+
+O sinal de disponibilidade (>= 99,9%) e coberto por uma sonda executada no proprio Worker:
+
+- Cron a cada 5 minutos (`scheduled` handler em `src/worker.mjs`) executa a mesma checagem do endpoint `GET /api/health` (`SELECT 1` no D1).
+- Apois **2 falhas consecutivas**, envia um e-mail operacional via Brevo citando janela, rota e valor observado e apontando para este runbook - nunca dados de usuarios.
+- **Cooldown de 1 hora** entre e-mails evita alert fatigue.
+- Estado duravel (contador de falhas consecutivas + timestamp do ultimo alerta) persistido na tabela `monitor_state` (migration `0009_monitor_state.sql`).
+- Sem `env.BREVO_*` configurado, a sonda registra o estado mas nao envia e-mail (degradacao limpa, sem quebrar o Worker).
+
+Os sinais de latencia P95 (< 300 ms) e taxa de 5xx (< 0,1%) permanecem no painel Workers Observability, com notificacoes configuradas no dashboard Cloudflare - nao alteram Worker, D1 ou R2.

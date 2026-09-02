@@ -4,7 +4,7 @@
 >
 > **Data de referência:** 1º de setembro de 2026, com `main` em `f9d8e53`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4, Fase 4.1, Fase 4.2 e a Fase 4.3 concluídas — handlers de domínio extraídos, blocos legados removidos (#82) e variantes de imagem on-demand completas (#78–#80, #84) publicadas em produção (versão `e271e165`); próxima prioridade: 4.4 (alertas automatizados).
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4, Fase 4.1, Fase 4.2, Fase 4.3 e a Fase 4.4 concluídas — handlers de domínio extraídos (#82), variantes de imagem on-demand (#78–#80, #84) e sonda de disponibilidade in-worker (#87) publicadas em produção; próxima prioridade: revisão institucional de Termos de Uso e Política de Privacidade antes de publicação comercial.
 
 ---
 
@@ -76,7 +76,7 @@ A limpeza controlada foi concluída após comparar a árvore de cada branch obso
 
 ## 3. Funcionalidades em desenvolvimento
 
-Não há iniciativa em desenvolvimento em uma branch ativa. As quatro iniciativas da Fase 1, o marco de transição, a Fase 4.2 e a Fase 4.3 estão integrados e publicados em produção (versão `e271e165`). O catálogo e o despacho HTTP ficam em `src/router.mjs`; os handlers de domínio vivem em módulos próprios (`src/auth.mjs`, `photographers.mjs`, `account.mjs`, `account-security.mjs`, `portfolio.mjs`, `public-input.mjs`, `observability.mjs`) e o `worker.mjs` permanece como ponto de composição (782 linhas após o PR #82). As funcionalidades de produto abaixo já estão em `main` e em produção:
+Não há iniciativa em desenvolvimento em uma branch ativa. As quatro iniciativas da Fase 1, o marco de transição, a Fase 4.2, a Fase 4.3 e a Fase 4.4 estão integrados e publicados em produção. O catálogo e o despacho HTTP ficam em `src/router.mjs`; os handlers de domínio vivem em módulos próprios (`src/auth.mjs`, `photographers.mjs`, `account.mjs`, `account-security.mjs`, `portfolio.mjs`, `public-input.mjs`, `observability.mjs`) e o `worker.mjs` permanece como ponto de composição (782 linhas após o PR #82). As funcionalidades de produto abaixo já estão em `main` e em produção:
 
 ### Funcionalidades entregues
 
@@ -312,6 +312,12 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Validada com 160 testes, build do Wrangler e CI obrigatório; nenhuma migration ou dado do D1 foi alterado.
 - Versão `e271e165-8768-461d-a746-f3b66587b4c5` publicada em produção em 1º de setembro de 2026 (2 assets atualizados: `search.js` e `photographer-profile.js`; binding `IMAGES` confirmado ativo). Smoke somente leitura: health `200`, home `200`, sitemap `200` com 3 URLs, busca `200` (1 perfil) e rotas de foto respondendo `404` corretamente para perfil sem foto, com e sem `?width=640`. A transformação on-demand não pôde ser exercitada com dados reais (nenhum fotógrafo publicado com foto) e permanece coberta pela suíte automatizada.
 
+### Fase 4.4 — concluída (sonda in-worker; P95/5xx no dashboard)
+- O sinal de disponibilidade (>= 99,9%) é coberto por sonda in-worker: cron a cada 5 min (`scheduled` handler) executa a checagem D1 idêntica ao `GET /api/health`; após 2 falhas consecutivas envia e-mail operacional via Brevo (janela, rota, valor observado, runbook em `docs/OBSERVABILIDADE.md`), com cooldown de 1h e estado durável na tabela `monitor_state` (migration `0009`).
+- Os sinais de latencia P95 (< 300 ms) e taxa de 5xx (< 0,1%) permanecem no painel Workers Observability, com notificações configuradas no dashboard Cloudflare (não alteram Worker, D1 ou R2).
+- Validada com 166 testes, build do Wrangler e CI obrigatório; migration aplicada ao D1 remoto e Worker deployado (versão `51d056b4`); smoke pos-deploy: health HTTP 200, D1 ok.
+
+### P4 — SEO e presença (médio prazo, baixo risco)
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - Open Graph e JSON-LD (sitemap e robots já concluídos na Fase 3.4).
 - Cache via `caches.default` para assets e respostas imutáveis.
@@ -327,7 +333,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Fase 4.4] Alertas automatizados   ← 4.3 concluída nos PRs #78–#80 e #84
+1. [Proximo] Revisao institucional de Termos de Uso e Politica de Privacidade   ← antes de publicacao comercial
 2. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
 ```
 
@@ -341,6 +347,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - A Fase 4.1 passou a aproveitar o cache da edge para leituras públicas.
 - A Fase 4.2 foi concluída: todos os handlers de domínio foram extraídos e os blocos legados removidos no PR #82.
 - A Fase 4.3 foi concluída com transformação on-demand (Decisão 15) e publicada em produção na versão `e271e165`.
+- A Fase 4.4 foi concluída: sonda de disponibilidade in-worker (cron + e-mail Brevo após 2 falhas consecutivas, cooldown 1h) publicada na versão `51d056b4`; os sinais de P95 e 5xx permanecem no painel Workers Observability com notificações via dashboard Cloudflare.
 - P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
 
 ---
@@ -390,4 +397,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 1º de setembro de 2026, com `main` em `e0e83a7` (código) publicada em produção na versão `e271e165-8768-461d-a746-f3b66587b4c5`; a Fase 4.2 foi concluída no PR #82 (`worker.mjs` de 1.344 para 782 linhas) e a Fase 4.3 no PR #84 (variantes on-demand para foto de perfil; Decisão 15 registrada).
+**Última atualização deste handoff:** 1º de setembro de 2026, com `main` em `7df1dd1` (código) e produção na versão `51d056b4-53a1-4329-9012-36107d4db270`; a Fase 4.2 foi concluída no PR #82, a Fase 4.3 no PR #84 (Decisão 15) e a Fase 4.4 no PR #87 (sonda de disponibilidade in-worker).
