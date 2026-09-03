@@ -456,6 +456,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
+- `docs/BACKUP_D1.md` — backup diário do D1 no R2, procedimento de restauração e validação periódica (iniciativa 5.2).
 - `docs/DOCUMENTACAO_TECNICA.md` — documentação técnica detalhada.
 - `DESIGN_SYSTEM.md` — guia de design e tokens.
 - `CONTRIBUTING.md` — fluxo de contribuição.

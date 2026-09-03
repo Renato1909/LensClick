@@ -1,0 +1,141 @@
+name: Backup do D1
+
+# Iniciativa 5.2 do roadmap: backup automatico do D1 com restauracao testada.
+# Executa diariamente e tambem pode ser disparado manualmente.
+# O procedimento completo, incluindo a restauracao, esta em docs/BACKUP_D1.md.
+
+on:
+  schedule:
+    # 03:17 UTC - horario fora do pico, deliberadamente fora do minuto exato
+    # para nao concorrer com outras execucoes agendadas na plataforma.
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    inputs:
+      retention_days:
+        description: 'Descartar backups com mais de N dias'
+        required: false
+        default: '30'
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-d1
+  # Um backup em andamento nunca deve ser cancelado no meio: isso deixaria
+  # um arquivo parcial no R2 e passaria falsa sensacao de seguranca.
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Exportar o D1 e arquivar no R2
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      BACKUP_BUCKET: lensclick-backups
+      BACKUP_PREFIX: daily
+      DATABASE_NAME: lensclick-db
+
+    steps:
+      - name: Conferir os segredos obrigatorios
+        run: |
+          set -euo pipefail
+          faltando=0
+          for nome in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+            if [ -z "${!nome:-}" ]; then
+              echo "::error::O segredo $nome nao esta configurado. Veja docs/BACKUP_D1.md."
+              faltando=1
+            fi
+          done
+          if [ "$faltando" -ne 0 ]; then exit 1; fi
+          echo "Segredos obrigatorios presentes."
+
+      - name: Baixar o codigo
+        uses: actions/checkout@v4
+
+      - name: Preparar o Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias de forma reproduzivel
+        run: npm ci
+
+      - name: Exportar o banco remoto
+        run: |
+          set -euo pipefail
+          STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+          ARQUIVO="backup-${STAMP}.sql"
+          echo "STAMP=${STAMP}" >> "$GITHUB_ENV"
+          echo "ARQUIVO=${ARQUIVO}" >> "$GITHUB_ENV"
+
+          npx wrangler d1 export "$DATABASE_NAME" --remote --output "$ARQUIVO" -y
+
+          # Um export vazio ou zerado nao e evidencia de sucesso: falha aqui
+          # para que o workflow nao arquive um backup inutil.
+          test -s "$ARQUIVO"
+          echo "Export concluido: $(wc -c < "$ARQUIVO") bytes"
+
+      - name: Enviar para o R2
+        run: |
+          set -euo pipefail
+          npx wrangler r2 object put \
+            "${BACKUP_BUCKET}/${BACKUP_PREFIX}/${ARQUIVO}" \
+            --file "$ARQUIVO" \
+            --content-type "application/sql"
+          echo "Arquivado em ${BACKUP_BUCKET}/${BACKUP_PREFIX}/${ARQUIVO}"
+
+      - name: Aplicar a retencao
+        run: |
+          set -euo pipefail
+          DIAS="${{ inputs.retention_days || '30' }}"
+          CORTE="$(date -u -d "${DIAS} days ago" +%s)"
+          echo "Retencao de ${DIAS} dias - descartando anteriores a $(date -u -d "@${CORTE}" +%Y-%m-%dT%H:%M:%SZ)"
+
+          BASE="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/r2/buckets/${BACKUP_BUCKET}/objects"
+          LISTA="$(curl --fail --silent --show-error \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "${BASE}?prefix=${BACKUP_PREFIX}/&per_page=1000")"
+
+          if [ "$(printf '%s' "$LISTA" | jq -r '.success')" != "true" ]; then
+            echo "::error::Falha ao listar os objetos do bucket de backup."
+            printf '%s' "$LISTA" | jq -r '.errors[]? | "- \(.message)"'
+            exit 1
+          fi
+
+          # A API retorna "uploaded" como RFC3339 com milissegundos. O jq
+          # exige o formato exato em fromdateiso8601, entao a fracao e
+          # removida antes da comparacao (a sub nao altera nada se nao houver
+          # fracao, cobrindo os dois formatos).
+          printf '%s' "$LISTA" \
+            | jq -c --argjson corte "$CORTE" '
+                .result[]
+                | select(.key | endswith(".sql"))
+                | select((.uploaded | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601) < $corte)
+                | { key, uploaded }' \
+            | while read -r linha; do
+                chave="$(printf '%s' "$linha" | jq -r '.key')"
+                quando="$(printf '%s' "$linha" | jq -r '.uploaded')"
+                echo "Descartando ${chave} (enviado em ${quando})"
+                codificado="$(jq -rn --arg k "$chave" '$k | @uri')"
+                curl --fail --silent --show-error -X DELETE \
+                  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+                  "${BASE}/${codificado}" > /dev/null
+              done
+
+          echo "Retencao aplicada."
+
+      - name: Resumo da execucao
+        run: |
+          {
+            echo "### Backup do D1"
+            echo ""
+            echo "- Banco: \`${DATABASE_NAME}\` (remoto)"
+            echo "- Arquivo: \`${BACKUP_PREFIX}/${ARQUIVO}\`"
+            echo "- Destino: bucket R2 \`${BACKUP_BUCKET}\`"
+            echo "- Retencao: ${{ inputs.retention_days || '30' }} dias"
+          } >> "$GITHUB_STEP_SUMMARY"

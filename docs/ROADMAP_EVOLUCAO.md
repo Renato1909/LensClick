@@ -306,7 +306,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 5.2 Backup e restauracao do D1
 
-> **Estado:** não iniciada. Item de maior criticidade desta fase: hoje nao existe nenhuma automacao de backup.
+> **Estado:** implementada. Workflow `.github/workflows/backup.yml` (exportacao diaria do D1 remoto para o R2, com retencao de 30 dias) e procedimento em `docs/BACKUP_D1.md`. Depende de uma configuracao manual unica - bucket R2 e segredos - descrita na secao 3 do procedimento. A formalizacao como decisao segue pendente (subtarefa 5.2.c).
 
 1. **Nome da iniciativa**: Backup automatico do D1 com restauracao testada.
 2. **Objetivo**: Garantir que o banco possa ser recuperado, com politica explicita de frequencia, retencao e local de armazenamento.
@@ -318,8 +318,8 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 8. **Agentes envolvidos**: Engenheiro de Banco de Dados (Responsavel), Engenheiro DevOps (Automacao), Especialista em Seguranca (Revisor de integridade e de privilegios do token).
 9. **Ordem recomendada**: **18a**.
 10. **Subtarefas**:
-    - 5.2.a: workflow `backup.yml` com execucao diaria agendada e `workflow_dispatch`, exportando o D1 remoto para um bucket R2 proprio, com retencao minima de 30 dias.
-    - 5.2.b: procedimento de restauracao documentado e testado em ambiente isolado.
+    - 5.2.a (concluida): workflow `.github/workflows/backup.yml` - execucao diaria as 03:17 UTC e `workflow_dispatch` com parametro de retencao, arquivando em `lensclick-backups/daily/backup-<data>.sql`, com retencao de 30 dias aplicada via API da Cloudflare. O workflow falha se o segredo estiver ausente ou se o arquivo exportado estiver vazio.
+    - 5.2.b (procedimento documentado; teste de restore pendente): secao 5 de `docs/BACKUP_D1.md`. O restore de teste em ambiente isolado e a atividade da validacao periodica (secao 6 do mesmo documento) e **ainda nao foi executado** - requer o bucket e os segredos configurados.
     - 5.2.c: formalizar a decisao (frequencia, retencao, local) em `docs/DECISOES_TECNICAS.md`, que hoje lista o tema como decisao pendente.
 
 ### 5.3 Endurecimento transversal de seguranca
@@ -458,7 +458,7 @@ Estas recomendacoes nao sao iniciativas pontuais, mas praticas continuas que dev
 
 ### Backup e recuperacao do D1
 
-- **Backup**: configurar backup automatico do D1 (`wrangler d1 backup` ou export periodico) - o D1 nao garante backup automatico restauravel por padrao.
+- **Backup**: configurar backup automatico do D1 (`wrangler d1 backup` ou export periodico) - o D1 nao garante backup automatico restauravel por padrao. **Atendido pela iniciativa 5.2** (ver `docs/BACKUP_D1.md`).
 - **Restauracao**: documentar e testar o procedimento de restauracao do backup em ambiente isolado, nao em producao.
 - **Validacao periodica**: a cada release maior (Fase 3 e 4), executar um restore de teste e validar integridade das 8 tabelas.
 - **Retencao**: definir politica de retencao (minimo 30 dias de backups diarios) e local seguro de armazenamento (R2 separado ou storage externo).
