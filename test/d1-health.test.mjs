@@ -29,7 +29,7 @@ function queryPlan(database, sql, values) {
 
 test('migrations de busca alinham os indices aos filtros e a ordenacao', () => {
   const database = migratedDatabase();
-  assert.match(read('db/schema.ts'), /schemaVersion = 8/);
+  assert.match(read('db/schema.ts'), /schemaVersion = 10/);
   const base = `
     SELECT p.user_id
     FROM professional_profiles p

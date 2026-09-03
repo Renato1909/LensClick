@@ -23,7 +23,7 @@ Ele deve **envelhecer mais lentamente** que `docs/HANDOFF.md`: evita números mu
 - Dados estruturados no **D1**; imagens profissionais no **R2** (bucket privado, nunca público por URL direta).
 - Frontend em **HTML/CSS/JS vanilla**, sem framework, com i18n PT/EN.
 - Ambiente oficial: `https://lensclick.renato-aparecido-business.workers.dev`.
-- Escopo atual (Fase 1): landing page, cadastro/login reais, recuperação de senha via Brevo, central autenticada de conta, perfil profissional, portfolio (até 12 imagens), página pública do fotógrafo, mensagens de contato, newsletter. **Não há** dashboard de agendamentos.
+- Escopo atual: landing page, cadastro/login reais, recuperação de senha via Brevo, central autenticada de conta, perfil profissional com onboarding guiado, portfolio (até 12 imagens), página pública indexável do fotógrafo, busca com filtros e ordenação, avaliações verificadas, mensagens internas, sitemap e robots dinâmicos, observabilidade e alertas in-worker. **Não há** dashboard de agendamentos nem painel administrativo.
 - Termos de Uso e Política de Privacidade ainda requerem revisão institucional antes de publicação comercial.
 
 Detalhes de visão e escopo: `docs/CONTEXTO_PROJETO.md`.
@@ -36,14 +36,14 @@ Detalhes de visão e escopo: `docs/CONTEXTO_PROJETO.md`.
 flowchart LR
     B[Navegador] -->|HTTP| W[Entrypoint do Worker<br/>src/worker.mjs]
     W --> RT[Roteador<br/>src/router.mjs]
-    RT --> H[Handlers da API<br/>src/worker.mjs]
+    RT --> H[Handlers por dominio<br/>src/auth.mjs, src/photographers.mjs, src/account.mjs, src/account-security.mjs, src/portfolio.mjs, src/public-input.mjs, src/monitoring.mjs]
     H -->|SQL preparado| D[(D1<br/>lensclick-db)]
     H -->|autorização| R[(R2<br/>lensclick-profile-images)]
     RT -->|assets| A[public/]
     H -->|e-mail transacional| E[Brevo]
 ```
 
-- **Worker único** (`src/worker.mjs`) executa os handlers; `src/router.mjs` centraliza o catálogo e o despacho de `/api/*`, além da separação para os assets de `public/`.
+- **Worker único** (`src/worker.mjs`) atua como ponto de composição: mantém formatters, sessão, rate limiting, cache de edge e SSR. `src/router.mjs` centraliza o catálogo (37 rotas) e o despacho de `/api/*`, além da separação para os assets de `public/`. Os handlers de domínio foram extraídos na Fase 4.2 (concluída no PR #82) para `src/auth.mjs`, `src/photographers.mjs`, `src/account.mjs`, `src/account-security.mjs`, `src/portfolio.mjs`, `src/public-input.mjs` e `src/monitoring.mjs`.
 - `run_worker_first` força o Worker a interceptar `/api/*`, `/` e `/*.html`.
 - Backend e frontend compartilham o **mesmo domínio** (sem CORS entre origens).
 - Configuração de bindings: `wrangler.jsonc`.
@@ -61,7 +61,7 @@ A fonte primária depende do tipo de pergunta:
 | Pergunta | Fonte primária | Fonte secundária |
 |---|---|---|
 | O que **ESTÁ** implementado? | Implementação executável/observável: `src/`, `public/`, `migrations/`, `test/`, `wrangler.jsonc`, workflows e estado Git quando aplicável | Documentação (para contexto) |
-| **POR QUE** uma decisão foi tomada? | `docs/DECISOES_TECNICAS.md` (14 decisões arquiteturais documentadas) | `docs/DOCUMENTACAO_TECNICA.md` (seção 14) |
+| **POR QUE** uma decisão foi tomada? | `docs/DECISOES_TECNICAS.md` (15 decisões arquiteturais documentadas) | `docs/DOCUMENTACAO_TECNICA.md` (seção 14) |
 | O que **SERÁ** feito? | `docs/ROADMAP_EVOLUCAO.md` (intenção futura, não implementação) | — |
 | **ONDE ESTAMOS** operacionalmente? | `docs/HANDOFF.md` (validado contra Git/workspace quando necessário) | Estado Git ao vivo |
 | **COMO** uma IA deve trabalhar? | Este `docs/AI_CONTEXT.md` e `CONTRIBUTING.md` | `docs/CONTEXTO_PROJETO.md` |
@@ -153,11 +153,11 @@ Fluxo oficial (em `CONTRIBUTING.md`):
 ## 9. Banco de dados
 
 - **Cloudflare D1** (`lensclick-db`), binding `DB`.
-- **8 tabelas:** `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`.
+- **15 tabelas:** `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`.
 - **PRAGMA foreign_keys=ON**; FKs com `ON DELETE CASCADE`.
 - **Statements preparados** com `.bind()` — nunca concatene SQL.
-- **Migrações** em `migrations/` (`0001`–`0004`), imutáveis. Nova alteração = `0005_*.sql`.
-- **`db/schema.ts` está desatualizado** (lista 6 tabelas, faltam 2) — débito técnico P1. **As migrações são a fonte de verdade.**
+- **Migrações** em `migrations/` (`0001`–`0010`), imutáveis. Nova alteração = `0011_*.sql`.
+- **`db/schema.ts` está desatualizado** (lista 13 das 15 tabelas; faltam `monitor_state` e `monitor_minute_buckets`) — débito técnico P1, tratado na iniciativa 5.1. **As migrações são a fonte de verdade.**
 - **Índices** em colunas de leitura frequente para reduzir consumo do plano gratuito.
 
 Modelo detalhado (MER/DER/dicionário): `docs/DOCUMENTACAO_TECNICA.md` seção 8.
@@ -200,14 +200,14 @@ Referência visual: `DESIGN_SYSTEM.md`.
 - **Endpoints `/api/*`:** auth (register, login, logout, me, password-reset), account (profile, password, photo, delete, professional-profile, portfolio), públicos (photographers, contact, newsletter). Lista completa em `docs/DOCUMENTACAO_TECNICA.md` seção 6.3.
 - **Constantes principais:** `SESSION_COOKIE`, `SESSION_TTL_MS` (7 dias), `MAX_BODY_BYTES` (700k), `MAX_PROFILE_PICTURE_BYTES` (450k), `PBKDF2_ITERATIONS` (100k).
 - **Funções de apoio:** `cleanText`, `normalizeEmail`, `hashPassword`, `verifyPassword`, `parseCookies`, `sessionCookie`, `authenticatedUser`, `createSession`, `isRateLimited`, `decodeProfilePicture`, `portfolioUpload`, `storedImageResponse` e `dispatchApiRoute`.
-- **Roteamento:** `src/router.mjs` exporta `matchApiRoute` e `createRequestRouter`; a modularização dos handlers por domínio permanece reservada para a Fase 4.
+- **Roteamento:** `src/router.mjs` exporta `matchApiRoute` e `createRequestRouter`; a modularização dos handlers por domínio foi concluída na Fase 4.2 (PR #82).
 
 ---
 
 ## 13. Testes e qualidade
 
 - **Runner:** Node.js test runner (`node --test`).
-- **Arquivos:** `test/*.test.mjs` (14 arquivos cobrindo auth, conta, perfil profissional, portfolio, busca, tradução, fases 4–9, scripts HTML, copy).
+- **Arquivos:** `test/*.test.mjs` — suítes de contrato por rota, por domínio, de interface, de catálogos de tradução e de scripts HTML. O total muda a cada entrega: consulte `npm test` em vez de fixar números neste documento.
 - **Smoke HTTP:** `npm run test:smoke` (requer `npm start` em execução).
 - **Validação do Worker:** `npm run check` (`wrangler deploy --dry-run`).
 - **CI:** workflow "Qualidade" roda `npm test` + `npm run check` em todo PR e push para `main`.
@@ -240,10 +240,9 @@ Use o agente adequado à natureza da tarefa. Para mudanças transversais, comece
 
 Pontos que exigem atenção especial ou estão em débito técnico conhecido:
 
-- **`db/schema.ts` desatualizado** — lista 6 tabelas, faltam `professional_profiles` e `portfolio_items`. Débito P1. As **migrações** são a fonte de verdade.
+- **`db/schema.ts` desatualizado** — lista 13 das 15 tabelas; faltam `monitor_state` e `monitor_minute_buckets`. Débito P1. As **migrações** são a fonte de verdade.
 - **Helpers compartilhados permanecem em `src/worker.mjs`** — a iniciativa 4.2 extraiu todos os handlers de domínio (blocos legados removidos no PR #82); o worker mantém formatters, sessão, rate limiting, cache de edge e SSR como ponto de composição.
 - **Aliases visuais legados** (`--accent-1`, `--text`, `--radius`, `--shadow`) — devem ser migrados para `--lc-*`.
-- **`docs/CONTEXTO_PROJETO.md` não rastreado no git** — débito P2.
 - **Termos de Uso e Política de Privacidade** — pendentes de revisão institucional antes de publicação comercial.
 - **Auth git remoto no ambiente Windows** — pode estar indisponível; comandos git sensíveis podem precisar do usuário.
 

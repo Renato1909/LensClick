@@ -360,11 +360,16 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 - Edição de perfil + foto (R2)
 - Troca de senha com revogação de sessões
 - Exclusão definitiva da conta
-- Perfil profissional (rascunho/publicação, contatos seletivos)
-- Portfolio profissional (upload R2, ordem, textos, até 12 itens)
-- Página pública de fotógrafo (fotografo.html)
-- Busca de fotógrafos (busca.html)
+- Perfil profissional (rascunho/publicação, contatos seletivos) com onboarding guiado
+- Portfolio profissional (upload R2, ordem, textos, até 12 itens) com galeria responsiva e variantes on-demand
+- Página pública do fotógrafo, indexável (SSR, canonical, Open Graph e JSON-LD)
+- Busca de fotógrafos com filtros de preço, raio e ordenação
+- Avaliações e reputação verificadas
+- Mensagens internas entre cliente e fotógrafo
 - Contato e newsletter
+- Sitemap.xml e robots.txt dinâmicos
+- Cache de edge para leituras públicas
+- Observabilidade estruturada, SLOs e alertas in-worker (disponibilidade, P95 e taxa de 5xx)
 - Bilíngue PT/EN
 
 ### Branches, PRs e estado Git
@@ -373,51 +378,41 @@ O estado atual de branches, branches órfãs, PRs e pendências Git é mantido e
 
 ### Débitos técnicos conhecidos
 
-1. **`db/schema.ts` desatualizado** — `schemaVersion=2` lista apenas 6 tabelas (`users`, `sessions`, `passwordResetTokens`, `contactMessages`, `newsletterSubscriptions`, `rateLimits`), mas **não inclui** `professional_profiles` (migração 0003) nem `portfolio_items` (migração 0004). O schema está à frente do código de aplicação.
-2. **Hotspots de conflito** — os handlers em `src/worker.mjs` e os catálogos em `public/locales/` concentram alterações frequentes; branches concorrentes exigem resolução cuidadosa.
-3. **Branches órfãs** — `recuperacao-de-senha` e `gerenciamento-da-conta` perderam suas remotas; commits exclusivos correm risco de perda.
-4. **Sem 2FA** — apenas senha + sessão.
-5. **Sem verificação de e-mail** — cadastro não confirma o e-mail.
-6. **Rate limit simples no D1** — suficiente hoje, mas não escala para alto volume.
-7. **Termos/política precisam de revisão jurídica** antes de uso comercial.
-8. **Papéis não autorizam áreas** — `client`/`photographer` são dados de perfil, não controle de acesso.
-
+1. **`db/schema.ts` desatualizado** — `schemaVersion=8` lista 13 das 15 tabelas; faltam `monitor_state` e `monitor_minute_buckets` (migrações 0009 e 0010). Tratado na iniciativa 5.1.
+2. **Hotspots de conflito** — os catálogos em `public/locales/` concentram alterações frequentes. `src/worker.mjs` segue como ponto de composição, mas os handlers de domínio foram extraídos na Fase 4.2, reduzindo conflitos.
+3. **Branches órfãs** — resolvido. As branches `recuperacao-de-senha` e `gerenciamento-da-conta` foram integradas; as duas últimas remotas pendentes foram removidas em 3 de setembro de 2026, após conferência de conteúdo contra os commits de squash em `main`.
+4. **Sem 2FA** — apenas senha + sessão. Iniciativa 5.4.
+5. **Sem verificação de e-mail** — cadastro não confirma o e-mail. Iniciativa 5.4.
+6. **Rate limit híbrido** — escudo de rajada nativo na edge (PR #30) combinado a políticas longas no D1; atende o volume atual.
+7. **Termos/política precisam de revisão jurídica** — divulgações LGPD de alta prioridade (PR #89), de média prioridade (PR #91) e cláusulas opcionais (PR #93) já publicadas; resta a revisão legal formal antes do uso comercial. Iniciativa 5.5.
+8. **Papéis não autorizam áreas** — `client`/`photographer` são dados de perfil; a autorização ocorre por propriedade do recurso. Um papel administrativo continua necessário para moderação e é risco latente. Iniciativa 5.4.
+9. **Sem backup automatizado do D1** — não há workflow nem política de retenção. Iniciativa 5.2, a mais crítica entre as pendências.
+10. **Aliases visuais legados** — `--accent-1`, `--text`, `--radius` e `--shadow` seguem em uso e devem migrar para os tokens `--lc-*`. Iniciativa 5.7.
 ---
 
 ## 14. Próximos passos imediatos
 
-### Plano de limpeza e consolidação (P0-P4)
+### Fase 5 — plano corrente
 
-Baseado na revisão arquitetural das 7 branches:
+O plano de limpeza e consolidação P0-P4 registrado em versões anteriores foi **integralmente concluído**: todas as branches citadas já estavam integradas e as duas últimas remotas pendentes foram removidas em 3 de setembro de 2026.
 
-#### P0 — Limpeza (prioridade máxima)
+O plano corrente é a **Fase 5**, registrada em `docs/ROADMAP_EVOLUCAO.md` e resumida na seção 7 de `docs/HANDOFF.md`:
 
-- Deletar branches já mergeadas: `agent/configura-fluxo-github`, `chore/agentes-copilot`.
-- Confirmar que `main` contém todo o conteúdo mergeado.
-
-#### P1 — Recuperar branches órfãs
-
-- `agent/recuperacao-de-senha`: 2 commits exclusivos (migração para Brevo). Recriar remota ou abrir PR imediatamente.
-- `agent/gerenciamento-da-conta`: commits exclusivos. Recriar remota ou abrir PR.
-
-#### P2 — Consolidar funcionalidades da conta
-
-- `agent/exclusao-definitiva-da-conta` e `agent/gerenciamento-da-conta` compartilham 9 arquivos (mesmo domínio).
-- Estratégia: merge sequencial ou rebase sobre `main` com resolução de conflitos em `worker.mjs` e nos catálogos de `public/locales/`.
-
-#### P3 — Perfil profissional público
-
-- `agent/perfil-profissional-publico`: abrir/merge PR.
-- É base para `portfolio-fotografo`.
-
-#### P4 — Portfolio do fotógrafo
-
-- `agent/portfolio-fotografo`: depende de P3. Merge após P3 estar em `main`.
+| Ordem | Iniciativa | Complexidade |
+|---:|---|:---:|
+| 17 | 5.1 Consolidação documental | Baixa |
+| 18 | 5.2 Backup e restauração do D1 | Média |
+| 19 | 5.3 Endurecimento transversal de segurança | Média |
+| 20 | 5.4 Verificação de e-mail e papéis de autorização | Alta |
+| 21 | 5.5 Portabilidade de dados do titular (LGPD) | Baixa |
+| 22 | 5.6 Automação da entrega | Média |
+| 23 | 5.7 Qualidade e débitos técnicos | Média |
+| 24 | 5.8 Produto e presença digital | Média |
 
 ### Atualização de `db/schema.ts`
 
-- Adicionar `professional_profiles` e `portfolio_items` ao schema TypeScript.
-- Atualizar `schemaVersion` para refletir as 8 tabelas reais.
+- Adicionar `monitor_state` e `monitor_minute_buckets` ao schema TypeScript.
+- Atualizar `schemaVersion` para refletir as 15 tabelas reais (iniciativa 5.1).
 
 ### Antes de qualquer alteração
 

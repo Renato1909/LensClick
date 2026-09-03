@@ -2,7 +2,7 @@
 
 > **Premissa**: evoluir sem quebrar. Cada iniciativa e aditiva e reversivel. Nenhuma recomenda reescrita completa - o monolito atual e simples, testavel e adequado ao estadio do produto.
 >
-> **Arquitetura atual**: Worker unico Cloudflare (`src/worker.mjs`, handlers) com catalogo e despacho declarativos em `src/router.mjs` (22 padroes de rota e 25 contratos HTTP) - D1 `lensclick-db` (8 tabelas: `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`) - R2 `lensclick-profile-images` - Frontend HTML/JS/CSS vanilla (23 arquivos em `public/`) - suite automatizada de testes - Rate limiting hibrido (edge + politicas longas no D1) - `GET /api/health` para Worker/D1 - Sessoes por cookie (PBKDF2-SHA256, 100k iteracoes) - CSP rigorosa - Lazy loading nativo ja presente em `photographer-profile.js` (sem `srcset`/variantes) - sitemap/robots dinamicos, cache de edge de 60 segundos para descoberta publica e sem OG/JSON-LD/meta description dinamica adicional.
+> **Arquitetura atual**: Worker unico Cloudflare (`src/worker.mjs` como ponto de composicao) com catalogo e despacho declarativos em `src/router.mjs` (37 rotas catalogadas) e handlers extraidos por dominio (`src/auth.mjs`, `src/photographers.mjs`, `src/account.mjs`, `src/account-security.mjs`, `src/portfolio.mjs`, `src/public-input.mjs`, `src/monitoring.mjs`) - D1 `lensclick-db` (15 tabelas: `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`) - R2 `lensclick-profile-images` (bucket privado) - Frontend HTML/JS/CSS vanilla (29 arquivos em `public/`) - suite automatizada de testes (`node --test`; executar `npm test` para consultar o total atual) - Rate limiting hibrido (escudo de rajada nativo na edge + politicas longas autoritativas no D1) - `GET /api/health` para Worker/D1 - Sessoes por cookie (PBKDF2-SHA256, 100k iteracoes) - CSP rigorosa, ainda com `'unsafe-inline'` em `script-src` (tratado na 5.3) - variantes de imagem on-demand via binding `IMAGES` (Decisao 15) - sitemap/robots dinamicos - cache de edge de 60 segundos para descoberta publica - alertas in-worker de disponibilidade, P95 e taxa de 5xx (cron a cada 5 min) - Open Graph e JSON-LD presentes apenas nos perfis SSR (demais paginas tratadas na 5.8).
 >
 > **Agentes disponiveis**: Arquiteto de Software, Engenheiro Frontend, Engenheiro Backend, Engenheiro de Banco de Dados, Engenheiro DevOps, Engenheiro de QA, Designer, Especialista em Seguranca, Especialista em SEO e Performance, Especialista em Marketing para Fotografia, Revisor de Codigo.
 
@@ -281,6 +281,155 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ---
 
+## Fase 5 - Consolidacao e prontidao operacional
+
+> As Fases 1 a 4 entregaram as 16 iniciativas previstas. Esta fase nao adiciona funcionalidade de produto: ela da sustentacao ao que ja existe - base documental confiavel, continuidade dos dados, endurecimento de seguranca e automacao do ciclo de entrega. As iniciativas sao aditivas e reversiveis, como nas fases anteriores.
+
+### 5.1 Consolidacao documental
+
+> **Estado:** não iniciada. Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, e validado por duas análises independentes.
+
+1. **Nome da iniciativa**: Sincronizar a documentacao permanente com o estado real do repositorio.
+2. **Objetivo**: Restabelecer `docs/HANDOFF.md`, `docs/AI_CONTEXT.md`, `docs/CONTEXTO_PROJETO.md` e `db/schema.ts` como fontes confiaveis, eliminando as divergencias acumuladas entre o que a documentacao descreve e o que a implementacao prova.
+3. **Problema resolvido**: a documentacao descreve 8 tabelas (reais: 15) e 6 migracoes (reais: 10); a tabela de PRs do HANDOFF termina no #44 (reais: #96); a Fase 4.4 aparece como parcialmente concluida; o `db/schema.ts` lista 13 das 15 tabelas; o `CONTEXTO_PROJETO.md` mantem debitos e um plano P0-P4 ja resolvidos. Como a secao 4 do `AI_CONTEXT.md` define que a implementacao e a fonte primaria do que existe, documentacao defasada produz decisoes erradas - em especial para agentes de IA, que leem esses arquivos antes de tocar no codigo.
+4. **Impacto esperado**: plano, priorizacao e execucao passam a partir de premissas verdadeiras; reduz o retrabalho de quem assume o projeto.
+5. **Complexidade**: Baixa - somente documentacao e catalogo de esquema.
+6. **Riscos**: novo desalinhamento futuro. Mitigacao: atualizar a documentacao no mesmo PR que altera comportamento, ja previsto na secao 7 do `AI_CONTEXT.md`; manter contagens mutaveis (total de testes, linhas de arquivo) fora dos documentos de baixa mutabilidade, como o proprio `AI_CONTEXT.md` recomenda na secao 13.
+7. **Dependencias**: Nenhuma.
+8. **Agentes envolvidos**: Arquiteto de Software (Aprovador), Revisor de Codigo (Revisao), Engenheiro de Banco de Dados (`db/schema.ts`).
+9. **Ordem recomendada**: **17a** - e o pre-requisito das demais: planejar sobre documentacao falsa produz ordem errada.
+10. **Subtarefas**:
+    - 5.1.a: corrigir `docs/HANDOFF.md` - HEAD, contagem de tabelas e migracoes, tabela de PRs ate #96, estado real da Fase 4.4, remocao da secao sobre documentos em `tmp/` (diretorio inexistente, listado no `.gitignore`), correcao da lista de agentes e deduplicacao do titulo "P4 - SEO e presenca".
+    - 5.1.b: corrigir `docs/AI_CONTEXT.md` - contagem de tabelas e migracoes, 15 decisoes arquiteturais, `db/schema.ts` com 13 tabelas, modularizacao 4.2 ja concluida (secão 12), diagrama da secao 3 e remocao do debito "CONTEXTO_PROJETO.md nao rastreado", ja resolvido.
+    - 5.1.c: atualizar `docs/CONTEXTO_PROJETO.md` - debitos tecnicos (secao 13) e plano de limpeza P0-P4 (secao 14), ambos obsoletos, alem da lista de funcionalidades em producao.
+    - 5.1.d: atualizar `db/schema.ts` com `monitor_state` e `monitor_minute_buckets` e elevar `schemaVersion` para 10.
+
+### 5.2 Backup e restauracao do D1
+
+> **Estado:** não iniciada. Item de maior criticidade desta fase: hoje nao existe nenhuma automacao de backup.
+
+1. **Nome da iniciativa**: Backup automatico do D1 com restauracao testada.
+2. **Objetivo**: Garantir que o banco possa ser recuperado, com politica explicita de frequencia, retencao e local de armazenamento.
+3. **Problema resolvido**: `scripts/` contem apenas `http-smoke.mjs` e dois builds de documentacao, e o unico workflow do repositorio e o "Qualidade", que valida mas nao publica nem preserva dados. O D1 nao garante backup restauravel por padrao, e as recomendacoes transversais deste roadmap pedem backup, restauracao, validacao periodica e retencao - nenhuma atendida.
+4. **Impacto esperado**: elimina o cenario de perda irreversivel de dados; e pre-condicao para automatizar deploys (5.6) com seguranca.
+5. **Complexidade**: Media - workflow agendado, exportacao via Wrangler e armazenamento em bucket R2 proprio.
+6. **Riscos**: credencial com privilegio excessivo; backup nunca testado passa falsa sensacao de seguranca. Mitigacao: token com permissao minima (leitura no D1 e escrita apenas no bucket de backup), restore executado em ambiente isolado - nunca em producao - e procedimento documentado em `docs/BACKUP_D1.md`.
+7. **Dependencias**: Nenhuma critica, mas deve preceder 5.6.
+8. **Agentes envolvidos**: Engenheiro de Banco de Dados (Responsavel), Engenheiro DevOps (Automacao), Especialista em Seguranca (Revisor de integridade e de privilegios do token).
+9. **Ordem recomendada**: **18a**.
+10. **Subtarefas**:
+    - 5.2.a: workflow `backup.yml` com execucao diaria agendada e `workflow_dispatch`, exportando o D1 remoto para um bucket R2 proprio, com retencao minima de 30 dias.
+    - 5.2.b: procedimento de restauracao documentado e testado em ambiente isolado.
+    - 5.2.c: formalizar a decisao (frequencia, retencao, local) em `docs/DECISOES_TECNICAS.md`, que hoje lista o tema como decisao pendente.
+
+### 5.3 Endurecimento transversal de seguranca
+
+> **Estado:** não iniciada.
+
+1. **Nome da iniciativa**: HSTS, CSP sem `unsafe-inline` em scripts e limite de sessoes ativas.
+2. **Objetivo**: Fechar os itens de seguranca que as recomendacoes transversais deste roadmap preveem e que seguem em aberto.
+3. **Problema resolvido**: `SECURITY_HEADERS` em `src/worker.mjs` nao emite `Strict-Transport-Security`; a CSP libera `'unsafe-inline'` em `script-src` e em `style-src`, sustentando o bloco `<script>` inline de `public/index.html`; e nao ha teto de sessoes simultaneas por usuario, embora a rotacao de sessao na troca de senha ja exista em `src/account-security.mjs`.
+4. **Impacto esperado**: reduz a superficie de XSS e de sequestro de sessao; impede downgrade para HTTP.
+5. **Complexidade**: Media - exige externalizar o script inline de `public/index.html` para `public/home.js` e atualizar `test/html-scripts.test.mjs`, que valida a sintaxe dos scripts listados nominalmente.
+6. **Riscos**: `preload` no HSTS e praticamente irreversivel por meses - nao adotar nesta entrega; CSP restritiva demais quebra o frontend. Mitigacao: manter `'unsafe-inline'` em `style-src` nesta etapa e validar em preview antes da producao.
+7. **Dependencias**: Nenhuma.
+8. **Agentes envolvidos**: Especialista em Seguranca (Responsavel), Engenheiro Front-end (externalizacao do script), Engenheiro DevOps (cabecalhos), Revisor de Codigo.
+9. **Ordem recomendada**: **19a**.
+10. **Subtarefas**:
+    - 5.3.a: HSTS com `max-age=63072000; includeSubDomains`, sem `preload`.
+    - 5.3.b: externalizar o script inline e remover `'unsafe-inline'` de `script-src`.
+    - 5.3.c: teto de sessoes ativas por usuario em `createSession` (sugestao: 5), preservando a sessao corrente.
+
+### 5.4 Verificacao de e-mail e papeis de autorizacao
+
+> **Estado:** não iniciada. Risco classificado como critico no `HANDOFF.md` (secao 6, item 1).
+
+1. **Nome da iniciativa**: Confirmacao de e-mail no cadastro e papel administrativo para moderacao.
+2. **Objetivo**: Reduzir abuso na criacao de contas e destravar a moderacao de avaliacoes e conversas.
+3. **Problema resolvido**: contas podem ser criadas com e-mail nao verificado; e os riscos residuais das iniciativas 3.1 (avaliacoes) e 3.3 (conversas) dependem de um papel de moderador que nao existe - hoje `role` e dado de perfil, nao controle de acesso, como registra a secao "Decisoes que ainda precisam ser formalizadas" de `docs/DECISOES_TECNICAS.md`.
+4. **Impacto esperado**: menos abuso e account takeover; viabiliza moderacao e encerramento manual de conversas.
+5. **Complexidade**: Alta - novo fluxo de e-mail, novas rotas e novo modelo de autorizacao.
+6. **Riscos**: enumeracao de e-mail no reenvio (usar resposta generica, como ja faz `passwordResetRequest`); lockout de usuario; privilegio acidental de administrador. Mitigacao: rate limiting no `SENSITIVE_RATE_LIMITER`, guard `requireAdmin` coberto por testes de contrato, e primeiro administrador atribuido por migration ou script pontual - nunca por endpoint aberto.
+7. **Dependencias**: 5.3 (rate limiting e cabecalhos endurecidos reduzem abuso).
+8. **Agentes envolvidos**: Especialista em Seguranca (Responsavel), Engenheiro Backend, Engenheiro Front-end, Arquiteto de Software (Aprovador do modelo de papeis).
+9. **Ordem recomendada**: **20a**.
+10. **Subtarefas**:
+    - 5.4.a: tabela `email_verification_tokens` e coluna `email_verified_at` em nova migration, seguindo o padrao de `password_reset_tokens`; rotas de verificacao e reenvio; decidir formalmente se o login bloqueia ou apenas avisa.
+    - 5.4.b: coluna `is_admin` em nova migration - o `CHECK` de `role` na migration `0001` e imutavel - e guard `requireAdmin` no inicio de `dispatchApiRoute` para as rotas `admin.*`.
+    - 5.4.c: painel administrativo minimo para moderacao de avaliacoes e encerramento de conversas.
+
+### 5.5 Portabilidade de dados do titular (LGPD)
+
+> **Estado:** parcial. As divulgacoes de alta prioridade (PR #89), de media prioridade (PR #91) e as clausulas opcionais (PR #93) ja estao em producao.
+
+1. **Nome da iniciativa**: Exportacao dos dados do usuario pela propria conta.
+2. **Objetivo**: Atender ao direito de portabilidade do titular e fechar o ciclo das adequacoes legais.
+3. **Problema resolvido**: nao existe endpoint de exportacao; resta tambem a revisao legal formal antes da publicacao comercial, declarada como proxima prioridade no `HANDOFF.md`.
+4. **Impacto esperado**: conformidade com a LGPD e reducao de risco juridico na publicacao comercial.
+5. **Complexidade**: Baixa - leitura das tabelas existentes, sem novo schema.
+6. **Riscos**: vazamento de dados de terceiros, ja que as conversas tem dois participantes. Mitigacao: definir e documentar se a exportacao cobre apenas o lado do titular; rate limiting rigoroso; nunca incluir `password_hash`.
+7. **Dependencias**: 5.4 (e-mail verificado reforca a titularidade da conta).
+8. **Agentes envolvidos**: Especialista em Seguranca (Responsavel), Engenheiro Backend, Arquiteto de Software (Aprovador do escopo da exportacao).
+9. **Ordem recomendada**: **21a**.
+10. **Subtarefas**:
+    - 5.5.a: `GET /api/account/export` autenticado, com `SENSITIVE_RATE_LIMITER`, em JSON, sem `password_hash` e sem binarios do R2.
+    - 5.5.b: revisao legal formal dos Termos de Uso e da Politica de Privacidade - atividade externa ao codigo e condicao para a publicacao comercial.
+
+### 5.6 Automacao da entrega
+
+> **Estado:** não iniciada.
+
+1. **Nome da iniciativa**: Ambiente de preview e deploy automatizado.
+2. **Objetivo**: Sair do deploy manual via `wrangler deploy` sem abrir mao do gate de qualidade.
+3. **Problema resolvido**: o unico workflow (`quality.yml`) valida, mas nao publica; nao ha validacao de PR em ambiente real, item que as recomendacoes transversais de CI/CD preveem para iniciativas de alto risco.
+4. **Impacto esperado**: rastreabilidade entre commit e versao publicada; menos variabilidade manual no deploy.
+5. **Complexidade**: Media.
+6. **Riscos**: automatizar deploy sem backup amplia o raio de impacto de um erro. Mitigacao: depender de 5.2 e manter `npm run check` (dry-run) como gate obrigatorio do PR.
+7. **Dependencias**: 5.2 (backup e restauracao) - **critica**.
+8. **Agentes envolvidos**: Engenheiro DevOps (Responsavel), Engenheiro de QA (Validacao), Revisor de Codigo (Aprovador).
+9. **Ordem recomendada**: **22a**.
+10. **Subtarefas**:
+    - 5.6.a: job de preview no CI subindo o Worker local e executando `npm run test:smoke` contra ele.
+    - 5.6.b: workflow `deploy.yml` em `push` para `main`, apos o "Qualidade", usando `CLOUDFLARE_API_TOKEN`.
+
+### 5.7 Qualidade e debitos tecnicos
+
+> **Estado:** não iniciada.
+
+1. **Nome da iniciativa**: Aliases visuais legados, lint e testes em navegador real.
+2. **Objetivo**: Reduzir a divida tecnica declarada na secao 15 (Hotspots) do `docs/AI_CONTEXT.md`.
+3. **Problema resolvido**: `--accent-1`, `--text`, `--radius` e `--shadow` seguem em uso - 24 ocorrencias somente de `--accent-1` em `public/index.html`; nao ha script de lint no `package.json`; e nao ha cobertura de interface em navegador ou dispositivo real.
+4. **Impacto esperado**: tokens visuais com fonte unica; deteccao precoce de erros de sintaxe e de regressoes de interface.
+5. **Complexidade**: Media.
+6. **Riscos**: remover os aliases antes de substituir os usos quebra o visual. Mitigacao: substituir primeiro as ocorrencias e remover as declaracoes do `:root` de `public/refinements.css` por ultimo, em PR separado.
+7. **Dependencias**: Nenhuma.
+8. **Agentes envolvidos**: Designer (tokens), Engenheiro Front-end, Engenheiro de QA (testes de interface), Revisor de Codigo (lint).
+9. **Ordem recomendada**: **23a**.
+10. **Subtarefas**:
+    - 5.7.a: migrar os usos dos aliases legados para os tokens `--lc-*` e remover as declaracoes temporarias.
+    - 5.7.b: script de lint e sua inclusao no workflow "Qualidade".
+    - 5.7.c: testes de interface em navegador real para os fluxos criticos (cadastro, publicacao de perfil e envio de mensagem).
+
+### 5.8 Produto e presenca digital
+
+> **Estado:** não iniciada. Itens de menor risco, que podem ser antecipados conforme a prioridade de produto.
+
+1. **Nome da iniciativa**: Capa e categorias no portfolio, metadados sociais nas demais paginas e dominio proprio.
+2. **Objetivo**: Fechar lacunas de produto e de descoberta identificadas apos a conclusao da Fase 4.
+3. **Problema resolvido**: `portfolio_items` nao tem capa destacada nem categoria; Open Graph e JSON-LD existem apenas nos perfis SSR gerados em `src/worker.mjs`; e o site e servido em `*.workers.dev`, sem `routes` ou `custom_domain` em `wrangler.jsonc`.
+4. **Impacto esperado**: melhor apresentacao do portfolio; indexacao e compartilhamento mais ricos; endereco proprio e remetente de e-mail no dominio.
+5. **Complexidade**: Media.
+6. **Riscos**: metadados inconsistentes com o conteudo real prejudicam indexacao. Mitigacao: como o conteudo dessas paginas e estatico, as tags podem ser fixas no HTML, sem SSR; validacao com o Especialista em SEO.
+7. **Dependencias**: 5.3 para o dominio proprio, que habilita HSTS com `preload` no futuro.
+8. **Agentes envolvidos**: Especialista em SEO e Performance (Responsavel), Engenheiro Front-end, Engenheiro Backend, Engenheiro DevOps (dominio e DNS), Designer (capa e categorias), Especialista em Marketing para Fotografia (copy dos metadados).
+9. **Ordem recomendada**: **24a** - pode ser antecipada conforme a prioridade de produto.
+10. **Subtarefas**:
+    - 5.8.a: `is_cover` e `category` em `portfolio_items` via nova migration, garantindo um unico item de capa por usuario.
+    - 5.8.b: Open Graph e JSON-LD (`WebSite` e `Organization`) nas paginas publicas que nao sao SSR.
+    - 5.8.c: dominio proprio em `wrangler.jsonc`, com SPF, DKIM e DMARC, e remetente Brevo no dominio.
+
+---
+
 ## Recomendacoes arquiteturais transversais
 
 Estas recomendacoes nao sao iniciativas pontuais, mas praticas continuas que devem acompanhar todas as fases. Elas sao pre-requisitos de qualidade e seguranca para qualquer evolucao do sistema.
@@ -338,6 +487,14 @@ Estas recomendacoes nao sao iniciativas pontuais, mas praticas continuas que dev
 | 14 | Modularizacao do worker por dominio | 4 | Media |
 | 15 | Estrategia de imagens com R2 + Image Resizing | 4 | Alta |
 | 16 | Alertas e SLOs | 4 | Media |
+| 17 | Consolidacao documental | 5 | Baixa |
+| 18 | Backup e restauracao do D1 | 5 | Media |
+| 19 | Endurecimento transversal de seguranca | 5 | Media |
+| 20 | Verificacao de e-mail e papeis de autorizacao | 5 | Alta |
+| 21 | Portabilidade de dados do titular (LGPD) | 5 | Baixa |
+| 22 | Automacao da entrega | 5 | Media |
+| 23 | Qualidade e debitos tecnicos | 5 | Media |
+| 24 | Produto e presenca digital | 5 | Media |
 
 ---
 
