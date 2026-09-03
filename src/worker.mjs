@@ -1,4 +1,5 @@
 import {
+  buildRequestCompletedEvent,
   completeRequest,
   createRequestContext,
   errorCategoryForStatus,
@@ -13,7 +14,7 @@ import { createPublicInputHandlers } from './public-input.mjs';
 import { createPortfolioHandlers } from './portfolio.mjs';
 import { createAccountSecurityHandlers } from './account-security.mjs';
 import { createImageService } from './images.mjs';
-import { createMonitoringHandlers } from './monitoring.mjs';
+import { createMonitoringHandlers, recordRequestSample } from './monitoring.mjs';
 
 const SESSION_COOKIE = 'lensclick_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -782,6 +783,14 @@ export default {
     }
     const instrumentedResponse = responseWithRequestId(response, requestContext.requestId);
     completeRequest(requestContext, instrumentedResponse.status, { errorCategory });
+    if (env?.DB && context?.waitUntil) {
+      const event = buildRequestCompletedEvent(requestContext, instrumentedResponse.status);
+      context.waitUntil(recordRequestSample(env, {
+        durationMs: event.duration_ms,
+        status: event.status,
+        isApi: event.route.startsWith('/api/')
+      }));
+    }
     return instrumentedResponse;
   },
   async scheduled(event, env, context) {
@@ -795,6 +804,7 @@ export default {
           if (Number(check) !== 1) throw new Error('D1 health check returned an unexpected result.');
         }
       });
+      await monitoring.runPerformanceCheck({ env, requestContext });
     } catch (error) {
       console.error('Monitoring probe failed:', error?.message || error);
     }

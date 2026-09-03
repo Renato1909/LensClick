@@ -147,3 +147,30 @@ O sinal de disponibilidade (>= 99,9%) e coberto por uma sonda executada no propr
 - Sem `env.BREVO_*` configurado, a sonda registra o estado mas nao envia e-mail (degradacao limpa, sem quebrar o Worker).
 
 Os sinais de latencia P95 (< 300 ms) e taxa de 5xx (< 0,1%) permanecem no painel Workers Observability, com notificacoes configuradas no dashboard Cloudflare - nao alteram Worker, D1 ou R2.
+
+## 9.2 Evidencias da validacao operacional (3 de setembro de 2026)
+
+Verificacao pos-implementacao da Fase 4.4, sem alteracao de codigo:
+
+| Item | Resultado | Evidencia |
+|---|---|---|
+| Cron de 5 minutos no repositorio | OK | `triggers.crons: ["*/5 * * * *"]` em `wrangler.jsonc` |
+| Deploy ativo | OK | `wrangler deployments list`: versao `ba5d4dd3-70e1-4975-a128-b97526b8b157` em 100% do trafego desde 2026-09-01T23:03Z (mesma data do PR #87) |
+| Segredos de producao | OK | `wrangler secret list` confirma `BREVO_API_KEY` e `BREVO_SENDER_EMAIL` (valores nunca expostos) |
+| Suite de testes | OK | 166/166 testes aprovados, incluindo `monitoring.test.mjs` (6/6) e `observability.test.mjs` (12/12) |
+| Notificacoes de P95 e 5xx no dashboard | **Nao configuradas** | Verificacao manual em 2026-09-03: **Cloudflare Dashboard → Notifications** sem nenhuma notificacao cadastrada (lista vazia) |
+
+Constatacao adicional: as notificacoes nativas da Cloudflare para Workers **nao oferecem alertas customizados por threshold de P95 ou taxa de 5xx por rota**. A premissa original do roadmap (alertas desses sinais via dashboard) nao e suportada nativamente pela plataforma.
+
+Decisao tomada em 2026-09-03: estender a sonda in-worker (`src/monitoring.mjs`) para cobrir P95 e taxa de 5xx com alertas via Brevo, seguindo o mesmo padrao da sonda de disponibilidade (tabela `monitor_state`, cooldown, e-mail operacional sanitizado). Isso mantem toda a configuracao de alertas versionada no repositorio (GitOps) e elimina a dependencia de configuracao manual no dashboard.
+
+## 9.3 Alertas in-worker de P95 e 5xx (implementado em 3 de setembro de 2026)
+
+Os tres sinais dos SLOs agora sao cobertos por sondas in-worker, sem dependencia do dashboard:
+
+- **Amostragem**: cada requisicao registra um contador agregado por minuto na tabela `monitor_minute_buckets` (migration `0010`), via `context.waitUntil` - fora do caminho critico e best-effort. A tabela guarda somente contadores (total, 5xx, histograma de latencia das rotas `/api/*`); nenhum dado de usuario e persistido. Buckets com mais de 24h sao removidos pelo proprio cron.
+- **P95**: a cada 5 min, o cron agrega os ultimos 15 minutos e calcula o P95 aproximado pelo histograma. A funcao retorna a fronteira superior do bucket; como 300 ms e fronteira do bucket `lt300` (amostras de 100-299 ms), o alerta usa comparacao estrita e dispara apenas quando o P95 cai em `lt500` ou acima - eliminando falso positivo na fronteira. Minimo de 10 amostras na janela.
+- **Taxa de 5xx**: a cada 5 min, o cron agrega os ultimos 10 minutos. O SLO e < 0,1%, mas o alerta dispara no limiar conservador de >= 0,5% (conforme tabela da secao 9), com no minimo 20 requisicoes na janela (evita falso positivo em volume baixo). O e-mail cita SLO e limiar de alerta explicitamente.
+- **Cooldown**: 1 hora por sinal (`probe:last_p95_alert_at`, `probe:last_5xx_alert_at` em `monitor_state`), independente do cooldown de disponibilidade.
+- **E-mail**: mesmo canal Brevo, mensagem operacional com janela, valor observado e link para este runbook - nunca dados de usuarios. Sem `BREVO_*` configurado, o estado e registrado sem envio (degradacao limpa).
+- **Custo**: 1 escrita pequena por requisicao no D1; leitura de poucas linhas a cada 5 min. Compativel com o volume atual; revisar se o trafego crescer ordens de magnitude.
