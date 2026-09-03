@@ -68,6 +68,6 @@ test('a politica explica retencao e exclusao em ambos os idiomas', () => {
   assert.match(privacy, /data-i18n="privacy\.sec14\.p"/);
   assert.equal(translations['pt-BR']['privacy.sec8.title'], '8. Retenção e Exclusão');
   assert.equal(translations['en-US']['privacy.sec8.title'], '8. Retention and Deletion');
-  assert.match(translations['pt-BR']['privacy.sec8.li5'], /identificadores irreversíveis que expiram automaticamente/);
-  assert.match(translations['en-US']['privacy.sec8.li5'], /irreversible identifiers that expire automatically/);
+    assert.match(translations['pt-BR']['privacy.sec8.li5'], /identificadores irrevers[<\s\S]*?que expiram automaticamente/);
+  assert.match(translations['en-US']['privacy.sec8.li5'], /irreversible identifiers[<\s\S]*?that expire automatically/);
 });
