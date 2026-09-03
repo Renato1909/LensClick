@@ -333,7 +333,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Proximo] Melhorias opcionais de Termos e Politica (clausulas padrao, seletor de idioma nas paginas juridicas, e-mail de dominio proprio)   ← revisao legal formal antes de publicacao comercial
+1. [Parcial] Melhorias opcionais de Termos e Política (cláusulas padrão — PR #93; seletor de idioma nas páginas jurídicas — PR #93; e-mail de domínio próprio — pendente). ← revisão legal formal antes de publicação comercial
 2. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
 ```
 
