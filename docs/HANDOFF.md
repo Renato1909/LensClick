@@ -207,7 +207,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 
 ### Legais / Processo
 
-9. **Termos e política em adequação progressiva** — as divulgações LGPD de alta prioridade da política de privacidade foram implementadas pelo PR #89 (base legal por tratamento — art. 7º; encarregado/DPO — art. 41; transferência internacional — art. 33; direito de reclamação à ANPD) e estão em produção. Restam: itens de média prioridade (versão/data nos termos, foro e lei aplicável, rescisão, dados de menores, prazos de retenção por categoria), melhorias opcionais e a revisão legal formal antes da publicação comercial.
+9. **Termos e política em adequação progressiva** — as divulgações LGPD de alta prioridade da política de privacidade foram implementadas pelo PR #89 (base legal por tratamento — art. 7º; encarregado/DPO — art. 41; transferência internacional — art. 33; direito de reclamação à ANPD) e os itens de média prioridade pelo PR #91 (versão/data nos documentos, idade mínima e dados de menores — art. 14, conta e encerramento nos termos, foro e lei aplicável, prazos de retenção por categoria), ambos em produção. Restam: melhorias opcionais e a revisão legal formal antes da publicação comercial.
 
 ---
 
@@ -326,14 +326,14 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Verificação de e-mail no cadastro.
 - 2FA opcional.
 - Autorização por papel (roles).
-- Revisão legal formal de termos e política (divulgações LGPD de alta prioridade já implementadas — PR #89).
+- Revisão legal formal de termos e política (divulgações LGPD de alta prioridade — PR #89 — e itens de média prioridade — PR #91 — já implementados).
 
 ---
 
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Proximo] Concluir adequacao de Termos e Politica: itens de media prioridade (versao nos termos, foro, rescisao, menores, prazos por categoria) e melhorias opcionais   ← revisao legal formal antes de publicacao comercial
+1. [Proximo] Melhorias opcionais de Termos e Politica (clausulas padrao, seletor de idioma nas paginas juridicas, e-mail de dominio proprio)   ← revisao legal formal antes de publicacao comercial
 2. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
 ```
 
