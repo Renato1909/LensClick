@@ -267,7 +267,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 4.4 Alertas e SLOs
 
-> **Status:** implementação concluída e validada em CI em 1º de setembro de 2026. O sinal de disponibilidade (>= 99,9%) é coberto por sonda in-worker (cron a cada 5 min + e-mail Brevo após 2 falhas consecutivas, cooldown 1h, migration `0009`); os sinais de P95 (< 300 ms) e 5xx (< 0,1%) permanecem no painel Workers Observability com notificações via dashboard Cloudflare.
+> **Status:** concluída. Disponibilidade (>= 99,9%) coberta desde 1º de setembro de 2026 por sonda in-worker (cron 5 min + e-mail Brevo após 2 falhas, cooldown 1h, migration `0009`). Em 3 de setembro de 2026 (PR #95), os sinais de P95 (< 300 ms) e taxa de 5xx (< 0,1%) passaram a ser cobertos in-worker também: histograma agregado por minuto (migration `0010`), alertas Brevo com cooldown por sinal e limiares conservadores — após constatar que o dashboard Cloudflare não oferece alertas nativos por threshold. Detalhes em `docs/OBSERVABILIDADE.md` seções 9.1 a 9.3.
 
 1. **Nome da iniciativa**: Definir SLOs e alertas automatizados.
 2. **Objetivo**: Estabelecer metas (disponibilidade 99.9%, p95 <300ms para API, taxa de erro <0.1%) e alertar quando violadas.
