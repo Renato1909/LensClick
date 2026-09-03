@@ -174,3 +174,10 @@ Os tres sinais dos SLOs agora sao cobertos por sondas in-worker, sem dependencia
 - **Cooldown**: 1 hora por sinal (`probe:last_p95_alert_at`, `probe:last_5xx_alert_at` em `monitor_state`), independente do cooldown de disponibilidade.
 - **E-mail**: mesmo canal Brevo, mensagem operacional com janela, valor observado e link para este runbook - nunca dados de usuarios. Sem `BREVO_*` configurado, o estado e registrado sem envio (degradacao limpa).
 - **Custo**: 1 escrita pequena por requisicao no D1; leitura de poucas linhas a cada 5 min. Compativel com o volume atual; revisar se o trafego crescer ordens de magnitude.
+
+### Evidencias do deploy (3 de setembro de 2026)
+
+- PR #95 mergeado com CI verde; versao `9c72c288-4169-44e3-9084-665880a0dc26` em 100% do trafego com cron `*/5 * * * *`.
+- Migration `0010` aplicada no D1 remoto antes do deploy.
+- Smoke tests pos-deploy: `GET /api/health` 200 e `GET /` 200.
+- Amostragem confirmada em producao: `monitor_minute_buckets` ja registra buckets com as requisicoes reais minutos apos o deploy.
