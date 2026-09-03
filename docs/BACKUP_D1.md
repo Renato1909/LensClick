@@ -37,9 +37,33 @@ O horário foge deliberadamente do minuto exato para não concorrer com outras e
 
 ## 3. Configuração obrigatória (manual, única vez)
 
-O workflow depende de duas etapas que **não podem ser feitas por código**, porque exigem ação fora do repositório:
+O workflow foi desenhado para exigir **o mínimo possível de configuração manual**. Das três etapas originalmente previstas, duas passaram a ser feitas pelo próprio workflow:
 
-### 3.1 Criar o bucket R2 de backup
+| Etapa | Quem executa |
+|---|---|
+| Criar o bucket `lensclick-backups` | **o workflow** — tenta criar e tolera a existência prévia |
+| Resolver o account ID | **o workflow** — deriva do token quando o segredo opcional não está definido |
+| Criar e registrar o token da Cloudflare | **o mantenedor** — exige login no painel da Cloudflare |
+
+### 3.1 Criar o token e registrar o segredo — a única etapa obrigatória
+
+Crie um token de API na Cloudflare com **permissão mínima**:
+
+- leitura no D1 `lensclick-db`;
+- leitura e escrita no R2, de preferência restrita ao bucket `lensclick-backups`. (A criação automática do bucket exige permissão de criação no R2 da conta; se o token não a tiver, use a etapa 3.2 para criar o bucket antes.);
+- leitura de account, necessária para resolver o ID da conta.
+
+Depois registre **um único segredo** no repositório:
+
+```bash
+gh secret set CLOUDFLARE_API_TOKEN
+```
+
+> ⚠️ Nunca commite esse valor. O workflow lê apenas de `secrets.*`.
+
+### 3.2 Etapas opcionais
+
+**Pré-criar o bucket** — recomendado quando o token tem permissão restrita e não pode criar buckets:
 
 ```bash
 npx wrangler r2 bucket create lensclick-backups
@@ -49,22 +73,11 @@ O bucket é **separado** do bucket de imagens (`lensclick-profile-images`), como
 
 Ele **não é declarado em `wrangler.jsonc`** de propósito: o Worker não precisa acessar os backups, e não criar o binding mantém o princípio do menor privilégio.
 
-### 3.2 Criar o token e registrar os segredos
-
-Crie um token de API na Cloudflare com **permissão mínima**:
-
-- leitura no D1 `lensclick-db`;
-- leitura e escrita **apenas** no bucket `lensclick-backups`;
-- leitura de account (necessária para o Wrangler resolver a conta).
-
-Depois registre os segredos no repositório:
+**Fixar o account ID** — opcional, mas recomendado em contas com múltiplas organizações, onde a resolução automática poderia escolher a conta errada:
 
 ```bash
-gh secret set CLOUDFLARE_API_TOKEN
 gh secret set CLOUDFLARE_ACCOUNT_ID
 ```
-
-> ⚠️ Nunca commite esses valores. O workflow lê apenas de `secrets.*`.
 
 ---
 
