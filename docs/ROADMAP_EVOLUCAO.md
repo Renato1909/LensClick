@@ -306,7 +306,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 5.2 Backup e restauracao do D1
 
-> **Estado:** automacao operacional validada. O workflow `.github/workflows/backup.yml` exporta diariamente o D1 remoto para o R2 remoto, confirma a existência do objeto pela API e aplica retenção de 30 dias. A execução manual 33883526187 validou o fluxo completo em 4 de setembro de 2026. O restore isolado e a formalização como decisão seguem pendentes (5.2.b e 5.2.c).
+> **Estado:** automacao operacional validada. O workflow `.github/workflows/backup.yml` exporta diariamente o D1 remoto para o R2 remoto, confirma a existência do objeto pela API e aplica retenção de 30 dias. A execução manual 33883526187 validou o fluxo completo em 4 de setembro de 2026. A política foi formalizada como Decisão 16 em `docs/DECISOES_TECNICAS.md` (5.2.c, concluída); o restore isolado segue pendente (5.2.b).
 
 1. **Nome da iniciativa**: Backup automatico do D1 com restauracao testada.
 2. **Objetivo**: Garantir que o banco possa ser recuperado, com politica explicita de frequencia, retencao e local de armazenamento.

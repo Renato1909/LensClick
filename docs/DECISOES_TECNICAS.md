@@ -656,6 +656,51 @@ As variantes são geradas **on-demand** pelo binding nativo `IMAGES` (Cloudflare
 
 ---
 
+## Decisão 16 — Backup automático do D1 com retenção de 30 dias
+
+### Contexto
+
+O D1 **não garante backup restaurável por padrão**: antes da iniciativa 5.2 do roadmap, o repositório não tinha nenhuma automação de backup — `scripts/` continha apenas o smoke HTTP e dois builds de documentação, e o único workflow era o "Qualidade", que valida mas não preserva dados. Sem backup, qualquer incidente no banco `lensclick-db` (15 tabelas com contas, sessões, perfis, portfólios, avaliações e conversas) seria perda irreversível — e a automação do deploy (5.6) não teria rede de segurança. O procedimento completo está em `docs/BACKUP_D1.md` e a automação em `.github/workflows/backup.yml`.
+
+### Decisão tomada
+
+A política de continuidade dos dados é:
+
+- **Frequência**: execução diária às 03:17 UTC (`cron: 17 3 * * *`, fora do minuto exato para não concorrer com outros agendamentos) + disparo manual (`workflow_dispatch`) com parâmetro `retention_days` (padrão 30).
+- **Origem**: banco remoto `lensclick-db`, via `wrangler d1 export --remote` (sempre remoto — há regressão automatizada exigindo o flag).
+- **Destino**: bucket R2 **`lensclick-backups`**, prefixo `daily/`, formato `backup-YYYYMMDDTHHMMSSZ.sql` (schema + dados). É um bucket **separado** do bucket de imagens (`lensclick-profile-images`), para que um erro de retenção ou permissão num não afete o outro. Ele **não é declarado em `wrangler.jsonc`** de propósito: o Worker não precisa acessar os backups (menor privilégio).
+- **Retenção**: 30 dias por padrão, calculada pela data embutida no nome do arquivo (sem depender de metadados opcionais da API); objetos fora do padrão `backup-*.sql` são preservados.
+- **Garantias do workflow**: falha sem `CLOUDFLARE_API_TOKEN`; falha se o export vier vazio (0 bytes arquivados seriam falsa sensação de segurança); confirma o objeto recém-enviado pela API da Cloudflare **sem baixar nem inspecionar o conteúdo**; concorrência com `cancel-in-progress: false` (um backup nunca é interrompido no meio); timeout de 20 minutos.
+- **Credencial mínima**: token com edição no D1 (a API de export usa `POST`), leitura/escrita no R2 (de preferência restrita ao bucket de backup) e leitura de account; o account ID é resolvido a partir do próprio token quando o segredo opcional não existe. Segredos só via `secrets.*`, nunca no código.
+- **Evidência operacional**: execução manual `33883526187` (4 de setembro de 2026) validou o fluxo completo — objeto `daily/backup-20260904T142433Z.sql` (15.662 bytes), retenção aplicada.
+
+### Motivo da escolha
+
+- **Elimina a perda irreversível**: é a pré-condição de segurança para automatizar deploys (5.6).
+- **SQL exportado e versionável no R2**: portável e auditável, em vez de depender de um mecanismo opaco.
+- **Bucket separado do de imagens**: isola falhas de retenção e permissões entre dados críticos e assets.
+- **Retenção pelo nome do arquivo**: determinística, sem depender de metadados que a API pode não retornar.
+- **Confirmação sem download**: prova a existência do objeto remoto sem expor dados pessoais (o backup contém PII) nos logs.
+
+### Alternativas consideradas
+
+- **Arquivar no armazenamento local do runner**: rejeitado — efêmero (foi o bug corrigido no PR #98); o arquivo sumiria com a máquina do CI.
+- **Reutilizar o bucket `lensclick-profile-images`**: rejeitado — acoplaria a retenção e as permissões dos backups às imagens de produto; um erro num afetaria o outro.
+- **Storage externo fora da Cloudflare**: rejeitado nesta etapa — custo e complexidade adicionais sem benefício, já que o R2 atende com auditoria pela API.
+- **Restore de teste contra produção**: rejeitado — restauração em produção só em incidente real; testes sempre em ambiente isolado.
+
+### Consequências
+
+- **Benefícios:** backup diário automático com confirmação remota, retenção explícita, credencial de privilégio mínimo, procedimento de restore documentado.
+- **Limitações:** o restore isolado ainda **não foi executado** (subtarefa 5.2.b) — backup sem restore testado é proteção parcial; a validação periódica (seção 6 de `docs/BACKUP_D1.md`) ainda não ocorreu; o backup contém dados pessoais — o download exige autorização específica.
+- **Pontos futuros:** executar o restore isolado (5.2.b) e só então habilitar o deploy automatizado (5.6).
+
+### Status
+
+**Ativa.** Política decidida e automação validada manualmente; restore isolado pendente (5.2.b).
+
+---
+
 ## Resumo
 
 | # | Decisão | Status |
@@ -675,6 +720,7 @@ As variantes são geradas **on-demand** pelo binding nativo `IMAGES` (Cloudflare
 | 13 | Segurança: R2 privado, validação, proteção de dados | Ativa (revisável para HSTS/2FA) |
 | 14 | Roadmap técnico como documento vivo | Ativa (revisável trimestralmente) |
 | 15 | Variantes de imagem on-demand (Cloudflare Images) | Ativa |
+| 16 | Backup automático do D1 com retenção de 30 dias | Ativa (restore isolado pendente) |
 
 ---
 
