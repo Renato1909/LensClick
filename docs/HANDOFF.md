@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 3 de setembro de 2026, com `main` em `86d3c3f`.
+> **Data de referência:** 4 de setembro de 2026, com `main` em `87f11db`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas — handlers de domínio extraídos (#82), variantes de imagem on-demand (#78–#80, #84), sonda de disponibilidade (#87) e alertas in-worker de P95 e taxa de 5xx (#95) publicados em produção. A **Fase 5** foi planejada (iniciativas 5.1 a 5.8, em `docs/ROADMAP_EVOLUCAO.md`); a primeira execução é a 5.1 (consolidação documental), seguida da 5.2 (backup do D1). Permanece como condição para publicação comercial a revisão legal formal de Termos de Uso e Política de Privacidade.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, a consolidação documental (5.1) e a automação operacional do backup do D1 (5.2.a) foram concluídas; o restore isolado (5.2.b) e a decisão técnica formal (5.2.c) permanecem pendentes. Permanece como condição para publicação comercial a revisão legal formal de Termos de Uso e Política de Privacidade.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `86d3c3f` — "docs: registra conclusao da Fase 4.4 com evidencias do deploy (PR #95)" (#96).
+- **Branch:** `main` → commit `87f11db` — "fix: tornar retencao do backup robusta" (#99).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -366,6 +366,11 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - O sinal de disponibilidade (>= 99,9%) é coberto por sonda in-worker: cron a cada 5 min (`scheduled` handler) executa a checagem D1 idêntica ao `GET /api/health`; após 2 falhas consecutivas envia e-mail operacional via Brevo (janela, rota, valor observado, runbook em `docs/OBSERVABILIDADE.md`), com cooldown de 1h e estado durável na tabela `monitor_state` (migration `0009`).
 - Os sinais de latencia P95 (< 300 ms) e taxa de 5xx (< 0,1%) permanecem no painel Workers Observability, com notificações configuradas no dashboard Cloudflare (não alteram Worker, D1 ou R2).
 - Validada com 166 testes, build do Wrangler e CI obrigatório; migration aplicada ao D1 remoto e Worker deployado (versão `51d056b4`); smoke pos-deploy: health HTTP 200, D1 ok.
+
+### Fase 5.2.a — concluída (backup remoto operacional)
+- O workflow diário exporta o D1 remoto e envia o arquivo com `--remote` ao bucket privado `lensclick-backups`, sob `daily/`; o PR #98 corrigiu a localização do upload e o PR #99 tornou a retenção robusta e adicionou confirmação explícita da existência remota.
+- Evidência: execução manual [33883526187](https://github.com/Renato1909/LensClick/actions/runs/33883526187), em 4 de setembro de 2026, aprovada integralmente. O D1 e o R2 registraram `Resource location: remote`, o objeto `daily/backup-20260904T142433Z.sql` foi confirmado pela API com 15.662 bytes e a retenção de 30 dias foi aplicada.
+- O conteúdo do backup não foi baixado nem inspecionado. Permanecem pendentes o restore de teste exclusivamente em ambiente isolado (5.2.b) e a formalização da decisão (5.2.c); restauração em produção continua proibida fora de incidente real.
 
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - Open Graph e JSON-LD nas páginas que não são SSR — nos perfis públicos já existem desde a Fase 3.2.
