@@ -306,7 +306,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 5.2 Backup e restauracao do D1
 
-> **Estado:** implementada. Workflow `.github/workflows/backup.yml` (exportacao diaria do D1 remoto para o R2, com retencao de 30 dias) e procedimento em `docs/BACKUP_D1.md`. Depende de uma configuracao manual unica - bucket R2 e segredos - descrita na secao 3 do procedimento. A formalizacao como decisao segue pendente (subtarefa 5.2.c).
+> **Estado:** automacao operacional validada. O workflow `.github/workflows/backup.yml` exporta diariamente o D1 remoto para o R2 remoto, confirma a existência do objeto pela API e aplica retenção de 30 dias. A execução manual 33883526187 validou o fluxo completo em 4 de setembro de 2026. O restore isolado e a formalização como decisão seguem pendentes (5.2.b e 5.2.c).
 
 1. **Nome da iniciativa**: Backup automatico do D1 com restauracao testada.
 2. **Objetivo**: Garantir que o banco possa ser recuperado, com politica explicita de frequencia, retencao e local de armazenamento.
@@ -318,8 +318,8 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 8. **Agentes envolvidos**: Engenheiro de Banco de Dados (Responsavel), Engenheiro DevOps (Automacao), Especialista em Seguranca (Revisor de integridade e de privilegios do token).
 9. **Ordem recomendada**: **18a**.
 10. **Subtarefas**:
-    - 5.2.a (concluida): workflow `.github/workflows/backup.yml` - execucao diaria as 03:17 UTC e `workflow_dispatch` com parametro de retencao, arquivando em `lensclick-backups/daily/backup-<data>.sql`, com retencao de 30 dias aplicada via API da Cloudflare. O workflow falha se o segredo estiver ausente ou se o arquivo exportado estiver vazio.
-    - 5.2.b (procedimento documentado; teste de restore pendente): secao 5 de `docs/BACKUP_D1.md`. O restore de teste em ambiente isolado e a atividade da validacao periodica (secao 6 do mesmo documento) e **ainda nao foi executado** - requer o bucket e os segredos configurados.
+    - 5.2.a (concluida e validada): workflow `.github/workflows/backup.yml` - execucao diaria as 03:17 UTC e `workflow_dispatch` com parametro de retencao, arquivando no R2 remoto em `lensclick-backups/daily/backup-<data>.sql`, confirmando a existência do objeto e aplicando retenção de 30 dias via API da Cloudflare. Evidência operacional: execução manual 33883526187, objeto `backup-20260904T142433Z.sql`, 15.662 bytes, sem acesso ao conteúdo.
+    - 5.2.b (procedimento documentado; teste de restore pendente): secao 5 de `docs/BACKUP_D1.md`. O restore de teste em ambiente isolado e a atividade da validacao periodica (secao 6 do mesmo documento) **ainda nao foram executados**. O bucket e o segredo já estão configurados; o teste deve baixar o arquivo apenas quando houver autorização específica para tratar os dados pessoais e nunca deve atingir produção.
     - 5.2.c: formalizar a decisao (frequencia, retencao, local) em `docs/DECISOES_TECNICAS.md`, que hoje lista o tema como decisao pendente.
 
 ### 5.3 Endurecimento transversal de seguranca

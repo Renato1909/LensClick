@@ -158,6 +158,12 @@ A iniciativa é **reversível**, como todas as do roadmap. Para desativar: desab
 
 ---
 
-## 9. Formalização pendente
+## 9. Evidência operacional
+
+Em 4 de setembro de 2026, a execução manual [33883526187](https://github.com/Renato1909/LensClick/actions/runs/33883526187) confirmou o fluxo completo: exportação do D1 remoto, upload com `Resource location: remote`, existência do objeto `lensclick-backups/daily/backup-20260904T142433Z.sql` (15.662 bytes) e aplicação da retenção de 30 dias. A verificação usou apenas os logs e metadados da API; o conteúdo do backup não foi baixado nem exposto.
+
+---
+
+## 10. Formalização pendente
 
 A frequência, a retenção e o local estão implementados, mas `docs/DECISOES_TECNICAS.md` ainda lista "Backup e restauração do D1" entre as **decisões que precisam ser formalizadas**. A formalização (subtarefa 5.2.c) deve registrar estes valores como decisão, encerrando a pendência.
