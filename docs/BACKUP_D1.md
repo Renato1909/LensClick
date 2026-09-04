@@ -49,7 +49,7 @@ O workflow foi desenhado para exigir **o mínimo possível de configuração man
 
 Crie um token de API na Cloudflare com **permissão mínima**:
 
-- leitura no D1 `lensclick-db`;
+- edição no D1 (`D1 Edit`) para `lensclick-db`, necessária porque a API de exportação usa uma operação `POST`;
 - leitura e escrita no R2, de preferência restrita ao bucket `lensclick-backups`. (A criação automática do bucket exige permissão de criação no R2 da conta; se o token não a tiver, use a etapa 3.2 para criar o bucket antes.);
 - leitura de account, necessária para resolver o ID da conta.
 
@@ -99,6 +99,7 @@ gh run watch                                        # acompanha a execução
 
 ```bash
 npx wrangler r2 object get lensclick-backups/daily/backup-20260903T031700Z.sql \
+  --remote \
   --file restore.sql
 ```
 
