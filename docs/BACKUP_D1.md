@@ -31,6 +31,8 @@ O horário foge deliberadamente do minuto exato para não concorrer com outras e
 
 - falha imediatamente se `CLOUDFLARE_API_TOKEN` ou `CLOUDFLARE_ACCOUNT_ID` não estiverem configurados;
 - **falha se o arquivo exportado estiver vazio** — um backup de 0 bytes arquivado seria pior que nenhum, porque passaria falsa sensação de segurança;
+- confirma pela API da Cloudflare que o objeto recém-enviado existe no bucket R2 remoto, sem baixar nem inspecionar seu conteúdo;
+- calcula a retenção pela data do nome `backup-YYYYMMDDTHHMMSSZ.sql`, sem depender de metadados opcionais da API, e ignora objetos fora desse padrão;
 - a concorrência usa `cancel-in-progress: false`: um backup em andamento nunca é interrompido no meio, o que evita deixar um arquivo parcial no R2.
 
 ---

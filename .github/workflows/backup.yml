@@ -116,6 +116,23 @@ jobs:
             --content-type "application/sql"
           echo "Arquivado em ${BACKUP_BUCKET}/${BACKUP_PREFIX}/${ARQUIVO}"
 
+      - name: Confirmar objeto no R2 remoto
+        run: |
+          set -euo pipefail
+          OBJETO="${BACKUP_PREFIX}/${ARQUIVO}"
+          BASE="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/r2/buckets/${BACKUP_BUCKET}/objects"
+          LISTA="$(curl --fail --silent --show-error \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "${BASE}?prefix=${OBJETO}&per_page=100")"
+
+          if ! printf '%s' "$LISTA" | jq -e --arg objeto "$OBJETO" \
+            '.success == true and any(.result[]?; .key == $objeto)' > /dev/null; then
+            echo "::error::O objeto ${OBJETO} nao foi localizado no bucket R2 remoto."
+            exit 1
+          fi
+
+          echo "Objeto remoto confirmado: ${BACKUP_BUCKET}/${OBJETO}"
+
       - name: Aplicar a retencao
         run: |
           set -euo pipefail
@@ -134,20 +151,23 @@ jobs:
             exit 1
           fi
 
-          # A API retorna "uploaded" como RFC3339 com milissegundos. O jq
-          # exige o formato exato em fromdateiso8601, entao a fracao e
-          # removida antes da comparacao (a sub nao altera nada se nao houver
-          # fracao, cobrindo os dois formatos).
+          # A data e obtida do nome controlado pelo proprio workflow. Isso evita
+          # depender de metadados opcionais da API e preserva qualquer objeto
+          # que nao siga exatamente o padrao dos backups diarios.
           printf '%s' "$LISTA" \
-            | jq -c --argjson corte "$CORTE" '
+            | jq -c --arg prefix "$BACKUP_PREFIX" --argjson corte "$CORTE" '
                 .result[]
-                | select(.key | endswith(".sql"))
-                | select((.uploaded | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601) < $corte)
-                | { key, uploaded }' \
+                | select(.key | test("^" + $prefix + "/backup-[0-9]{8}T[0-9]{6}Z\\.sql$"))
+                | . as $objeto
+                | (.key
+                    | capture("backup-(?<stamp>[0-9]{8}T[0-9]{6}Z)\\.sql$").stamp
+                    | strptime("%Y%m%dT%H%M%SZ")
+                    | mktime) as $criado
+                | select($criado < $corte)
+                | { key: $objeto.key }' \
             | while read -r linha; do
                 chave="$(printf '%s' "$linha" | jq -r '.key')"
-                quando="$(printf '%s' "$linha" | jq -r '.uploaded')"
-                echo "Descartando ${chave} (enviado em ${quando})"
+                echo "Descartando ${chave}"
                 codificado="$(jq -rn --arg k "$chave" '$k | @uri')"
                 curl --fail --silent --show-error -X DELETE \
                   -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
