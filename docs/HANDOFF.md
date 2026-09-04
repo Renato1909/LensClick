@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 1º de setembro de 2026, com `main` em `f9d8e53`.
+> **Data de referência:** 3 de setembro de 2026, com `main` em `86d3c3f`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4, Fase 4.1, Fase 4.2, Fase 4.3 e a Fase 4.4 concluídas — handlers de domínio extraídos (#82), variantes de imagem on-demand (#78–#80, #84) e sonda de disponibilidade in-worker (#87) publicadas em produção; próxima prioridade: revisão institucional de Termos de Uso e Política de Privacidade antes de publicação comercial.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas — handlers de domínio extraídos (#82), variantes de imagem on-demand (#78–#80, #84), sonda de disponibilidade (#87) e alertas in-worker de P95 e taxa de 5xx (#95) publicados em produção. A **Fase 5** foi planejada (iniciativas 5.1 a 5.8, em `docs/ROADMAP_EVOLUCAO.md`); a primeira execução é a 5.1 (consolidação documental), seguida da 5.2 (backup do D1). Permanece como condição para publicação comercial a revisão legal formal de Termos de Uso e Política de Privacidade.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `0295292` — "fix: order sitemap profiles by user id" (#55).
+- **Branch:** `main` → commit `86d3c3f` — "docs: registra conclusao da Fase 4.4 com evidencias do deploy (PR #95)" (#96).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -51,15 +51,15 @@
 - `npm run test:smoke` — smoke HTTP (`scripts/http-smoke.mjs`).
 - `npm run db:migrate:local` / `db:migrate:remote` — aplica migrações D1.
 
-### Tabelas D1 (8)
+### Tabelas D1 (15)
 
-`users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`.
+`users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`.
 
-### Migrações publicadas (6)
+### Migrações publicadas (10)
 
-`0001_initial.sql`, `0002_password_reset.sql`, `0003_professional_profiles.sql`, `0004_portfolio_items.sql`, `0005_search_indexes.sql`, `0006_search_price_radius_indexes.sql`.
+`0001_initial.sql`, `0002_password_reset.sql`, `0003_professional_profiles.sql`, `0004_portfolio_items.sql`, `0005_search_indexes.sql`, `0006_search_price_radius_indexes.sql`, `0007_reviews_and_reputation.sql`, `0008_conversations_and_messages.sql`, `0009_monitor_state.sql`, `0010_monitor_minute_buckets.sql`.
 
-> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0007_*.sql` para qualquer alteração de schema.
+> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0011_*.sql` para qualquer alteração de schema.
 
 ---
 
@@ -93,13 +93,19 @@ Não há iniciativa em desenvolvimento em uma branch ativa. As quatro iniciativa
 - **Busca** (`public/busca.html`) — filtros por cidade/estado, preservação de cidade ao trocar estado.
 - **Contato** — formulário com `contact_messages`.
 - **Newsletter** — inscrições em `newsletter_subscriptions`.
+- **Busca avançada** — faixa de preço, raio de serviço e ordenação por recomendação, preço, raio, avaliação ou atualização (Fase 2.2).
+- **Avaliações e reputação** — solicitação de contato, confirmação pelo fotógrafo e nota verificada, com média pública e trilha de auditoria (Fase 3.1).
+- **Mensagens internas** — conversa persistente entre cliente e fotógrafo, com inbox, paginação e contador de não lidas (Fase 3.3).
+- **Perfis indexáveis** — rota `/fotografo/:slug` com SSR, canonical, Open Graph e JSON-LD (Fase 3.2).
+- **Sitemap e robots** — gerados dinamicamente a partir dos perfis publicados (Fase 3.4).
+- **Observabilidade e alertas** — logs estruturados com `X-Request-ID`, SLOs definidos e sondas in-worker de disponibilidade, P95 e taxa de 5xx (Fases 1.1 e 4.4).
 - **Bilíngue PT-BR/EN-US** — catálogos JSON separados, fallback progressivo e runtime `public/lang.js` com `window.i18n`.
 - **Header redesign** — botão de busca responsivo.
 - **Redesign editorial** — textura de fundo premium.
 
 ### Não implementado (gaps identificados)
 
-- Sem Open Graph / JSON-LD (SEO social e dados estruturados).
+- Open Graph e JSON-LD presentes apenas nos perfis públicos SSR (Fase 3.2); as demais páginas seguem sem metadados (iniciativa 5.8).
 - Sem 2FA / verificação de e-mail.
 - O rate limiting permanece deliberadamente híbrido: escudo de rajada nativo na edge e políticas longas autoritativas no D1.
 - A suíte de contratos cobre os 22 padrões de rota e os 25 contratos HTTP catalogados; testes ponta a ponta com serviços reais permanecem fora do escopo atual.
@@ -156,16 +162,60 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #42 | `4e2b52d` | feat: add catalog-based internationalization |
 | #43 | `bc1a14b` | docs: close catalog internationalization phase |
 | #44 | `14df46f` | feat: adicionar avaliacoes e reputacao verificadas |
+| #45 | `b9bee0f` | Documentar conclusão da Fase 3.1 |
+| #46 | `db29294` | fix: stabilize verified reputation flow |
+| #47 | `f1a5e03` | feat: add indexable photographer profiles |
+| #48 | `b6b88eb` | fix: fetch profile template with explicit request |
+| #49 | `2e3b936` | docs: close phase 3.2 |
+| #50 | `d3f3b88` | feat: add persistent conversation API |
+| #51 | `e87d972` | feat: add conversation interface |
+| #52 | `1e6c640` | docs: close phase 3.3 |
+| #53 | `0a70e2a` | feat: add dynamic sitemap and robots |
+| #54 | `e8a6b5f` | fix: qualify sitemap timestamps |
+| #55 | `0295292` | fix: order sitemap profiles by user id |
+| #56 | `77e3df6` | docs: close phase 3.4 |
+| #57 | `0997afb` | feat: add edge cache for public discovery |
+| #58 | `0a39460` | docs: close phase 4.1 |
+| #59 | `a6fe1a1` | refactor: extract authentication handlers |
+| #60 | `b511e5b` | docs: record phase 4.2 authentication extraction |
+| #61 | `b581001` | refactor: extract photographer read handlers |
+| #62 | `c5ce3a1` | docs: record photographer handler extraction |
+| #63 | `9df8b7e` | refactor: extract photographer public read handlers |
+| #64 | `4de3765` | docs: record photographer public reads |
+| #65 | `fc08240` | refactor: extract photographer review request handler |
+| #66 | `46c02d0` | refactor: extract photographer conversation handler |
+| #67 | `660d87d` | refactor: extract professional profile read handler |
+| #68 | `3d994ab` | refactor: extract professional profile update handler |
+| #69 | `2c148fb` | refactor: extract review request listing handler |
+| #70 | `b83b843` | refactor: extract review request update handler |
+| #71 | `1fb5163` | refactor: extract review creation handler |
+| #72 | `8d1ccc7` | refactor: extract review maintenance handlers |
+| #73 | `59f30d2` | refactor: extract account conversation handlers |
+| #74 | `f42ab1d` | refactor: extract public input handlers |
+| #75 | `f20350f` | refactor: extract account portfolio listing |
+| #76 | `e9d47f3` | refactor: extract portfolio mutations |
+| #77 | `af88201` | refactor: extract account security handlers |
+| #78 | `b3cbaac` | feat: add optional portfolio image transformations |
+| #79 | `da30690` | feat: integrate responsive portfolio images |
+| #80 | `e183573` | feat: finalize responsive image cache policy |
+| #81 | `cc55fa2` | docs: define observability SLOs |
+| #82 | `f9d8e53` | refactor: remove disabled handler blocks left by domain extraction |
+| #83 | `2a0f249` | docs: record Fase 4.2 completion across state docs |
+| #84 | `e0e83a7` | feat: extend responsive image variants to profile photos |
+| #85 | `59c0872` | docs: record Fase 4.3 completion and register Decisão 15 |
+| #86 | `f4d3bfb` | docs: record Fase 4.3 production deployment |
+| #87 | `7df1dd1` | feat: availability probe with automated alerting (Fase 4.4) |
+| #88 | `c0198b2` | docs: record Fase 4.4 completion across state docs |
+| #89 | `c513c8e` | fix: add LGPD high-priority disclosures to privacy policy |
+| #90 | `650a712` | docs: record LGPD high-priority compliance progress |
+| #91 | `8532266` | fix: medium-priority legal compliance for terms and privacy policy |
+| #92 | `d37b33f` | docs: record LGPD medium-priority compliance progress |
+| #93 | `ad203ec` | feat: add sec11 General Provisions + language toggle on legal pages |
+| #94 | `c398788` | docs: mark optional LGPD provisions complete |
+| #95 | `ca3eee2` | feat(monitoring): alertas in-worker de P95 e taxa de 5xx (Fase 4.4) |
+| #96 | `86d3c3f` | docs: registra conclusao da Fase 4.4 com evidencias do deploy |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
-
-### Documentos de PR em `tmp/`
-
-- `tmp/account-management-pr.md` — PR do gerenciamento de conta.
-- `tmp/password-reset-pr.md` — PR da recuperação de senha.
-- `tmp/pr-body.md` — corpo genérico de PR.
-- `tmp/pr-fix-public-shell.md` — PR #14 (fix public-shell).
-- `tmp/github-flow-pr.md` — PR do fluxo CI/CD.
 
 ---
 
@@ -318,23 +368,44 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Validada com 166 testes, build do Wrangler e CI obrigatório; migration aplicada ao D1 remoto e Worker deployado (versão `51d056b4`); smoke pos-deploy: health HTTP 200, D1 ok.
 
 ### P4 — SEO e presença (médio prazo, baixo risco)
-### P4 — SEO e presença (médio prazo, baixo risco)
-- Open Graph e JSON-LD (sitemap e robots já concluídos na Fase 3.4).
+- Open Graph e JSON-LD nas páginas que não são SSR — nos perfis públicos já existem desde a Fase 3.2.
 - Cache via `caches.default` para assets e respostas imutáveis.
+- Domínio próprio e remetente Brevo no domínio.
 
 ### P5 — Segurança (médio/longo prazo, alto risco)
 - Verificação de e-mail no cadastro.
 - 2FA opcional.
-- Autorização por papel (roles).
+- Autorização por papel (roles) — risco latente: a moderação de avaliações e de conversas depende de um papel administrativo que ainda não existe.
 - Revisão legal formal de termos e política (divulgações LGPD de alta prioridade — PR #89 — e itens de média prioridade — PR #91 — já implementados).
+
+### Fase 5 — planejada (registrada em `docs/ROADMAP_EVOLUCAO.md`)
+
+Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a partir da leitura cruzada de HANDOFF, AI_CONTEXT, CONTEXTO_PROJETO e do código em `src/`, `migrations/`, `public/` e `wrangler.jsonc`.
+
+| Ordem | Iniciativa | Complexidade |
+|---:|---|:---:|
+| 17 | 5.1 Consolidação documental | Baixa |
+| 18 | 5.2 Backup e restauração do D1 | Média |
+| 19 | 5.3 Endurecimento transversal de segurança | Média |
+| 20 | 5.4 Verificação de e-mail e papéis de autorização | Alta |
+| 21 | 5.5 Portabilidade de dados do titular (LGPD) | Baixa |
+| 22 | 5.6 Automação da entrega | Média |
+| 23 | 5.7 Qualidade e débitos técnicos | Média |
+| 24 | 5.8 Produto e presença digital | Média |
 
 ---
 
 ## 8. Ordem recomendada de execução
 
 ```
-1. [Parcial] Melhorias opcionais de Termos e Política (cláusulas padrão — PR #93; seletor de idioma nas páginas jurídicas — PR #93; e-mail de domínio próprio — pendente). ← revisão legal formal antes de publicação comercial
-2. [P5] Segurança: verificação e-mail, 2FA, roles   ← revisão dedicada de alto risco
+1. [5.1] Consolidação documental — HANDOFF, AI_CONTEXT, CONTEXTO_PROJETO e db/schema.ts.
+2. [5.2] Backup e restauração do D1 ← item mais crítico; exige criar o bucket R2 de backup e o secret CLOUDFLARE_API_TOKEN.
+3. [5.3] Segurança transversal: HSTS, CSP sem unsafe-inline em scripts, teto de sessões.
+4. [5.4] Verificação de e-mail e papéis de autorização ← alta criticidade; revisão dedicada.
+5. [5.5] Portabilidade de dados (LGPD) + revisão legal formal antes da publicação comercial.
+6. [5.6] Automação da entrega — preview e deploy (após a 5.2).
+7. [5.7] Qualidade: aliases --lc-*, lint, testes em navegador real.
+8. [5.8] Produto e presença digital — capa do portfólio, OG/JSON-LD, domínio próprio.
 ```
 
 **Justificativa da ordem:**
@@ -347,8 +418,9 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - A Fase 4.1 passou a aproveitar o cache da edge para leituras públicas.
 - A Fase 4.2 foi concluída: todos os handlers de domínio foram extraídos e os blocos legados removidos no PR #82.
 - A Fase 4.3 foi concluída com transformação on-demand (Decisão 15) e publicada em produção na versão `e271e165`.
-- A Fase 4.4 foi concluída: sonda de disponibilidade in-worker (cron + e-mail Brevo após 2 falhas consecutivas, cooldown 1h) publicada na versão `51d056b4`; os sinais de P95 e 5xx permanecem no painel Workers Observability com notificações via dashboard Cloudflare.
-- P5 (segurança) fica por último por ser o mais sensível e exigir revisão dedicada — mas não deve ser adiado indefinidamente.
+- A Fase 4.4 foi concluída: além da sonda de disponibilidade (versão `51d056b4`), os sinais de P95 e taxa de 5xx passaram a ser cobertos in-worker pelo PR #95, publicado na versão `9c72c288` em 3 de setembro de 2026.
+- A Fase 5 foi planejada a partir do levantamento de 3 de setembro de 2026 e registrada em `docs/ROADMAP_EVOLUCAO.md`. A 5.1 vem primeiro porque planejar sobre documentação defasada produz ordem errada; a 5.2 vem logo depois por ser o único item com risco de perda irreversível de dados.
+- A 5.6 depende da 5.2: automatizar deploy sem backup amplia o raio de impacto de um erro. Pela mesma lógica, a 5.4 (alta criticidade) exige revisão dedicada, mas não deve ser adiada indefinidamente.
 
 ---
 
@@ -380,10 +452,11 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fase 4.2 concluída; próximas: 4.3 e 4.4).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fases 1 a 4 concluídas; Fase 5 planejada, iniciativas 5.1 a 5.8).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
+- `docs/BACKUP_D1.md` — backup diário do D1 no R2, procedimento de restauração e validação periódica (iniciativa 5.2).
 - `docs/DOCUMENTACAO_TECNICA.md` — documentação técnica detalhada.
 - `DESIGN_SYSTEM.md` — guia de design e tokens.
 - `CONTRIBUTING.md` — fluxo de contribuição.
@@ -391,10 +464,10 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 
 ### Agentes Copilot disponíveis (`.github/agents/`)
 
-Arquiteto de Software · Engenheiro Backend · Engenheiro Frontend · Engenheiro de Banco de Dados · Engenheiro DevOps · Engenheiro de QA · Especialista em Segurança · Especialista em SEO e Performance · Especialista em Marketing para Fotografia · Revisor de Código · Explore.
+Arquiteto de Software · Designer · Engenheiro Backend · Engenheiro Frontend · Engenheiro de Banco de Dados · Engenheiro DevOps · Engenheiro de QA · Especialista em Segurança · Especialista em SEO e Performance · Especialista em Marketing para Fotografia · Revisor de Código — 11 agentes definidos em `.github/agents/`. (O Explore citado em versões anteriores deste documento é agente nativo do Copilot, não um `.agent.md` do projeto.)
 
 Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 1º de setembro de 2026, com `main` em `7df1dd1` (código) e produção na versão `51d056b4-53a1-4329-9012-36107d4db270`; a Fase 4.2 foi concluída no PR #82, a Fase 4.3 no PR #84 (Decisão 15) e a Fase 4.4 no PR #87 (sonda de disponibilidade in-worker).
+**Última atualização deste handoff:** 3 de setembro de 2026, com `main` em `86d3c3f` (documentação) e produção na versão `9c72c288-4169-44e3-9084-665880a0dc26`; a Fase 4.4 foi concluída no PR #95 (alertas in-worker de P95 e taxa de 5xx) e registrada no PR #96. A Fase 5 foi planejada — ver a seção 7.
