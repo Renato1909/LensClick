@@ -111,6 +111,7 @@ jobs:
           set -euo pipefail
           npx wrangler r2 object put \
             "${BACKUP_BUCKET}/${BACKUP_PREFIX}/${ARQUIVO}" \
+            --remote \
             --file "$ARQUIVO" \
             --content-type "application/sql"
           echo "Arquivado em ${BACKUP_BUCKET}/${BACKUP_PREFIX}/${ARQUIVO}"
