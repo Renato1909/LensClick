@@ -90,7 +90,7 @@ As consultas usam **statements preparados com `.bind(...)`** para evitar SQL Inj
 
 - **Benefícios:** consultas SQL com índices, integridade referencial via CASCADE, familiaridade do modelo relacional, binding interno sem exposição pública.
 - **Limitações:** a janela do Time Travel depende do plano. A política de cópias adicionais está na Decisão 16; restore isolado pendente (5.2.b). As migrations são a fonte executável do schema.
-- **Pontos futuros:** conforme o volume cresce, índices adicionais e health check do D1 são recomendados (Fase 1 do roadmap); o backup deve ser formalizado.
+- **Pontos futuros:** conforme o volume cresce, revisar índices e health check do D1; validar a restauração isolada prevista na Decisão 16.
 
 ### Status
 
@@ -676,8 +676,8 @@ A política de continuidade dos dados é:
 
 ### Motivo da escolha
 
-O D1 oferece Time Travel sempre ativo nos bancos com armazenamento de produção, com janela de 7 dias no Workers Free e 30 dias no Workers Paid. As cópias SQL diárias no R2 complementam essa proteção com retenção própria de 30 dias; a restauração isolada ainda precisa ser testada (5.2.b). Referência: [Time Travel e backups](https://developers.cloudflare.com/d1/reference/time-travel/).
-- **SQL exportado e versionável no R2**: portável e auditável, em vez de depender de um mecanismo opaco.
+- **Redução do risco de perda**: complementa o Time Travel nativo do D1. Uma cópia diária não garante recuperação de alterações posteriores ao último export; o restore isolado ainda precisa ser validado.
+- **SQL exportado no R2**: formato portável, com cópias identificadas pela data da execução.
 - **Bucket separado do de imagens**: isola falhas de retenção e permissões entre dados críticos e assets.
 - **Retenção pelo nome do arquivo**: determinística, sem depender de metadados que a API pode não retornar.
 - **Confirmação sem download**: prova a existência do objeto remoto sem expor dados pessoais (o backup contém PII) nos logs.
