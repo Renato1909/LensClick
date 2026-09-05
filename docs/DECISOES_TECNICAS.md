@@ -89,8 +89,8 @@ As consultas usam **statements preparados com `.bind(...)`** para evitar SQL Inj
 ### Consequências
 
 - **Benefícios:** consultas SQL com índices, integridade referencial via CASCADE, familiaridade do modelo relacional, binding interno sem exposição pública.
-- **Limitações:** o D1 não garante backup automático restaurável por padrão (o roadmap recomenda configurar `wrangler d1 backup`); o `db/schema.ts` de referência está desatualizado (schemaVersion=2, apenas 6 tabelas — faltam `professional_profiles` e `portfolio_items`), sendo um débito técnico conhecido.
-- **Pontos futuros:** conforme o volume cresce, índices adicionais e health check do D1 são recomendados (Fase 1 do roadmap); o backup deve ser formalizado.
+- **Limitações:** a janela do Time Travel depende do plano. A política de cópias adicionais está na Decisão 16; restore isolado pendente (5.2.b). As migrations são a fonte executável do schema.
+- **Pontos futuros:** conforme o volume cresce, revisar índices e health check do D1; validar a restauração isolada prevista na Decisão 16.
 
 ### Status
 
@@ -656,6 +656,51 @@ As variantes são geradas **on-demand** pelo binding nativo `IMAGES` (Cloudflare
 
 ---
 
+## Decisão 16 — Backup automático do D1 com retenção de 30 dias
+
+### Contexto
+
+O D1 oferece Time Travel sempre ativo nos bancos com armazenamento de produção, com janela de 7 dias no Workers Free e 30 dias no Workers Paid. As cópias SQL diárias no R2 complementam essa proteção com retenção própria de 30 dias; a restauração isolada ainda precisa ser testada (5.2.b). Referência: [Time Travel e backups](https://developers.cloudflare.com/d1/reference/time-travel/).
+
+### Decisão tomada
+
+A política de continuidade dos dados é:
+
+- **Frequência**: execução diária às 03:17 UTC (`cron: 17 3 * * *`, fora do minuto exato para não concorrer com outros agendamentos) + disparo manual (`workflow_dispatch`) com parâmetro `retention_days` (padrão 30).
+- **Origem**: banco remoto `lensclick-db`, via `wrangler d1 export --remote` (sempre remoto — há regressão automatizada exigindo o flag).
+- **Destino**: bucket R2 **`lensclick-backups`**, prefixo `daily/`, formato `backup-YYYYMMDDTHHMMSSZ.sql` (schema + dados). É um bucket **separado** do bucket de imagens (`lensclick-profile-images`), para que um erro de retenção ou permissão num não afete o outro. Ele **não é declarado em `wrangler.jsonc`** de propósito: o Worker não precisa acessar os backups (menor privilégio).
+- **Retenção**: 30 dias por padrão, calculada pela data embutida no nome do arquivo (sem depender de metadados opcionais da API); objetos fora do padrão `backup-*.sql` são preservados.
+- **Garantias do workflow**: falha sem `CLOUDFLARE_API_TOKEN`; falha se o export vier vazio (0 bytes arquivados seriam falsa sensação de segurança); confirma o objeto recém-enviado pela API da Cloudflare **sem baixar nem inspecionar o conteúdo**; concorrência com `cancel-in-progress: false` (um backup nunca é interrompido no meio); timeout de 20 minutos.
+- **Credencial mínima**: token com edição no D1 (a API de export usa `POST`), leitura/escrita no R2 (de preferência restrita ao bucket de backup) e leitura de account; o account ID é resolvido a partir do próprio token quando o segredo opcional não existe. Segredos só via `secrets.*`, nunca no código.
+- **Evidência operacional**: execução manual `33883526187` (4 de setembro de 2026) validou o fluxo completo — objeto `daily/backup-20260904T142433Z.sql` (15.662 bytes), retenção aplicada.
+
+### Motivo da escolha
+
+- **Redução do risco de perda**: complementa o Time Travel nativo do D1. Uma cópia diária não garante recuperação de alterações posteriores ao último export; o restore isolado ainda precisa ser validado.
+- **SQL exportado no R2**: formato portável, com cópias identificadas pela data da execução.
+- **Bucket separado do de imagens**: isola falhas de retenção e permissões entre dados críticos e assets.
+- **Retenção pelo nome do arquivo**: determinística, sem depender de metadados que a API pode não retornar.
+- **Confirmação sem download**: prova a existência do objeto remoto sem expor dados pessoais (o backup contém PII) nos logs.
+
+### Alternativas consideradas
+
+- **Arquivar no armazenamento local do runner**: rejeitado — efêmero (foi o bug corrigido no PR #98); o arquivo sumiria com a máquina do CI.
+- **Reutilizar o bucket `lensclick-profile-images`**: rejeitado — acoplaria a retenção e as permissões dos backups às imagens de produto; um erro num afetaria o outro.
+- **Storage externo fora da Cloudflare**: rejeitado nesta etapa — custo e complexidade adicionais sem benefício, já que o R2 atende com auditoria pela API.
+- **Restore de teste contra produção**: rejeitado — restauração em produção só em incidente real; testes sempre em ambiente isolado.
+
+### Consequências
+
+- **Benefícios:** backup diário automático com confirmação remota, retenção explícita, credencial de privilégio mínimo, procedimento de restore documentado.
+- **Limitações:** o restore isolado ainda **não foi executado** (subtarefa 5.2.b) — backup sem restore testado é proteção parcial; a validação periódica (seção 6 de `docs/BACKUP_D1.md`) ainda não ocorreu; o backup contém dados pessoais — o download exige autorização específica.
+- **Pontos futuros:** executar o restore isolado (5.2.b) e só então habilitar o deploy automatizado (5.6).
+
+### Status
+
+**Ativa.** Política decidida e automação validada manualmente; restore isolado pendente (5.2.b).
+
+---
+
 ## Resumo
 
 | # | Decisão | Status |
@@ -675,6 +720,7 @@ As variantes são geradas **on-demand** pelo binding nativo `IMAGES` (Cloudflare
 | 13 | Segurança: R2 privado, validação, proteção de dados | Ativa (revisável para HSTS/2FA) |
 | 14 | Roadmap técnico como documento vivo | Ativa (revisável trimestralmente) |
 | 15 | Variantes de imagem on-demand (Cloudflare Images) | Ativa |
+| 16 | Backup automático do D1 com retenção de 30 dias | Ativa (restore isolado pendente) |
 
 ---
 
@@ -696,7 +742,7 @@ Estes pontos **não são decisões tomadas** — são candidatos a formalizaçã
 - **Verificação de e-mail**: hoje não existe; formalizar a abordagem (link de verificação, expiração, reenvio) quando for implementada.
 - **Segundo fator de autenticacao (2FA)**: hoje não existe; formalizar o mecanismo (TOTP, SMS, e-mail) quando for priorizado.
 - **Rate limiting nativo da edge**: o rate limit atual é simples e no D1; a migração para o rate limiting nativo da Cloudflare (Fase 1) exigirá uma decisão formal.
-- **Backup e restauração do D1**: o roadmap recomenda, mas a política (frequência, retenção, local) ainda não está formalizada como decisão.
+- **Restauração isolada do D1**: a política de backup está formalizada na Decisão 16; falta validar o restore isolado (5.2.b).
 - **HSTS e headers adicionais**: o roadmap recomenda HSTS e padronização de headers; a decisão sobre os valores exatos ainda não está formalizada.
 - **Papéis como autorização**: hoje `client` e `photographer` são dados de perfil, não autorizam áreas; a decisão sobre como papéis passarão a autorizar ainda não foi tomada.
 - **Domínio personalizado**: listado como prioridade média; a decisão sobre o domínio e a configuração ainda não está formalizada.
