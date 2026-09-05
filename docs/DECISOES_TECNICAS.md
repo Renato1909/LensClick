@@ -89,7 +89,7 @@ As consultas usam **statements preparados com `.bind(...)`** para evitar SQL Inj
 ### Consequências
 
 - **Benefícios:** consultas SQL com índices, integridade referencial via CASCADE, familiaridade do modelo relacional, binding interno sem exposição pública.
-- **Limitações:** o D1 não garante backup automático restaurável por padrão (o roadmap recomenda configurar `wrangler d1 backup`); o `db/schema.ts` de referência está desatualizado (schemaVersion=2, apenas 6 tabelas — faltam `professional_profiles` e `portfolio_items`), sendo um débito técnico conhecido.
+- **Limitações:** a janela do Time Travel depende do plano. A política de cópias adicionais está na Decisão 16; restore isolado pendente (5.2.b). As migrations são a fonte executável do schema.
 - **Pontos futuros:** conforme o volume cresce, índices adicionais e health check do D1 são recomendados (Fase 1 do roadmap); o backup deve ser formalizado.
 
 ### Status
@@ -660,7 +660,7 @@ As variantes são geradas **on-demand** pelo binding nativo `IMAGES` (Cloudflare
 
 ### Contexto
 
-O D1 **não garante backup restaurável por padrão**: antes da iniciativa 5.2 do roadmap, o repositório não tinha nenhuma automação de backup — `scripts/` continha apenas o smoke HTTP e dois builds de documentação, e o único workflow era o "Qualidade", que valida mas não preserva dados. Sem backup, qualquer incidente no banco `lensclick-db` (15 tabelas com contas, sessões, perfis, portfólios, avaliações e conversas) seria perda irreversível — e a automação do deploy (5.6) não teria rede de segurança. O procedimento completo está em `docs/BACKUP_D1.md` e a automação em `.github/workflows/backup.yml`.
+O D1 oferece Time Travel sempre ativo nos bancos com armazenamento de produção, com janela de 7 dias no Workers Free e 30 dias no Workers Paid. As cópias SQL diárias no R2 complementam essa proteção com retenção própria de 30 dias; a restauração isolada ainda precisa ser testada (5.2.b). Referência: [Time Travel e backups](https://developers.cloudflare.com/d1/reference/time-travel/).
 
 ### Decisão tomada
 
@@ -676,7 +676,7 @@ A política de continuidade dos dados é:
 
 ### Motivo da escolha
 
-- **Elimina a perda irreversível**: é a pré-condição de segurança para automatizar deploys (5.6).
+O D1 oferece Time Travel sempre ativo nos bancos com armazenamento de produção, com janela de 7 dias no Workers Free e 30 dias no Workers Paid. As cópias SQL diárias no R2 complementam essa proteção com retenção própria de 30 dias; a restauração isolada ainda precisa ser testada (5.2.b). Referência: [Time Travel e backups](https://developers.cloudflare.com/d1/reference/time-travel/).
 - **SQL exportado e versionável no R2**: portável e auditável, em vez de depender de um mecanismo opaco.
 - **Bucket separado do de imagens**: isola falhas de retenção e permissões entre dados críticos e assets.
 - **Retenção pelo nome do arquivo**: determinística, sem depender de metadados que a API pode não retornar.

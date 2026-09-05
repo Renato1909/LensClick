@@ -7,7 +7,7 @@
 
 ## 1. Por que existe
 
-O D1 **não garante backup restaurável por padrão**. Antes desta iniciativa, o repositório não tinha nenhuma automação de backup: `scripts/` continha apenas o smoke HTTP e dois builds de documentação, e o único workflow era o "Qualidade", que valida mas não preserva dados.
+O D1 oferece Time Travel sempre ativo nos bancos com armazenamento de produção, com janela de 7 dias no Workers Free e 30 dias no Workers Paid. As cópias SQL diárias no R2 complementam essa proteção com retenção própria de 30 dias; a restauração isolada ainda precisa ser testada (5.2.b). Referência: [Time Travel e backups](https://developers.cloudflare.com/d1/reference/time-travel/).
 
 As recomendações arquiteturais transversais do roadmap pediam quatro coisas — backup, procedimento de restauração, validação periódica e política de retenção. Este documento cobre as quatro.
 
@@ -164,6 +164,6 @@ Em 4 de setembro de 2026, a execução manual [33883526187](https://github.com/R
 
 ---
 
-## 10. Formalização pendente
+## 10. Política formalizada
 
-A frequência, a retenção e o local estão implementados, mas `docs/DECISOES_TECNICAS.md` ainda lista "Backup e restauração do D1" entre as **decisões que precisam ser formalizadas**. A formalização (subtarefa 5.2.c) deve registrar estes valores como decisão, encerrando a pendência.
+Política formalizada na Decisão 16 de `docs/DECISOES_TECNICAS.md` (5.2.c concluída); restore isolado pendente (5.2.b).
