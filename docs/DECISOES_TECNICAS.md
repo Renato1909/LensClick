@@ -742,7 +742,7 @@ Estes pontos **não são decisões tomadas** — são candidatos a formalizaçã
 - **Verificação de e-mail**: hoje não existe; formalizar a abordagem (link de verificação, expiração, reenvio) quando for implementada.
 - **Segundo fator de autenticacao (2FA)**: hoje não existe; formalizar o mecanismo (TOTP, SMS, e-mail) quando for priorizado.
 - **Rate limiting nativo da edge**: o rate limit atual é simples e no D1; a migração para o rate limiting nativo da Cloudflare (Fase 1) exigirá uma decisão formal.
-- **Backup e restauração do D1**: o roadmap recomenda, mas a política (frequência, retenção, local) ainda não está formalizada como decisão.
+- **Restauração isolada do D1**: a política de backup está formalizada na Decisão 16; falta validar o restore isolado (5.2.b).
 - **HSTS e headers adicionais**: o roadmap recomenda HSTS e padronização de headers; a decisão sobre os valores exatos ainda não está formalizada.
 - **Papéis como autorização**: hoje `client` e `photographer` são dados de perfil, não autorizam áreas; a decisão sobre como papéis passarão a autorizar ainda não foi tomada.
 - **Domínio personalizado**: listado como prioridade média; a decisão sobre o domínio e a configuração ainda não está formalizada.
