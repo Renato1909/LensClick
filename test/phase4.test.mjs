@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 test('a Fase 4 oferece microinteracoes com movimento reduzido', () => {
   const styles = readFileSync(resolve('public', 'refinements.css'), 'utf8');
   const ux = readFileSync(resolve('public', 'ux.js'), 'utf8');
-  const home = readFileSync(resolve('public', 'index.html'), 'utf8');
+  const home = readFileSync(resolve('public', 'home.js'), 'utf8');
 
   assert.match(styles, /button\.is-loading::after/);
   assert.match(styles, /@keyframes lc-feedback-in/);

@@ -99,7 +99,11 @@ test('a rota amigavel publicada responde HTML indexavel com cabecalhos de segura
   assert.equal(assetRequest.method, 'GET');
   assert.equal(new URL(assetRequest.url).pathname, '/fotografo.html');
   assert.equal(response.headers.get('Cache-Control'), 'public, max-age=60');
-  assert.match(response.headers.get('Content-Security-Policy'), /default-src 'self'/);
+  const contentSecurityPolicy = response.headers.get('Content-Security-Policy');
+  assert.match(contentSecurityPolicy, /default-src 'self'/);
+  assert.match(contentSecurityPolicy, /script-src 'self'/);
+  assert.doesNotMatch(contentSecurityPolicy, /script-src[^;]*'unsafe-inline'/);
+  assert.equal(response.headers.get('Strict-Transport-Security'), 'max-age=63072000; includeSubDomains');
   assert.match(html, /<link rel="canonical" href="https:\/\/lensclick\.example\/fotografo\/ana-luz">/);
 });
 

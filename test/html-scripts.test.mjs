@@ -7,12 +7,10 @@ import { readCatalogs } from '../test-utils/i18n.mjs';
 const pages = ['index.html', 'cadastro.html', 'login.html', 'recuperar-senha.html', 'redefinir-senha.html', 'perfil.html', 'fotografo.html', 'privacidade.html', 'termos.html'];
 
 for (const page of pages) {
-  test(`${page} possui scripts inline sintaticamente válidos`, () => {
+  test(`${page} não possui scripts inline`, () => {
     const html = readFileSync(resolve('public', page), 'utf8');
     const inlineScripts = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map((match) => match[1]);
-    for (const source of inlineScripts) {
-      assert.doesNotThrow(() => new Function(source), `Script inválido em ${page}`);
-    }
+    assert.equal(inlineScripts.length, 0, `${page} contém JavaScript inline`);
   });
 }
 
@@ -23,7 +21,10 @@ test('as páginas ativas não usam dados de conta no localStorage', () => {
   }
 });
 
-for (const script of ['lang.js', 'ux.js', 'profile-api.js', 'photographer-profile.js']) {
+for (const script of [
+  'lang.js', 'ux.js', 'profile-api.js', 'photographer-profile.js',
+  'home.js', 'signup.js', 'login.js', 'password-recovery.js', 'password-reset.js'
+]) {
   test(`${script} possui sintaxe válida`, () => {
     const source = readFileSync(resolve('public', script), 'utf8');
     assert.doesNotThrow(() => new Function(source), `Script inválido em ${script}`);
@@ -67,8 +68,8 @@ test('a tradução preserva títulos formatados, tooltips e links do rodapé', (
 test('a Fase 3 centraliza feedback e carregamento dos fluxos', () => {
   const ux = readFileSync(resolve('public', 'ux.js'), 'utf8');
   const home = readFileSync(resolve('public', 'index.html'), 'utf8');
-  const login = readFileSync(resolve('public', 'login.html'), 'utf8');
-  const signup = readFileSync(resolve('public', 'cadastro.html'), 'utf8');
+  const login = readFileSync(resolve('public', 'login.js'), 'utf8');
+  const signup = readFileSync(resolve('public', 'signup.js'), 'utf8');
   const profile = readFileSync(resolve('public', 'profile-api.js'), 'utf8');
 
   assert.match(ux, /async function apiFetch/);
