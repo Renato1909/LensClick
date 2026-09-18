@@ -10,15 +10,16 @@ const readPublic = (file) => readFileSync(resolve(publicDir, file), 'utf8');
 
 test('a Fase 8 elimina recarregamento indevido e navegacao inline', () => {
   const home = readPublic('index.html');
-  const newsletterFlow = home.slice(
-    home.indexOf("document.getElementById('newsletterForm').addEventListener"),
-    home.indexOf('// Check user authentication state')
+  const homeScript = readPublic('home.js');
+  const newsletterFlow = homeScript.slice(
+    homeScript.indexOf("document.getElementById('newsletterForm').addEventListener"),
+    homeScript.indexOf('// Check user authentication state')
   );
 
   assert.match(newsletterFlow, /event\.preventDefault\(\)/);
   assert.doesNotMatch(newsletterFlow, /passive:\s*true/);
   pageNames.forEach(page => assert.doesNotMatch(readPublic(page), /\sonclick=/));
-  assert.match(home, /window\.addEventListener\('scroll',[\s\S]*?\{ passive: true \}\)/);
+  assert.match(homeScript, /window\.addEventListener\('scroll',[\s\S]*?\{ passive: true \}\)/);
 });
 
 test('links e arquivos locais referenciados existem', () => {
@@ -44,20 +45,32 @@ test('paginas nao possuem IDs duplicados e links externos sao seguros', () => {
   });
 });
 
-test('rodape usa ano dinamico e o Worker mantem cabecalhos de seguranca', () => {
+test('rodape usa ano dinamico e respostas mantem cabecalhos de seguranca', () => {
   const runtime = readPublic('lang.js');
   const translations = readCatalogs();
   const worker = readFileSync(resolve('src', 'worker.mjs'), 'utf8');
+  const assetHeaders = readPublic('_headers');
 
   assert.match(translations['pt-BR'].footer, /© \{year\} Lens Click/);
   assert.match(translations['en-US'].footer, /© \{year\} Lens Click/);
   assert.match(runtime, /function currentYear\(\)/);
   assert.match(runtime, /function interpolate\(message, params = \{\}\)/);
   assert.match(worker, /'Content-Security-Policy'/);
+  assert.match(worker, /'Strict-Transport-Security': 'max-age=63072000; includeSubDomains'/);
+  assert.match(worker, /script-src 'self'/);
+  assert.doesNotMatch(worker, /script-src[^;]*'unsafe-inline'/);
   assert.match(worker, /'X-Content-Type-Options': 'nosniff'/);
   assert.match(worker, /'X-Frame-Options': 'DENY'/);
   assert.match(worker, /'Referrer-Policy': 'strict-origin-when-cross-origin'/);
   assert.match(worker, /'Permissions-Policy'/);
+  assert.match(assetHeaders, /^\/\*/m);
+  assert.match(assetHeaders, /Content-Security-Policy:.*script-src 'self';/);
+  assert.doesNotMatch(assetHeaders, /script-src[^;]*'unsafe-inline'/);
+  assert.match(assetHeaders, /Strict-Transport-Security: max-age=63072000; includeSubDomains/);
+  assert.match(assetHeaders, /X-Content-Type-Options: nosniff/);
+  assert.match(assetHeaders, /X-Frame-Options: DENY/);
+  assert.match(assetHeaders, /Referrer-Policy: strict-origin-when-cross-origin/);
+  assert.match(assetHeaders, /Permissions-Policy: camera=\(\), microphone=\(\), geolocation=\(\)/);
 });
 
 test('a pagina temporaria de perfil e apenas um redirecionamento seguro', () => {

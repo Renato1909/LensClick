@@ -22,17 +22,18 @@ test('a Fase 6 oferece estrutura e foco acessiveis nas paginas ativas', () => {
 
 test('a pagina inicial possui controles completos para teclado e leitores de tela', () => {
   const home = readPublic('index.html');
+  const homeScript = readPublic('home.js');
 
   assert.equal((home.match(/<h1\b/g) || []).length, 1);
   assert.doesNotMatch(home, /id="carouselToggle"|carouselPaused/);
-  assert.match(home, /if \(document\.hidden\) return;/);
-  assert.match(home, /setInterval\(nextSlide, 5000\)/);
-  assert.match(home, /item\.toggleAttribute\('inert', !active\)/);
-  assert.match(home, /dot\.setAttribute\('aria-pressed', String\(active\)\)/);
-  assert.match(home, /event\.key === 'ArrowRight'/);
-  assert.match(home, /event\.key === 'Home'/);
-  assert.match(home, /btn\.setAttribute\('aria-controls', answerId\)/);
-  assert.match(home, /event\.key === 'Tab' && modal\.classList\.contains\('open'\)/);
+  assert.match(homeScript, /if \(document\.hidden\) return;/);
+  assert.match(homeScript, /setInterval\(nextSlide, 5000\)/);
+  assert.match(homeScript, /item\.toggleAttribute\('inert', !active\)/);
+  assert.match(homeScript, /dot\.setAttribute\('aria-pressed', String\(active\)\)/);
+  assert.match(homeScript, /event\.key === 'ArrowRight'/);
+  assert.match(homeScript, /event\.key === 'Home'/);
+  assert.match(homeScript, /btn\.setAttribute\('aria-controls', answerId\)/);
+  assert.match(homeScript, /event\.key === 'Tab' && modal\.classList\.contains\('open'\)/);
   assert.match(home, /aria-atomic="true"/);
 });
 
