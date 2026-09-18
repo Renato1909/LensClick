@@ -2,7 +2,7 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 18 de setembro de 2026, com a base `main` em `4adb964`.
+> **Data de referência:** 18 de setembro de 2026, com a base `main` em `62857da`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
 > **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, as iniciativas 5.1 (documentação), 5.2 (backup e restauração) e 5.3 (segurança transversal) estão concluídas. A próxima iniciativa é a 5.4, de verificação de e-mail e papéis de autorização. Permanece como condição para publicação comercial a revisão legal formal de Termos de Uso e Política de Privacidade.
 
@@ -10,7 +10,7 @@
 
 ## 1. Situação atual da main
 
-- **Base da entrega:** `main` → commit `4adb964` — "security: limit active account sessions" (#105).
+- **Base da entrega:** `main` → commit `62857da` — "docs: conclude phase 5.3 security hardening" (#106).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -223,6 +223,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #103 | `d1c984d` | docs: conclude isolated D1 restore validation |
 | #104 | `9b6cf21` | security: enforce HSTS and strict script CSP |
 | #105 | `4adb964` | security: limit active account sessions |
+| #106 | `62857da` | docs: conclude phase 5.3 security hardening |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -491,4 +492,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 18 de setembro de 2026, com base `main` em `4adb964`; as iniciativas 5.1, 5.2 e 5.3 estão concluídas e validadas. A próxima iniciativa é a 5.4.
+**Última atualização deste handoff:** 18 de setembro de 2026, com base `main` em `62857da` (encerramento documental da Fase 5.3 pelo PR #106); as iniciativas 5.1, 5.2 e 5.3 estão concluídas e validadas. A próxima iniciativa é a 5.4.
