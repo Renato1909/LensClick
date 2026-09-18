@@ -33,6 +33,7 @@ const STATIC_API_ROUTES = new Set([
   '/api/account/portfolio',
   '/api/account/review-requests',
   '/api/account/conversations',
+  '/api/account/export',
   '/api/account/professional-profile',
   '/api/profile',
   '/api/account/password',

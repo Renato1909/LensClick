@@ -361,7 +361,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 5.5 Portabilidade de dados do titular (LGPD)
 
-> **Estado:** parcial. As divulgacoes de alta prioridade (PR #89), de media prioridade (PR #91) e as clausulas opcionais (PR #93) ja estao em producao.
+> **Estado:** parcial. A subtarefa 5.5.a (exportação) está concluída; resta a 5.5.b (revisão legal formal), atividade externa ao código e condição para a publicação comercial.
 
 1. **Nome da iniciativa**: Exportacao dos dados do usuario pela propria conta.
 2. **Objetivo**: Atender ao direito de portabilidade do titular e fechar o ciclo das adequacoes legais.
@@ -373,7 +373,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 8. **Agentes envolvidos**: Especialista em Seguranca (Responsavel), Engenheiro Backend, Arquiteto de Software (Aprovador do escopo da exportacao).
 9. **Ordem recomendada**: **21a**.
 10. **Subtarefas**:
-    - 5.5.a: `GET /api/account/export` autenticado, com `SENSITIVE_RATE_LIMITER`, em JSON, sem `password_hash` e sem binarios do R2.
+    - 5.5.a (concluída): `GET /api/account/export` autenticado, com `SENSITIVE_RATE_LIMITER`, em JSON com `Content-Disposition: attachment`, sem `password_hash` e sem binarios do R2 (apenas metadados e URLs). Escopo formalizado na Decisão 21.
     - 5.5.b: revisao legal formal dos Termos de Uso e da Politica de Privacidade - atividade externa ao codigo e condicao para a publicacao comercial.
 
 ### 5.6 Automacao da entrega

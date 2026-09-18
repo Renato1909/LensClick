@@ -866,6 +866,43 @@ Com o papel administrativo criado (Decisão 19), faltava a operação: remover d
 
 ---
 
+## Decisão 21 — Exportação de dados do titular (5.5.a)
+
+### Contexto
+
+A LGPD garante ao titular a portabilidade dos dados, mas não existia endpoint de exportação. O risco central é vazar dados de terceiros, pois conversas têm dois participantes.
+
+### Decisão tomada
+
+- **Rota**: `GET /api/account/export`, autenticada, sob `SENSITIVE_RATE_LIMITER` (5/hora), resposta JSON com `Content-Disposition: attachment`.
+- **Inclui**: perfil (sem `password_hash`), perfil profissional, portfólio (metadados e URLs, sem binários do R2), solicitações e avaliações (autoria e recebimento), conversas do titular com mensagens, contatos e newsletter do próprio e-mail.
+- **Escopo de terceiros**: mensagens recebidas e nomes de contraparte entram para dar contexto às conversas do titular; nenhum dado de contas sem vínculo com o titular é incluído.
+- **Exclui**: `password_hash`, sessões, tokens, binários de imagem.
+
+### Motivo da escolha
+
+- **Portabilidade real**: JSON único, legível e reutilizável, sem exigir ferramenta proprietária.
+- **Abuso contido**: rate limit rigoroso impede raspagem via exportação.
+- **Revisão legal**: 5.5.b segue externa e pendente antes da publicação comercial.
+
+### Alternativas consideradas
+
+- **Exportar só mensagens do próprio autor**: rejeitado; conversa sem as respostas perde o sentido e frustra o direito.
+- **Incluir binários do R2 em base64**: rejeitado; multiplica o tamanho e expõe URLs assinadas fora de controle.
+- **Endpoint público com token por e-mail**: rejeitado; reintroduziria enumeração e entrega a terceiros.
+
+### Consequências
+
+- **Benefícios:** direito de portabilidade atendido no produto.
+- **Limitações:** sem revisão legal formal, sem importação reversa.
+- **Operação:** sem schema novo; nenhuma migration.
+
+### Status
+
+**Ativa.** Implementada na iniciativa 5.5.a; validação em produção pendente de deploy.
+
+---
+
 ## Resumo
 
 | # | Decisão | Status |
@@ -890,6 +927,7 @@ Com o papel administrativo criado (Decisão 19), faltava a operação: remover d
 | 18 | Verificação de e-mail com login em modo de aviso (5.4.a) | Ativa |
 | 19 | Papel administrativo com `is_admin` e guard `requireAdmin` (5.4.b) | Ativa |
 | 20 | Moderação administrativa de avaliações e conversas (5.4.c) | Ativa |
+| 21 | Exportação de dados do titular (5.5.a) | Ativa |
 
 ---
 

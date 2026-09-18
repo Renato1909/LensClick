@@ -26,5 +26,37 @@ export function createAccountHandlers({ json, authenticatedUser, isRateLimited, 
   }
   async function markRead({ params, request, env }) { const current = await authenticatedUser(request, env); if (!current) return json(401, { error: 'Faca login novamente.' }); const id = Number(params[0]); const conversation = await env.DB.prepare('SELECT id FROM conversations WHERE id = ? AND (client_user_id = ? OR photographer_user_id = ?)').bind(id, current.id, current.id).first(); if (!conversation) return json(404, { error: 'Conversa nao encontrada.' }); const result = await env.DB.prepare('UPDATE messages SET read_at = CURRENT_TIMESTAMP WHERE conversation_id = ? AND sender_user_id <> ? AND read_at IS NULL').bind(id, current.id).run(); return json(200, { ok: true, updated: Number(result.meta?.changes || 0) }); }
   async function portfolioList({ request, env }) { const current = await authenticatedUser(request, env); if (!current) return json(401, { error: 'Faca login novamente.' }); const portfolio = await env.DB.prepare('SELECT id, caption, alt_text, position, updated_at FROM portfolio_items WHERE user_id = ? ORDER BY position, id').bind(current.id).all(); return json(200, { portfolio: portfolio.results.map((item) => portfolioItem(item)) }); }
-  return { listConversations, messages, createMessage, markRead, portfolioList };
+  async function exportData({ request, env, pathname }) {
+    if (await isRateLimited(request, env, pathname, 5, 60 * 60 * 1000, env.SENSITIVE_RATE_LIMITER)) return json(429, { error: 'Muitas solicitacoes. Aguarde antes de tentar novamente.' });
+    const current = await authenticatedUser(request, env); if (!current) return json(401, { error: 'Faca login novamente.' });
+    const id = Number(current.id);
+    const [profile, professionalProfile, portfolio, reviewRequests, reviewsAuthored, reviewsReceived, conversations, messages, contactMessages, newsletter] = await Promise.all([
+      env.DB.prepare('SELECT id, name, email, phone, role, age, gender, profile_pic_key, email_verified_at, is_admin, created_at, updated_at FROM users WHERE id = ?').bind(id).first(),
+      env.DB.prepare('SELECT slug, bio, specialties, city, state, service_radius_km, starting_price_cents, availability, is_published, public_email, public_phone, show_email, show_phone, created_at, updated_at FROM professional_profiles WHERE user_id = ?').bind(id).first(),
+      env.DB.prepare('SELECT id, caption, alt_text, position, created_at, updated_at FROM portfolio_items WHERE user_id = ? ORDER BY position, id').bind(id).all(),
+      env.DB.prepare('SELECT id, client_user_id, photographer_user_id, message, status, confirmed_at, created_at, updated_at FROM review_requests WHERE client_user_id = ? OR photographer_user_id = ? ORDER BY id').bind(id, id).all(),
+      env.DB.prepare('SELECT id, photographer_user_id, rating, comment, status, created_at, updated_at FROM reviews WHERE client_user_id = ? ORDER BY id').bind(id).all(),
+      env.DB.prepare('SELECT id, client_user_id, rating, comment, status, created_at, updated_at FROM reviews WHERE photographer_user_id = ? ORDER BY id').bind(id).all(),
+      env.DB.prepare('SELECT id, client_user_id, photographer_user_id, status, last_message_at, created_at, updated_at FROM conversations WHERE client_user_id = ? OR photographer_user_id = ? ORDER BY id').bind(id, id).all(),
+      env.DB.prepare('SELECT m.id, m.conversation_id, m.sender_user_id, m.body, m.read_at, m.created_at FROM messages m JOIN conversations c ON c.id = m.conversation_id WHERE c.client_user_id = ? OR c.photographer_user_id = ? ORDER BY m.id').bind(id, id).all(),
+      env.DB.prepare('SELECT id, name, email, message, created_at FROM contact_messages WHERE email = ? ORDER BY id').bind(String(current.email)).all(),
+      env.DB.prepare('SELECT id, email, created_at FROM newsletter_subscriptions WHERE email = ? ORDER BY id').bind(String(current.email)).all()
+    ]);
+    const pick = (row, keys) => { const out = {}; for (const key of keys) out[key] = row?.[key] ?? null; return out; };
+    return json(200, {
+      exportedAt: new Date().toISOString(),
+      scope: 'Dados vinculados a esta conta, incluindo conversas com nomes de contraparte para contexto. Sem credenciais e sem binarios de imagem.',
+      user: pick(profile, ['id', 'name', 'email', 'phone', 'role', 'age', 'gender', 'email_verified_at', 'is_admin', 'created_at', 'updated_at']),
+      professionalProfile: professionalProfile || null,
+      portfolio: (portfolio.results || []).map((item) => portfolioItem(item)),
+      reviewRequests: reviewRequests.results || [],
+      reviewsAuthored: reviewsAuthored.results || [],
+      reviewsReceived: reviewsReceived.results || [],
+      conversations: conversations.results || [],
+      messages: messages.results || [],
+      contactMessages: contactMessages.results || [],
+      newsletterSubscriptions: newsletter.results || []
+    }, { 'Content-Disposition': 'attachment; filename="lensclick-dados.json"' });
+  }
+  return { listConversations, messages, createMessage, markRead, portfolioList, exportData };
 }

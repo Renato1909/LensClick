@@ -23,6 +23,7 @@ const API_ROUTES = Object.freeze([
   { id: 'photographers.detail', method: 'GET', pattern: /^\/api\/photographers\/([a-z0-9-]{3,80})$/ },
   { id: 'account.review-requests.list', method: 'GET', path: '/api/account/review-requests' },
   { id: 'account.conversations.list', method: 'GET', path: '/api/account/conversations' },
+  { id: 'account.export', method: 'GET', path: '/api/account/export' },
   { id: 'account.conversations.messages', method: 'GET', pattern: /^\/api\/account\/conversations\/(\d+)\/messages$/ },
   { id: 'account.conversations.messages.create', method: 'POST', pattern: /^\/api\/account\/conversations\/(\d+)\/messages$/ },
   { id: 'account.conversations.read', method: 'PUT', pattern: /^\/api\/account\/conversations\/(\d+)\/read$/ },
