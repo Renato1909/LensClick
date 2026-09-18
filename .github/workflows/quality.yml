@@ -41,3 +41,49 @@ jobs:
       - name: Validar a configuração do Worker
         run: npm run check
 
+  # Iniciativa 5.6.a do roadmap: preview local com smoke ponta a ponta.
+  # Sobe o Worker com D1 local migrado e executa o smoke HTTP contra ele,
+  # para que PRs sejam validados em ambiente real antes do merge.
+  preview:
+    name: Preview local com smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Preparar o Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependências de forma reproduzível
+        run: npm ci
+
+      - name: Aplicar migrations no D1 local
+        run: npm run db:migrate:local
+
+      - name: Subir o Worker local em segundo plano
+        run: |
+          set -euo pipefail
+          (npx wrangler dev --local --port 4174 > worker-preview.log 2>&1 &)
+          for tentativa in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4174/api/health > /dev/null; then
+              echo "Worker local pronto após ${tentativa} tentativa(s)."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::O Worker local não respondeu em 60 segundos."
+          cat worker-preview.log
+          exit 1
+
+      - name: Executar o smoke contra o preview
+        run: npm run test:smoke
+
+      - name: Encerrar o Worker local
+        if: always()
+        run: pkill -f "wrangler dev --local --port 4174" || true
+

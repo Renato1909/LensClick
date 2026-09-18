@@ -903,6 +903,43 @@ A LGPD garante ao titular a portabilidade dos dados, mas não existia endpoint d
 
 ---
 
+## Decisão 22 — Entrega automatizada com preview e deploy (5.6)
+
+### Contexto
+
+O único workflow validava sem publicar; deploys manuais via `wrangler deploy` variavam por máquina e não validavam o PR em ambiente real.
+
+### Decisão tomada
+
+- **Preview (5.6.a)**: job `preview` no CI sobe `wrangler dev --local` com D1 migrado, aguarda `/api/health` e executa `npm run test:smoke` (que escreve apenas no D1 local); o Worker é sempre encerrado (`if: always()`).
+- **Deploy (5.6.b)**: workflow `deploy.yml` em `push` para `main` (após o Qualidade verde no PR) com gate próprio (`npm test` + `npm run check`), migration remota antes do upload e smoke somente leitura após publicar.
+- **Concorrência**: deploy nunca é cancelado no meio (`cancel-in-progress: false`); qualidade/preview seguem canceláveis.
+- **Segredo único**: `CLOUDFLARE_API_TOKEN`, como no backup (5.2), cuja rede de restore cobre falha de migration.
+
+### Motivo da escolha
+
+- **Rastreabilidade**: cada commit em `main` vira versão publicada com smoke registrado no resumo.
+- **Falha cedo**: migration que quebra interrompe antes do upload, com backup diário como rede.
+- **Sem escrita no smoke**: produção validada só com leituras e erros esperados (400/401).
+
+### Alternativas consideradas
+
+- **Deploy por ambiente de preview por PR (workers.dev preview)**: rejeitado; exigiria domínios e segredos por PR sem ganho frente ao `wrangler dev --local`.
+- **Migration automática fora do deploy**: rejeitado; separaria schema de código e reintroduziria deriva manual.
+- **Deploy sem gate próprio**: rejeitado; o push direto em `main` precisa validar mesmo com o PR verde.
+
+### Consequências
+
+- **Benefícios:** fim do deploy manual; validação real por PR.
+- **Limitações:** sem rollback automático; sem estratégia blue/green (incompatível com o porte atual).
+- **Operação:** monitorar a primeira execução real do `deploy.yml`; rollback manual via versão anterior do Worker + restore do backup (5.2).
+
+### Status
+
+**Ativa.** Implementada na iniciativa 5.6; validação em produção pendente da primeira execução real.
+
+---
+
 ## Resumo
 
 | # | Decisão | Status |
@@ -928,6 +965,7 @@ A LGPD garante ao titular a portabilidade dos dados, mas não existia endpoint d
 | 19 | Papel administrativo com `is_admin` e guard `requireAdmin` (5.4.b) | Ativa |
 | 20 | Moderação administrativa de avaliações e conversas (5.4.c) | Ativa |
 | 21 | Exportação de dados do titular (5.5.a) | Ativa |
+| 22 | Entrega automatizada com preview e deploy (5.6) | Ativa |
 
 ---
 
