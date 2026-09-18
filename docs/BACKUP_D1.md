@@ -7,7 +7,7 @@
 
 ## 1. Por que existe
 
-O D1 oferece Time Travel sempre ativo nos bancos com armazenamento de produção, com janela de 7 dias no Workers Free e 30 dias no Workers Paid. As cópias SQL diárias no R2 complementam essa proteção com retenção própria de 30 dias; a restauração isolada ainda precisa ser testada (5.2.b). Referência: [Time Travel e backups](https://developers.cloudflare.com/d1/reference/time-travel/).
+O D1 oferece Time Travel sempre ativo nos bancos com armazenamento de produção, com janela de 7 dias no Workers Free e 30 dias no Workers Paid. As cópias SQL diárias no R2 complementam essa proteção com retenção própria de 30 dias; a restauração isolada foi validada em 18 de setembro de 2026 (5.2.b). Referência: [Time Travel e backups](https://developers.cloudflare.com/d1/reference/time-travel/).
 
 As recomendações arquiteturais transversais do roadmap pediam quatro coisas — backup, procedimento de restauração, validação periódica e política de retenção. Este documento cobre as quatro.
 
@@ -162,8 +162,22 @@ A iniciativa é **reversível**, como todas as do roadmap. Para desativar: desab
 
 Em 4 de setembro de 2026, a execução manual [33883526187](https://github.com/Renato1909/LensClick/actions/runs/33883526187) confirmou o fluxo completo: exportação do D1 remoto, upload com `Resource location: remote`, existência do objeto `lensclick-backups/daily/backup-20260904T142433Z.sql` (15.662 bytes) e aplicação da retenção de 30 dias. A verificação usou apenas os logs e metadados da API; o conteúdo do backup não foi baixado nem exposto.
 
+### 9.1 Restore isolado validado
+
+Em 18 de setembro de 2026, com autorização específica para tratar o backup privado, o objeto `daily/backup-20260918T081321Z.sql` foi baixado para uma pasta temporária ignorada pelo Git e aplicado em um armazenamento D1 local exclusivo por meio de `--local --persist-to`.
+
+- Tamanho: 14.828 bytes.
+- SHA-256: `6B27E7F5B1190C75A00CE59BDA626C671B59E9DF4F053588C060CE3D1C11D032`.
+- Restore: 65 comandos executados com sucesso.
+- Estrutura: 15 tabelas de negócio, além de `d1_migrations` e `sqlite_sequence`.
+- Integridade SQLite: `ok`.
+- Violações de chave estrangeira: 0.
+- Privacidade: nenhum registro pessoal foi exibido ou registrado como evidência.
+- Isolamento: nenhum comando D1 com `--remote` foi executado; produção permaneceu intocada.
+- Limpeza: o SQL e todo o armazenamento D1 temporário foram removidos após a validação.
+
 ---
 
 ## 10. Política formalizada
 
-Política formalizada na Decisão 16 de `docs/DECISOES_TECNICAS.md` (5.2.c concluída); restore isolado pendente (5.2.b).
+Política formalizada na Decisão 16 de `docs/DECISOES_TECNICAS.md`; automação, restore isolado e documentação concluídos (5.2.a–5.2.c).

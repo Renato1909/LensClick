@@ -384,8 +384,7 @@ O estado atual de branches, branches órfãs, PRs e pendências Git é mantido e
 4. **Rate limit híbrido** — escudo de rajada nativo na edge (PR #30) combinado a políticas longas no D1; atende o volume atual.
 5. **Termos/política precisam de revisão jurídica** — divulgações LGPD de alta prioridade (PR #89), de média prioridade (PR #91) e cláusulas opcionais (PR #93) já publicadas; resta a revisão legal formal antes do uso comercial. Iniciativa 5.5.
 6. **Papéis não autorizam áreas** — `client`/`photographer` são dados de perfil; a autorização ocorre por propriedade do recurso. Um papel administrativo continua necessário para moderação e é risco latente. Iniciativa 5.4.
-7. **Restore isolado ainda não validado** — o backup diário do D1 para o R2 está operacional e tem retenção formalizada, mas o procedimento de restauração precisa ser exercitado em ambiente isolado. Iniciativa 5.2.b.
-8. **Aliases visuais legados** — `--accent-1`, `--text`, `--radius` e `--shadow` seguem em uso e devem migrar para os tokens `--lc-*`. Iniciativa 5.7.
+7. **Aliases visuais legados** — `--accent-1`, `--text`, `--radius` e `--shadow` seguem em uso e devem migrar para os tokens `--lc-*`. Iniciativa 5.7.
 ---
 
 ## 14. Próximos passos imediatos
@@ -399,7 +398,7 @@ O plano corrente é a **Fase 5**, registrada em `docs/ROADMAP_EVOLUCAO.md` e res
 | Ordem | Iniciativa | Complexidade |
 |---:|---|:---:|
 | 17 | 5.1 Consolidação documental — concluída | Baixa |
-| 18 | 5.2 Backup e restauração do D1 — restore isolado pendente | Média |
+| 18 | 5.2 Backup e restauração do D1 — concluída | Média |
 | 19 | 5.3 Endurecimento transversal de segurança | Média |
 | 20 | 5.4 Verificação de e-mail e papéis de autorização | Alta |
 | 21 | 5.5 Portabilidade de dados do titular (LGPD) | Baixa |

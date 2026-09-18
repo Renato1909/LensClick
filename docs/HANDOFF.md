@@ -4,13 +4,13 @@
 >
 > **Data de referência:** 18 de setembro de 2026, com a base `main` em `bbd4c34`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, a consolidação documental (5.1), o backup operacional (5.2.a) e sua decisão técnica (5.2.c) estão concluídos; o restore isolado (5.2.b) é a próxima entrega. Permanece como condição para publicação comercial a revisão legal formal de Termos de Uso e Política de Privacidade.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, a consolidação documental (5.1) e toda a iniciativa de backup e restauração (5.2.a–5.2.c) estão concluídas. A próxima iniciativa é a 5.3, de endurecimento transversal de segurança. Permanece como condição para publicação comercial a revisão legal formal de Termos de Uso e Política de Privacidade.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Base da entrega:** `main` → commit `bbd4c34` — "docs: formaliza backup do D1 como Decisão 16 (5.2.c)" (#101).
+- **Base da entrega:** `main` → commit `7ee0870` — "docs: conclude phase 5.1 consolidation" (#102).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -219,6 +219,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #99 | `87f11db` | fix: tornar retencao do backup robusta |
 | #100 | `dcfb5fd` | docs: registra backup remoto validado |
 | #101 | `bbd4c34` | docs: formaliza backup do D1 como Decisão 16 (5.2.c) |
+| #102 | `7ee0870` | docs: conclude phase 5.1 consolidation |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -375,7 +376,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### Fase 5.2.a — concluída (backup remoto operacional)
 - O workflow diário exporta o D1 remoto e envia o arquivo com `--remote` ao bucket privado `lensclick-backups`, sob `daily/`; o PR #98 corrigiu a localização do upload e o PR #99 tornou a retenção robusta e adicionou confirmação explícita da existência remota.
 - Evidência: execução manual [33883526187](https://github.com/Renato1909/LensClick/actions/runs/33883526187), em 4 de setembro de 2026, aprovada integralmente. O D1 e o R2 registraram `Resource location: remote`, o objeto `daily/backup-20260904T142433Z.sql` foi confirmado pela API com 15.662 bytes e a retenção de 30 dias foi aplicada.
-- O conteúdo do backup não foi baixado nem inspecionado. A política foi formalizada na Decisão 16 (5.2.c concluída); permanece pendente o restore de teste exclusivamente em ambiente isolado (5.2.b). Restauração em produção continua proibida fora de incidente real.
+- A política foi formalizada na Decisão 16 (5.2.c). Em 18 de setembro de 2026, o backup `backup-20260918T081321Z.sql` foi restaurado exclusivamente em D1 local isolado: 15 tabelas de negócio, integridade `ok` e 0 violações de chave estrangeira. Nenhum registro pessoal foi exibido; produção permaneceu intocada e os artefatos temporários foram removidos. A iniciativa 5.2 está concluída.
 
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - Open Graph e JSON-LD nas páginas que não são SSR — nos perfis públicos já existem desde a Fase 3.2.
@@ -395,7 +396,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 | Ordem | Iniciativa | Complexidade |
 |---:|---|:---:|
 | 17 | 5.1 Consolidação documental — concluída | Baixa |
-| 18 | 5.2 Backup e restauração do D1 — restore isolado pendente | Média |
+| 18 | 5.2 Backup e restauração do D1 — concluída | Média |
 | 19 | 5.3 Endurecimento transversal de segurança | Média |
 | 20 | 5.4 Verificação de e-mail e papéis de autorização | Alta |
 | 21 | 5.5 Portabilidade de dados do titular (LGPD) | Baixa |
@@ -408,13 +409,12 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 ## 8. Ordem recomendada de execução
 
 ```
-1. [5.2.b] Validar o restore do D1 em ambiente isolado, com autorização específica para tratar o backup com dados pessoais.
-2. [5.3] Segurança transversal: HSTS, CSP sem unsafe-inline em scripts, teto de sessões.
-3. [5.4] Verificação de e-mail e papéis de autorização ← alta criticidade; revisão dedicada.
-4. [5.5] Portabilidade de dados (LGPD) + revisão legal formal antes da publicação comercial.
-5. [5.6] Automação da entrega — preview e deploy (após concluir o restore da 5.2).
-6. [5.7] Qualidade: aliases --lc-*, lint, testes em navegador real.
-7. [5.8] Produto e presença digital — capa do portfólio, OG/JSON-LD, domínio próprio.
+1. [5.3] Segurança transversal: HSTS, CSP sem unsafe-inline em scripts, teto de sessões.
+2. [5.4] Verificação de e-mail e papéis de autorização ← alta criticidade; revisão dedicada.
+3. [5.5] Portabilidade de dados (LGPD) + revisão legal formal antes da publicação comercial.
+4. [5.6] Automação da entrega — dependência de backup e restore atendida pela 5.2.
+5. [5.7] Qualidade: aliases --lc-*, lint, testes em navegador real.
+6. [5.8] Produto e presença digital — capa do portfólio, OG/JSON-LD, domínio próprio.
 ```
 
 **Justificativa da ordem:**
@@ -429,8 +429,8 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 - A Fase 4.3 foi concluída com transformação on-demand (Decisão 15) e publicada em produção na versão `e271e165`.
 - A Fase 4.4 foi concluída: além da sonda de disponibilidade (versão `51d056b4`), os sinais de P95 e taxa de 5xx passaram a ser cobertos in-worker pelo PR #95, publicado na versão `9c72c288` em 3 de setembro de 2026.
 - A consolidação documental 5.1 foi concluída: `db/schema.ts` está na versão 10 com 15 tabelas, e as fontes permanentes refletem as 16 decisões e o progresso até o PR #101.
-- A 5.2.a e a 5.2.c foram concluídas; a próxima entrega é a validação de restore isolado da 5.2.b.
-- A 5.6 depende da 5.2: automatizar deploy sem backup amplia o raio de impacto de um erro. Pela mesma lógica, a 5.4 (alta criticidade) exige revisão dedicada, mas não deve ser adiada indefinidamente.
+- A iniciativa 5.2 foi concluída integralmente: backup remoto, política formal e restore isolado validados. A dependência crítica da 5.6 está atendida.
+- A próxima iniciativa é a 5.3. A 5.4 (alta criticidade) exige revisão dedicada, mas não deve ser adiada indefinidamente.
 
 ---
 
@@ -462,7 +462,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fases 1 a 4 concluídas; Fase 5 em execução, com 5.1, 5.2.a e 5.2.c concluídas).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fases 1 a 4 concluídas; Fase 5 em execução, com 5.1 e 5.2 concluídas).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
@@ -480,4 +480,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 18 de setembro de 2026, com base `main` em `bbd4c34`; a Fase 5.1 foi consolidada, a política de backup foi formalizada no PR #101 e o restore isolado da 5.2.b é a próxima entrega operacional.
+**Última atualização deste handoff:** 18 de setembro de 2026, com base `main` em `7ee0870`; a Fase 5.1 está consolidada e a Fase 5.2 foi concluída com restore isolado validado. A próxima iniciativa é a 5.3.

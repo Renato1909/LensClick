@@ -96,8 +96,8 @@ As consultas usam **statements preparados com `.bind(...)`** para evitar SQL Inj
 ### Consequências
 
 - **Benefícios:** consultas SQL com índices, integridade referencial via CASCADE, familiaridade do modelo relacional, binding interno sem exposição pública.
-- **Limitações:** a janela do Time Travel depende do plano. A política de cópias adicionais está na Decisão 16; restore isolado pendente (5.2.b). As migrations são a fonte executável do schema.
-- **Pontos futuros:** conforme o volume cresce, revisar índices e health check do D1; validar a restauração isolada prevista na Decisão 16.
+- **Limitações:** a janela do Time Travel depende do plano. A política de cópias adicionais e a evidência de restore isolado estão na Decisão 16. As migrations são a fonte executável do schema.
+- **Pontos futuros:** conforme o volume cresce, revisar índices e health check do D1; repetir periodicamente a validação de restauração isolada prevista na Decisão 16.
 
 ### Status
 
@@ -668,7 +668,7 @@ As variantes são geradas **on-demand** pelo binding nativo `IMAGES` (Cloudflare
 
 ### Contexto
 
-O D1 oferece Time Travel sempre ativo nos bancos com armazenamento de produção, com janela de 7 dias no Workers Free e 30 dias no Workers Paid. As cópias SQL diárias no R2 complementam essa proteção com retenção própria de 30 dias; a restauração isolada ainda precisa ser testada (5.2.b). Referência: [Time Travel e backups](https://developers.cloudflare.com/d1/reference/time-travel/).
+O D1 oferece Time Travel sempre ativo nos bancos com armazenamento de produção, com janela de 7 dias no Workers Free e 30 dias no Workers Paid. As cópias SQL diárias no R2 complementam essa proteção com retenção própria de 30 dias; a restauração isolada foi validada em 18 de setembro de 2026 (5.2.b). Referência: [Time Travel e backups](https://developers.cloudflare.com/d1/reference/time-travel/).
 
 ### Decisão tomada
 
@@ -684,7 +684,7 @@ A política de continuidade dos dados é:
 
 ### Motivo da escolha
 
-- **Redução do risco de perda**: complementa o Time Travel nativo do D1. Uma cópia diária não garante recuperação de alterações posteriores ao último export; o restore isolado ainda precisa ser validado.
+- **Redução do risco de perda**: complementa o Time Travel nativo do D1. Uma cópia diária não garante recuperação de alterações posteriores ao último export; a restauração isolada comprovou que o formato arquivado pode ser reaplicado com integridade.
 - **SQL exportado no R2**: formato portável, com cópias identificadas pela data da execução.
 - **Bucket separado do de imagens**: isola falhas de retenção e permissões entre dados críticos e assets.
 - **Retenção pelo nome do arquivo**: determinística, sem depender de metadados que a API pode não retornar.
@@ -700,12 +700,12 @@ A política de continuidade dos dados é:
 ### Consequências
 
 - **Benefícios:** backup diário automático com confirmação remota, retenção explícita, credencial de privilégio mínimo, procedimento de restore documentado.
-- **Limitações:** o restore isolado ainda **não foi executado** (subtarefa 5.2.b) — backup sem restore testado é proteção parcial; a validação periódica (seção 6 de `docs/BACKUP_D1.md`) ainda não ocorreu; o backup contém dados pessoais — o download exige autorização específica.
-- **Pontos futuros:** executar o restore isolado (5.2.b) e só então habilitar o deploy automatizado (5.6).
+- **Limitações:** uma validação bem-sucedida não elimina a necessidade de testes periódicos; o backup contém dados pessoais e qualquer novo download exige autorização específica.
+- **Pontos futuros:** repetir o restore isolado no mínimo trimestralmente e após mudanças relevantes de schema; a dependência crítica da automação de deploy (5.6) está atendida.
 
 ### Status
 
-**Ativa.** Política decidida e automação validada manualmente; restore isolado pendente (5.2.b).
+**Ativa e validada.** Política, automação e restore isolado concluídos; próxima revisão periódica até dezembro de 2026.
 
 ---
 
@@ -728,7 +728,7 @@ A política de continuidade dos dados é:
 | 13 | Segurança: R2 privado, validação, proteção de dados | Ativa (revisável para HSTS/2FA) |
 | 14 | Roadmap técnico como documento vivo | Ativa (revisável trimestralmente) |
 | 15 | Variantes de imagem on-demand (Cloudflare Images) | Ativa |
-| 16 | Backup automático do D1 com retenção de 30 dias | Ativa (restore isolado pendente) |
+| 16 | Backup automático do D1 com retenção de 30 dias | Ativa e validada |
 
 ---
 
@@ -749,7 +749,6 @@ Estes pontos **não são decisões tomadas** — são candidatos a formalizaçã
 
 - **Verificação de e-mail**: hoje não existe; formalizar a abordagem (link de verificação, expiração, reenvio) quando for implementada.
 - **Segundo fator de autenticacao (2FA)**: hoje não existe; formalizar o mecanismo (TOTP, SMS, e-mail) quando for priorizado.
-- **Restauração isolada do D1**: a política de backup está formalizada na Decisão 16; falta validar o restore isolado (5.2.b).
 - **HSTS e headers adicionais**: o roadmap recomenda HSTS e padronização de headers; a decisão sobre os valores exatos ainda não está formalizada.
 - **Papéis como autorização**: hoje `client` e `photographer` são dados de perfil, não autorizam áreas; a decisão sobre como papéis passarão a autorizar ainda não foi tomada.
 - **Domínio personalizado**: listado como prioridade média; a decisão sobre o domínio e a configuração ainda não está formalizada.
