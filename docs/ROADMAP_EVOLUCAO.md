@@ -287,11 +287,11 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 5.1 Consolidacao documental
 
-> **Estado:** não iniciada. Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, e validado por duas análises independentes.
+> **Estado:** concluída. O catálogo `db/schema.ts` está na versão 10 com as 15 tabelas reais, e os documentos permanentes foram reconciliados com a implementação e com as decisões registradas até a Decisão 16.
 
 1. **Nome da iniciativa**: Sincronizar a documentacao permanente com o estado real do repositorio.
 2. **Objetivo**: Restabelecer `docs/HANDOFF.md`, `docs/AI_CONTEXT.md`, `docs/CONTEXTO_PROJETO.md` e `db/schema.ts` como fontes confiaveis, eliminando as divergencias acumuladas entre o que a documentacao descreve e o que a implementacao prova.
-3. **Problema resolvido**: a documentacao descreve 8 tabelas (reais: 15) e 6 migracoes (reais: 10); a tabela de PRs do HANDOFF termina no #44 (reais: #96); a Fase 4.4 aparece como parcialmente concluida; o `db/schema.ts` lista 13 das 15 tabelas; o `CONTEXTO_PROJETO.md` mantem debitos e um plano P0-P4 ja resolvidos. Como a secao 4 do `AI_CONTEXT.md` define que a implementacao e a fonte primaria do que existe, documentacao defasada produz decisoes erradas - em especial para agentes de IA, que leem esses arquivos antes de tocar no codigo.
+3. **Problema resolvido**: a documentação e o catálogo TypeScript divergiam da implementação quanto ao schema, às decisões arquiteturais, ao histórico operacional e ao progresso da Fase 5. A consolidação restabeleceu as fontes de contexto antes das próximas iniciativas.
 4. **Impacto esperado**: plano, priorizacao e execucao passam a partir de premissas verdadeiras; reduz o retrabalho de quem assume o projeto.
 5. **Complexidade**: Baixa - somente documentacao e catalogo de esquema.
 6. **Riscos**: novo desalinhamento futuro. Mitigacao: atualizar a documentacao no mesmo PR que altera comportamento, ja previsto na secao 7 do `AI_CONTEXT.md`; manter contagens mutaveis (total de testes, linhas de arquivo) fora dos documentos de baixa mutabilidade, como o proprio `AI_CONTEXT.md` recomenda na secao 13.
@@ -299,10 +299,10 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 8. **Agentes envolvidos**: Arquiteto de Software (Aprovador), Revisor de Codigo (Revisao), Engenheiro de Banco de Dados (`db/schema.ts`).
 9. **Ordem recomendada**: **17a** - e o pre-requisito das demais: planejar sobre documentacao falsa produz ordem errada.
 10. **Subtarefas**:
-    - 5.1.a: corrigir `docs/HANDOFF.md` - HEAD, contagem de tabelas e migracoes, tabela de PRs ate #96, estado real da Fase 4.4, remocao da secao sobre documentos em `tmp/` (diretorio inexistente, listado no `.gitignore`), correcao da lista de agentes e deduplicacao do titulo "P4 - SEO e presenca".
-    - 5.1.b: corrigir `docs/AI_CONTEXT.md` - contagem de tabelas e migracoes, 15 decisoes arquiteturais, `db/schema.ts` com 13 tabelas, modularizacao 4.2 ja concluida (secão 12), diagrama da secao 3 e remocao do debito "CONTEXTO_PROJETO.md nao rastreado", ja resolvido.
-    - 5.1.c: atualizar `docs/CONTEXTO_PROJETO.md` - debitos tecnicos (secao 13) e plano de limpeza P0-P4 (secao 14), ambos obsoletos, alem da lista de funcionalidades em producao.
-    - 5.1.d: atualizar `db/schema.ts` com `monitor_state` e `monitor_minute_buckets` e elevar `schemaVersion` para 10.
+    - 5.1.a (concluída): `docs/HANDOFF.md` reconciliado com a `main`, o histórico até o PR #101 e o estado real das iniciativas 5.1 e 5.2.
+    - 5.1.b (concluída): `docs/AI_CONTEXT.md` atualizado para 16 decisões, 15 tabelas, 10 migrações e catálogo de schema sincronizado.
+    - 5.1.c (concluída): `docs/CONTEXTO_PROJETO.md` atualizado com débitos e próximos passos vigentes.
+    - 5.1.d (concluída): `db/schema.ts` sincronizado na versão 10, incluindo `monitor_state` e `monitor_minute_buckets`.
 
 ### 5.2 Backup e restauracao do D1
 
@@ -460,7 +460,7 @@ Estas recomendacoes nao sao iniciativas pontuais, mas praticas continuas que dev
 
 - **Backup**: cópias SQL no R2 complementam o Time Travel nativo do D1. Automação concluída (5.2.a); restore isolado pendente (5.2.b). Ver `docs/BACKUP_D1.md`.
 - **Restauracao**: documentar e testar o procedimento de restauracao do backup em ambiente isolado, nao em producao.
-- **Validacao periodica**: a cada release maior (Fase 3 e 4), executar um restore de teste e validar integridade das 8 tabelas.
+- **Validacao periodica**: a cada release maior, executar um restore de teste em ambiente isolado e validar a integridade das 15 tabelas.
 - **Retencao**: definir politica de retencao (minimo 30 dias de backups diarios) e local seguro de armazenamento (R2 separado ou storage externo).
 
 **Agentes envolvidos**: Engenheiro de Banco de Dados (Responsavel), Engenheiro DevOps (Automacao), Especialista em Seguranca (Revisor de integridade).

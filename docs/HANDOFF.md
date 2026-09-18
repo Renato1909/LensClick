@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 4 de setembro de 2026, com `main` em `87f11db`.
+> **Data de referência:** 18 de setembro de 2026, com a base `main` em `bbd4c34`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, a consolidação documental (5.1) e a automação operacional do backup do D1 (5.2.a) foram concluídas; o restore isolado (5.2.b) e a decisão técnica formal (5.2.c) permanecem pendentes. Permanece como condição para publicação comercial a revisão legal formal de Termos de Uso e Política de Privacidade.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, a consolidação documental (5.1), o backup operacional (5.2.a) e sua decisão técnica (5.2.c) estão concluídos; o restore isolado (5.2.b) é a próxima entrega. Permanece como condição para publicação comercial a revisão legal formal de Termos de Uso e Política de Privacidade.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Branch:** `main` → commit `87f11db` — "fix: tornar retencao do backup robusta" (#99).
+- **Base da entrega:** `main` → commit `bbd4c34` — "docs: formaliza backup do D1 como Decisão 16 (5.2.c)" (#101).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -29,7 +29,7 @@
 | Camada | Tecnologia |
 |---|---|
 | Runtime | Cloudflare Workers (serverless) |
-| Banco de dados | D1 `lensclick-db` (SQLite) — 8 tabelas |
+| Banco de dados | D1 `lensclick-db` (SQLite) — 15 tabelas |
 | Armazenamento de imagens | R2 `lensclick-profile-images` (bucket privado) |
 | Assets estáticos | Workers Assets (`public/`) |
 | E-mail transacional | Brevo |
@@ -65,7 +65,7 @@
 
 ## 2. Branches atuais
 
-- **Branches locais:** somente `main`.
+- **Branches locais permanentes:** `main` e `codex/preserved-local-main-20260905` (histórico local preservado; não contém trabalho a integrar).
 - **Branches remotas:** somente `origin/main` (além do ponteiro simbólico `origin/HEAD -> origin/main`).
 - **Branches sem upstream:** nenhuma.
 - **Trabalho pendente em branches:** nenhum.
@@ -76,7 +76,7 @@ A limpeza controlada foi concluída após comparar a árvore de cada branch obso
 
 ## 3. Funcionalidades em desenvolvimento
 
-Não há iniciativa em desenvolvimento em uma branch ativa. As quatro iniciativas da Fase 1, o marco de transição, a Fase 4.2, a Fase 4.3 e a Fase 4.4 estão integrados e publicados em produção. O catálogo e o despacho HTTP ficam em `src/router.mjs`; os handlers de domínio vivem em módulos próprios (`src/auth.mjs`, `photographers.mjs`, `account.mjs`, `account-security.mjs`, `portfolio.mjs`, `public-input.mjs`, `observability.mjs`) e o `worker.mjs` permanece como ponto de composição (782 linhas após o PR #82). As funcionalidades de produto abaixo já estão em `main` e em produção:
+A iniciativa 5.1 está em entrega documental; não há funcionalidade de produto em desenvolvimento. As quatro iniciativas da Fase 1, o marco de transição, a Fase 4.2, a Fase 4.3 e a Fase 4.4 estão integrados e publicados em produção. O catálogo e o despacho HTTP ficam em `src/router.mjs`; os handlers de domínio vivem em módulos próprios (`src/auth.mjs`, `photographers.mjs`, `account.mjs`, `account-security.mjs`, `portfolio.mjs`, `public-input.mjs`, `monitoring.mjs`) e a instrumentação compartilhada fica em `observability.mjs`; o `worker.mjs` permanece como ponto de composição. As funcionalidades de produto abaixo já estão em `main` e em produção:
 
 ### Funcionalidades entregues
 
@@ -214,6 +214,11 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #94 | `c398788` | docs: mark optional LGPD provisions complete |
 | #95 | `ca3eee2` | feat(monitoring): alertas in-worker de P95 e taxa de 5xx (Fase 4.4) |
 | #96 | `86d3c3f` | docs: registra conclusao da Fase 4.4 com evidencias do deploy |
+| #97 | `3212a02` | docs: planeja a Fase 5 e automatiza o backup do D1 |
+| #98 | `128c295` | fix: enviar backup do D1 ao R2 remoto |
+| #99 | `87f11db` | fix: tornar retencao do backup robusta |
+| #100 | `dcfb5fd` | docs: registra backup remoto validado |
+| #101 | `bbd4c34` | docs: formaliza backup do D1 como Decisão 16 (5.2.c) |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -362,15 +367,15 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Validada com 160 testes, build do Wrangler e CI obrigatório; nenhuma migration ou dado do D1 foi alterado.
 - Versão `e271e165-8768-461d-a746-f3b66587b4c5` publicada em produção em 1º de setembro de 2026 (2 assets atualizados: `search.js` e `photographer-profile.js`; binding `IMAGES` confirmado ativo). Smoke somente leitura: health `200`, home `200`, sitemap `200` com 3 URLs, busca `200` (1 perfil) e rotas de foto respondendo `404` corretamente para perfil sem foto, com e sem `?width=640`. A transformação on-demand não pôde ser exercitada com dados reais (nenhum fotógrafo publicado com foto) e permanece coberta pela suíte automatizada.
 
-### Fase 4.4 — concluída (sonda in-worker; P95/5xx no dashboard)
+### Fase 4.4 — concluída (disponibilidade, P95 e 5xx in-worker)
 - O sinal de disponibilidade (>= 99,9%) é coberto por sonda in-worker: cron a cada 5 min (`scheduled` handler) executa a checagem D1 idêntica ao `GET /api/health`; após 2 falhas consecutivas envia e-mail operacional via Brevo (janela, rota, valor observado, runbook em `docs/OBSERVABILIDADE.md`), com cooldown de 1h e estado durável na tabela `monitor_state` (migration `0009`).
-- Os sinais de latencia P95 (< 300 ms) e taxa de 5xx (< 0,1%) permanecem no painel Workers Observability, com notificações configuradas no dashboard Cloudflare (não alteram Worker, D1 ou R2).
-- Validada com 166 testes, build do Wrangler e CI obrigatório; migration aplicada ao D1 remoto e Worker deployado (versão `51d056b4`); smoke pos-deploy: health HTTP 200, D1 ok.
+- Os sinais de latência P95 (< 300 ms) e taxa de 5xx (< 0,1%) também são agregados pelo Worker e avaliados pelo cron a cada 5 minutos, com alertas Brevo e cooldown por sinal (PR #95, migration `0010`).
+- A disponibilidade foi publicada na versão `51d056b4`; P95 e 5xx foram publicados na versão `9c72c288` em 3 de setembro de 2026. Contratos e operação estão em `docs/OBSERVABILIDADE.md`.
 
 ### Fase 5.2.a — concluída (backup remoto operacional)
 - O workflow diário exporta o D1 remoto e envia o arquivo com `--remote` ao bucket privado `lensclick-backups`, sob `daily/`; o PR #98 corrigiu a localização do upload e o PR #99 tornou a retenção robusta e adicionou confirmação explícita da existência remota.
 - Evidência: execução manual [33883526187](https://github.com/Renato1909/LensClick/actions/runs/33883526187), em 4 de setembro de 2026, aprovada integralmente. O D1 e o R2 registraram `Resource location: remote`, o objeto `daily/backup-20260904T142433Z.sql` foi confirmado pela API com 15.662 bytes e a retenção de 30 dias foi aplicada.
-- O conteúdo do backup não foi baixado nem inspecionado. Permanecem pendentes o restore de teste exclusivamente em ambiente isolado (5.2.b) e a formalização da decisão (5.2.c); restauração em produção continua proibida fora de incidente real.
+- O conteúdo do backup não foi baixado nem inspecionado. A política foi formalizada na Decisão 16 (5.2.c concluída); permanece pendente o restore de teste exclusivamente em ambiente isolado (5.2.b). Restauração em produção continua proibida fora de incidente real.
 
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - Open Graph e JSON-LD nas páginas que não são SSR — nos perfis públicos já existem desde a Fase 3.2.
@@ -383,14 +388,14 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Autorização por papel (roles) — risco latente: a moderação de avaliações e de conversas depende de um papel administrativo que ainda não existe.
 - Revisão legal formal de termos e política (divulgações LGPD de alta prioridade — PR #89 — e itens de média prioridade — PR #91 — já implementados).
 
-### Fase 5 — planejada (registrada em `docs/ROADMAP_EVOLUCAO.md`)
+### Fase 5 — em execução (registrada em `docs/ROADMAP_EVOLUCAO.md`)
 
 Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a partir da leitura cruzada de HANDOFF, AI_CONTEXT, CONTEXTO_PROJETO e do código em `src/`, `migrations/`, `public/` e `wrangler.jsonc`.
 
 | Ordem | Iniciativa | Complexidade |
 |---:|---|:---:|
-| 17 | 5.1 Consolidação documental | Baixa |
-| 18 | 5.2 Backup e restauração do D1 | Média |
+| 17 | 5.1 Consolidação documental — concluída | Baixa |
+| 18 | 5.2 Backup e restauração do D1 — restore isolado pendente | Média |
 | 19 | 5.3 Endurecimento transversal de segurança | Média |
 | 20 | 5.4 Verificação de e-mail e papéis de autorização | Alta |
 | 21 | 5.5 Portabilidade de dados do titular (LGPD) | Baixa |
@@ -403,14 +408,13 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 ## 8. Ordem recomendada de execução
 
 ```
-1. [5.1] Consolidação documental — HANDOFF, AI_CONTEXT, CONTEXTO_PROJETO e db/schema.ts.
-2. [5.2] Backup e restauração do D1 ← item mais crítico; exige criar o bucket R2 de backup e o secret CLOUDFLARE_API_TOKEN.
-3. [5.3] Segurança transversal: HSTS, CSP sem unsafe-inline em scripts, teto de sessões.
-4. [5.4] Verificação de e-mail e papéis de autorização ← alta criticidade; revisão dedicada.
-5. [5.5] Portabilidade de dados (LGPD) + revisão legal formal antes da publicação comercial.
-6. [5.6] Automação da entrega — preview e deploy (após a 5.2).
-7. [5.7] Qualidade: aliases --lc-*, lint, testes em navegador real.
-8. [5.8] Produto e presença digital — capa do portfólio, OG/JSON-LD, domínio próprio.
+1. [5.2.b] Validar o restore do D1 em ambiente isolado, com autorização específica para tratar o backup com dados pessoais.
+2. [5.3] Segurança transversal: HSTS, CSP sem unsafe-inline em scripts, teto de sessões.
+3. [5.4] Verificação de e-mail e papéis de autorização ← alta criticidade; revisão dedicada.
+4. [5.5] Portabilidade de dados (LGPD) + revisão legal formal antes da publicação comercial.
+5. [5.6] Automação da entrega — preview e deploy (após concluir o restore da 5.2).
+6. [5.7] Qualidade: aliases --lc-*, lint, testes em navegador real.
+7. [5.8] Produto e presença digital — capa do portfólio, OG/JSON-LD, domínio próprio.
 ```
 
 **Justificativa da ordem:**
@@ -424,7 +428,8 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 - A Fase 4.2 foi concluída: todos os handlers de domínio foram extraídos e os blocos legados removidos no PR #82.
 - A Fase 4.3 foi concluída com transformação on-demand (Decisão 15) e publicada em produção na versão `e271e165`.
 - A Fase 4.4 foi concluída: além da sonda de disponibilidade (versão `51d056b4`), os sinais de P95 e taxa de 5xx passaram a ser cobertos in-worker pelo PR #95, publicado na versão `9c72c288` em 3 de setembro de 2026.
-- A Fase 5 foi planejada a partir do levantamento de 3 de setembro de 2026 e registrada em `docs/ROADMAP_EVOLUCAO.md`. A 5.1 vem primeiro porque planejar sobre documentação defasada produz ordem errada; a 5.2 vem logo depois por ser o único item com risco de perda irreversível de dados.
+- A consolidação documental 5.1 foi concluída: `db/schema.ts` está na versão 10 com 15 tabelas, e as fontes permanentes refletem as 16 decisões e o progresso até o PR #101.
+- A 5.2.a e a 5.2.c foram concluídas; a próxima entrega é a validação de restore isolado da 5.2.b.
 - A 5.6 depende da 5.2: automatizar deploy sem backup amplia o raio de impacto de um erro. Pela mesma lógica, a 5.4 (alta criticidade) exige revisão dedicada, mas não deve ser adiada indefinidamente.
 
 ---
@@ -442,7 +447,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 
 ### Convenções do projeto
 
-- **Migrações imutáveis** — nunca editar `0001`–`0006`. Nova alteração de schema = novo arquivo `0007_*.sql`.
+- **Migrações imutáveis** — nunca editar `0001`–`0010`. Nova alteração de schema = novo arquivo `0011_*.sql`.
 - **Fast-forward only** — `main` não aceita merge commits. Todo PR é squash-mergeado.
 - **Status check obrigatório** — o CI "Qualidade" precisa passar antes do merge. Rodar `npm test` e `npm run check` localmente antes de abrir PR.
 - **i18n** — toda string visível ao usuário deve passar por `window.i18n`; cada chave precisa existir em `public/locales/pt-BR.json` e `public/locales/en-US.json`. Não hardcoded em PT ou EN.
@@ -451,13 +456,13 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 
 ### Hotspots de conflito
 
-- `src/worker.mjs` — toda feature de backend toca este arquivo. Trabalhar em branches curtos e merge rápido para reduzir conflitos.
+- `src/worker.mjs` — ponto de composição compartilhado; mudanças transversais ainda podem concentrar conflitos. Handlers de domínio devem permanecer nos módulos dedicados.
 - `public/locales/pt-BR.json` e `public/locales/en-US.json` — toda feature de UI adiciona chaves equivalentes nos dois arquivos. Mesma recomendação.
 
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fases 1 a 4 concluídas; Fase 5 planejada, iniciativas 5.1 a 5.8).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fases 1 a 4 concluídas; Fase 5 em execução, com 5.1, 5.2.a e 5.2.c concluídas).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
@@ -475,4 +480,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 3 de setembro de 2026, com `main` em `86d3c3f` (documentação) e produção na versão `9c72c288-4169-44e3-9084-665880a0dc26`; a Fase 4.4 foi concluída no PR #95 (alertas in-worker de P95 e taxa de 5xx) e registrada no PR #96. A Fase 5 foi planejada — ver a seção 7.
+**Última atualização deste handoff:** 18 de setembro de 2026, com base `main` em `bbd4c34`; a Fase 5.1 foi consolidada, a política de backup foi formalizada no PR #101 e o restore isolado da 5.2.b é a próxima entrega operacional.

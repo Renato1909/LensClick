@@ -1,7 +1,7 @@
 # CONTEXTO_PROJETO.md
 
 > Documento permanente de onboarding para novos desenvolvedores e IAs.
-> Última atualização: agosto de 2026.
+> Última atualização: setembro de 2026.
 >
 > Consulte `docs/HANDOFF.md` para HEAD, branch e estado operacional atuais.
 
@@ -378,16 +378,14 @@ O estado atual de branches, branches órfãs, PRs e pendências Git é mantido e
 
 ### Débitos técnicos conhecidos
 
-1. **`db/schema.ts` desatualizado** — `schemaVersion=8` lista 13 das 15 tabelas; faltam `monitor_state` e `monitor_minute_buckets` (migrações 0009 e 0010). Tratado na iniciativa 5.1.
-2. **Hotspots de conflito** — os catálogos em `public/locales/` concentram alterações frequentes. `src/worker.mjs` segue como ponto de composição, mas os handlers de domínio foram extraídos na Fase 4.2, reduzindo conflitos.
-3. **Branches órfãs** — resolvido. As branches `recuperacao-de-senha` e `gerenciamento-da-conta` foram integradas; as duas últimas remotas pendentes foram removidas em 3 de setembro de 2026, após conferência de conteúdo contra os commits de squash em `main`.
-4. **Sem 2FA** — apenas senha + sessão. Iniciativa 5.4.
-5. **Sem verificação de e-mail** — cadastro não confirma o e-mail. Iniciativa 5.4.
-6. **Rate limit híbrido** — escudo de rajada nativo na edge (PR #30) combinado a políticas longas no D1; atende o volume atual.
-7. **Termos/política precisam de revisão jurídica** — divulgações LGPD de alta prioridade (PR #89), de média prioridade (PR #91) e cláusulas opcionais (PR #93) já publicadas; resta a revisão legal formal antes do uso comercial. Iniciativa 5.5.
-8. **Papéis não autorizam áreas** — `client`/`photographer` são dados de perfil; a autorização ocorre por propriedade do recurso. Um papel administrativo continua necessário para moderação e é risco latente. Iniciativa 5.4.
-9. **Sem backup automatizado do D1** — não há workflow nem política de retenção. Iniciativa 5.2, a mais crítica entre as pendências.
-10. **Aliases visuais legados** — `--accent-1`, `--text`, `--radius` e `--shadow` seguem em uso e devem migrar para os tokens `--lc-*`. Iniciativa 5.7.
+1. **Hotspots de conflito** — os catálogos em `public/locales/` concentram alterações frequentes. `src/worker.mjs` segue como ponto de composição, mas os handlers de domínio foram extraídos na Fase 4.2, reduzindo conflitos.
+2. **Sem 2FA** — apenas senha + sessão. Iniciativa 5.4.
+3. **Sem verificação de e-mail** — cadastro não confirma o e-mail. Iniciativa 5.4.
+4. **Rate limit híbrido** — escudo de rajada nativo na edge (PR #30) combinado a políticas longas no D1; atende o volume atual.
+5. **Termos/política precisam de revisão jurídica** — divulgações LGPD de alta prioridade (PR #89), de média prioridade (PR #91) e cláusulas opcionais (PR #93) já publicadas; resta a revisão legal formal antes do uso comercial. Iniciativa 5.5.
+6. **Papéis não autorizam áreas** — `client`/`photographer` são dados de perfil; a autorização ocorre por propriedade do recurso. Um papel administrativo continua necessário para moderação e é risco latente. Iniciativa 5.4.
+7. **Restore isolado ainda não validado** — o backup diário do D1 para o R2 está operacional e tem retenção formalizada, mas o procedimento de restauração precisa ser exercitado em ambiente isolado. Iniciativa 5.2.b.
+8. **Aliases visuais legados** — `--accent-1`, `--text`, `--radius` e `--shadow` seguem em uso e devem migrar para os tokens `--lc-*`. Iniciativa 5.7.
 ---
 
 ## 14. Próximos passos imediatos
@@ -400,8 +398,8 @@ O plano corrente é a **Fase 5**, registrada em `docs/ROADMAP_EVOLUCAO.md` e res
 
 | Ordem | Iniciativa | Complexidade |
 |---:|---|:---:|
-| 17 | 5.1 Consolidação documental | Baixa |
-| 18 | 5.2 Backup e restauração do D1 | Média |
+| 17 | 5.1 Consolidação documental — concluída | Baixa |
+| 18 | 5.2 Backup e restauração do D1 — restore isolado pendente | Média |
 | 19 | 5.3 Endurecimento transversal de segurança | Média |
 | 20 | 5.4 Verificação de e-mail e papéis de autorização | Alta |
 | 21 | 5.5 Portabilidade de dados do titular (LGPD) | Baixa |
@@ -409,10 +407,10 @@ O plano corrente é a **Fase 5**, registrada em `docs/ROADMAP_EVOLUCAO.md` e res
 | 23 | 5.7 Qualidade e débitos técnicos | Média |
 | 24 | 5.8 Produto e presença digital | Média |
 
-### Atualização de `db/schema.ts`
+### Estado de `db/schema.ts`
 
-- Adicionar `monitor_state` e `monitor_minute_buckets` ao schema TypeScript.
-- Atualizar `schemaVersion` para refletir as 15 tabelas reais (iniciativa 5.1).
+- `schemaVersion=10`, com as 15 tabelas das migrações `0001`–`0010`.
+- As migrações permanecem como fonte executável; o catálogo TypeScript deve acompanhar novas migrações no mesmo PR.
 
 ### Antes de qualquer alteração
 
@@ -431,11 +429,11 @@ O plano corrente é a **Fase 5**, registrada em `docs/ROADMAP_EVOLUCAO.md` e res
 1. **`docs/AI_CONTEXT.md`** — guia operacional para IAs: regras, fontes de verdade, procedimentos antes/depois de alterar, hotspots e o que não fazer.
 2. **`docs/CONTEXTO_PROJETO.md`** (este documento) — visão geral, arquitetura, convenções, débitos técnicos e próximos passos.
 3. **`docs/HANDOFF.md`** — estado operacional atual (HEAD, branches, PRs, pendências e tarefas prioritárias). Mutável; validar contra Git quando necessário.
-4. **`docs/DECISOES_TECNICAS.md`** — registro das 14 decisões arquiteturais já tomadas, com motivo, alternativas e consequências.
+4. **`docs/DECISOES_TECNICAS.md`** — registro das 16 decisões arquiteturais já tomadas, com motivo, alternativas e consequências.
 5. **`README.md`** — produto, requisitos, execução local, verificações, escopo atual.
 6. **`CONTRIBUTING.md`** — fluxo Git/GitHub de 6 passos, regras de branch e PR.
 7. **`docs/DOCUMENTACAO_TECNICA.md`** — documentação técnica completa (arquitetura, endpoints, modelo de dados, segurança, testes, deploy).
-8. **`docs/ROADMAP_EVOLUCAO.md`** — intenção futura (4 fases, 16 iniciativas). **Não confundir com implementação.**
+8. **`docs/ROADMAP_EVOLUCAO.md`** — documento vivo: Fases 1 a 4 concluídas e Fase 5 em execução. **Não confundir intenção futura com implementação.**
 9. **`DESIGN_SYSTEM.md`** — tokens visuais, componentes, direção visual.
 10. **`CLOUDFLARE_SETUP.md`** — procedimentos de deploy, segredos, conferência pós-publicar.
 11. **`wrangler.jsonc`** — bindings (D1 `DB`, R2 `PROFILE_IMAGES`, Assets `ASSETS`), configuração do Worker.
