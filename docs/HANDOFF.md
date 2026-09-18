@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 18 de setembro de 2026, com a base `main` em `91bd1b6`.
+> **Data de referência:** 18 de setembro de 2026, com a base `main` em `33ad80f`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, as iniciativas 5.1 (documentação), 5.2 (backup e restauração) e 5.3 (segurança transversal) estão concluídas, e a 5.4 está parcial (5.4.a verificação de e-mail e 5.4.b papel administrativo concluídas; 5.4.c painel de moderação pendente). Permanece como condição para publicação comercial a revisão legal formal de Termos de Uso e Política de Privacidade.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, as iniciativas 5.1 (documentação), 5.2 (backup e restauração), 5.3 (segurança transversal) e 5.4 (verificação de e-mail e papéis de autorização) estão concluídas. A próxima iniciativa é a 5.5, de portabilidade de dados do titular (LGPD). Permanece como condição para publicação comercial a revisão legal formal de Termos de Uso e Política de Privacidade.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Base da entrega:** `main` → commit `91bd1b6` — "feat(auth): admin role with requireAdmin guard (5.4.b)" (#109).
+- **Base da entrega:** `main` → commit `33ad80f` — "feat(admin): moderation panel for reviews and conversations (5.4.c)" (#111).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -227,6 +227,8 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #107 | `6252b5f` | docs: fix HANDOFF base to 62857da with PR 106 |
 | #108 | `365d6b4` | feat(auth): email verification with warn-only login (5.4.a) |
 | #109 | `91bd1b6` | feat(auth): admin role with requireAdmin guard (5.4.b) |
+| #110 | `7aff8ed` | docs: record 5.4.a and 5.4.b production rollout in HANDOFF |
+| #111 | `33ad80f` | feat(admin): moderation panel for reviews and conversations (5.4.c) |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -403,6 +405,11 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Decisão 19: primeiro admin somente por SQL pontual; nenhum endpoint de promoção; `publicUser` expõe `isAdmin`.
 - Versão `f046a3dc-ef72-402b-b774-7bf0aa5441e5` publicada em 18 de setembro de 2026 com 197/197 testes e smoke de produção aprovado. Conta oficial `lensclick.fotografias@gmail.com` promovida a administradora verificada por SQL pontual.
 
+### Fase 5.4.c — concluída (painel de moderação)
+- O PR #111 criou `GET /api/admin/reviews` + `PUT /api/admin/reviews/:id` (moderate/restore com trilha em `review_audit`), `GET /api/admin/conversations` + `PUT /api/admin/conversations/:id` (close/reopen; encerrada bloqueia mensagens com `409`) e o painel `public/admin.html` + `admin.js` com 21 chaves `admin.*` em PT/EN.
+- A política foi formalizada na Decisão 20 de `docs/DECISOES_TECNICAS.md`. A Fase 5.4 está encerrada.
+- Versão `63108ee4-f69a-4933-aa2a-19772010e9d7` publicada em 18 de setembro de 2026 com 203/203 testes e smoke de produção aprovado. Nenhuma migration ou dado do D1 foi alterado.
+
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - Open Graph e JSON-LD nas páginas que não são SSR — nos perfis públicos já existem desde a Fase 3.2.
 - Cache via `caches.default` para assets e respostas imutáveis.
@@ -411,7 +418,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### P5 — Segurança (médio/longo prazo, alto risco)
 - Verificação de e-mail no cadastro.
 - 2FA opcional.
-- Autorização por papel (roles) — parcialmente resolvida: `is_admin` + `requireAdmin` ativos desde a 5.4.b; falta o painel de moderação (5.4.c) para avaliações e conversas.
+- Autorização por papel (roles) — resolvida operacionalmente: `is_admin` + `requireAdmin` (5.4.b) e painel de moderação (5.4.c) ativos.
 - Revisão legal formal de termos e política (divulgações LGPD de alta prioridade — PR #89 — e itens de média prioridade — PR #91 — já implementados).
 
 ### Fase 5 — em execução (registrada em `docs/ROADMAP_EVOLUCAO.md`)
@@ -423,7 +430,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 | 17 | 5.1 Consolidação documental — concluída | Baixa |
 | 18 | 5.2 Backup e restauração do D1 — concluída | Média |
 | 19 | 5.3 Endurecimento transversal de segurança — concluída | Média |
-| 20 | 5.4 Verificação de e-mail e papéis de autorização — parcial (5.4.a e 5.4.b concluídas) | Alta |
+| 20 | 5.4 Verificação de e-mail e papéis de autorização — concluída | Alta |
 | 21 | 5.5 Portabilidade de dados do titular (LGPD) | Baixa |
 | 22 | 5.6 Automação da entrega | Média |
 | 23 | 5.7 Qualidade e débitos técnicos | Média |
@@ -434,7 +441,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 ## 8. Ordem recomendada de execução
 
 ```
-1. [5.4.c] Painel de moderação ← alta criticidade; revisão dedicada.
+1. [5.5] Portabilidade de dados (LGPD) + revisão legal formal antes da publicação comercial ← próximo.
 2. [5.5] Portabilidade de dados (LGPD) + revisão legal formal antes da publicação comercial.
 3. [5.6] Automação da entrega — dependência de backup e restore atendida pela 5.2.
 4. [5.7] Qualidade: aliases --lc-*, lint, testes em navegador real.
@@ -455,7 +462,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 - A consolidação documental 5.1 foi concluída: `db/schema.ts` está na versão 12 com 16 tabelas, e as fontes permanentes refletem as decisões e o progresso do projeto.
 - A iniciativa 5.2 foi concluída integralmente: backup remoto, política formal e restore isolado validados. A dependência crítica da 5.6 está atendida.
 - A iniciativa 5.3 foi concluída: HSTS e CSP foram validados nas respostas públicas, e o teto de cinco sessões foi coberto por testes de isolamento entre usuários.
-- As iniciativas 5.4.a (verificação de e-mail, Decisão 18) e 5.4.b (papel administrativo, Decisão 19) foram concluídas e publicadas; resta a 5.4.c (painel de moderação), que exige revisão dedicada e não deve ser adiada indefinidamente.
+- As iniciativas 5.4.a (verificação de e-mail, Decisão 18), 5.4.b (papel administrativo, Decisão 19) e 5.4.c (painel de moderação, Decisão 20) foram concluídas e publicadas. A Fase 5.4 está encerrada; a próxima é a 5.5 (portabilidade LGPD + revisão legal formal).
 
 ---
 
@@ -487,7 +494,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fases 1 a 4 concluídas; Fase 5 em execução, com 5.1, 5.2, 5.3 e 5.4.a/5.4.b concluídas).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fases 1 a 4 concluídas; Fase 5 em execução, com 5.1, 5.2, 5.3 e 5.4 concluídas).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
@@ -505,4 +512,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 18 de setembro de 2026, com base `main` em `91bd1b6` (Fase 5.4 parcial: 5.4.a pelo PR #108 e 5.4.b pelo PR #109, ambas publicadas); resta a 5.4.c (painel de moderação).
+**Última atualização deste handoff:** 18 de setembro de 2026, com base `main` em `33ad80f` (Fase 5.4 encerrada pelo PR #111, publicado); a próxima iniciativa é a 5.5.
