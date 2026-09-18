@@ -306,12 +306,12 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 5.2 Backup e restauracao do D1
 
-> **Estado:** automacao operacional validada. O workflow `.github/workflows/backup.yml` exporta diariamente o D1 remoto para o R2 remoto, confirma a existência do objeto pela API e aplica retenção de 30 dias. A execução manual 33883526187 validou o fluxo completo em 4 de setembro de 2026. A política foi formalizada como Decisão 16 em `docs/DECISOES_TECNICAS.md` (5.2.c, concluída); o restore isolado segue pendente (5.2.b).
+> **Estado:** concluída. O workflow `.github/workflows/backup.yml` exporta diariamente o D1 remoto para o R2 remoto, confirma a existência do objeto pela API e aplica retenção de 30 dias. A automação foi validada em 4 de setembro de 2026, a política foi formalizada como Decisão 16 e o restore isolado foi validado em 18 de setembro de 2026.
 
 1. **Nome da iniciativa**: Backup automatico do D1 com restauracao testada.
 2. **Objetivo**: Garantir que o banco possa ser recuperado, com politica explicita de frequencia, retencao e local de armazenamento.
-3. **Problema resolvido**: faltava uma cópia SQL automatizada no R2 com retenção própria, complementar ao Time Travel nativo. Automação operacional; restore isolado pendente.
-4. **Impacto esperado**: reduz o risco de perda de dados; a restauração isolada deve ser validada antes de automatizar deploys (5.6). Exports diários não garantem perda zero.
+3. **Problema resolvido**: faltava uma cópia SQL automatizada no R2 com retenção própria, complementar ao Time Travel nativo, e evidência de que o arquivo podia ser restaurado com integridade.
+4. **Impacto esperado**: reduz o risco de perda de dados e remove a dependência crítica da automação de deploys (5.6). Exports diários não garantem perda zero.
 5. **Complexidade**: Media - workflow agendado, exportacao via Wrangler e armazenamento em bucket R2 proprio.
 6. **Riscos**: credencial com privilegio excessivo; backup nunca testado passa falsa sensacao de seguranca. Mitigacao: token com permissao minima (leitura no D1 e escrita apenas no bucket de backup), restore executado em ambiente isolado - nunca em producao - e procedimento documentado em `docs/BACKUP_D1.md`.
 7. **Dependencias**: Nenhuma critica, mas deve preceder 5.6.
@@ -319,8 +319,8 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 9. **Ordem recomendada**: **18a**.
 10. **Subtarefas**:
     - 5.2.a (concluida e validada): workflow `.github/workflows/backup.yml` - execucao diaria as 03:17 UTC e `workflow_dispatch` com parametro de retencao, arquivando no R2 remoto em `lensclick-backups/daily/backup-<data>.sql`, confirmando a existência do objeto e aplicando retenção de 30 dias via API da Cloudflare. Evidência operacional: execução manual 33883526187, objeto `backup-20260904T142433Z.sql`, 15.662 bytes, sem acesso ao conteúdo.
-    - 5.2.b (procedimento documentado; teste de restore pendente): secao 5 de `docs/BACKUP_D1.md`. O restore de teste em ambiente isolado e a atividade da validacao periodica (secao 6 do mesmo documento) **ainda nao foram executados**. O bucket e o segredo já estão configurados; o teste deve baixar o arquivo apenas quando houver autorização específica para tratar os dados pessoais e nunca deve atingir produção.
-    - Política formalizada na Decisão 16 de `docs/DECISOES_TECNICAS.md` (5.2.c concluída); restore isolado pendente (5.2.b).
+    - 5.2.b (concluída): em 18 de setembro de 2026, o backup `backup-20260918T081321Z.sql` foi restaurado em D1 local isolado; 15 tabelas de negócio, integridade SQLite `ok` e 0 violações de chave estrangeira. Nenhum registro pessoal foi exibido, produção não foi tocada e os artefatos temporários foram removidos.
+    - 5.2.c (concluída): política formalizada na Decisão 16 de `docs/DECISOES_TECNICAS.md`.
 
 ### 5.3 Endurecimento transversal de seguranca
 
@@ -458,10 +458,10 @@ Estas recomendacoes nao sao iniciativas pontuais, mas praticas continuas que dev
 
 ### Backup e recuperacao do D1
 
-- **Backup**: cópias SQL no R2 complementam o Time Travel nativo do D1. Automação concluída (5.2.a); restore isolado pendente (5.2.b). Ver `docs/BACKUP_D1.md`.
-- **Restauracao**: documentar e testar o procedimento de restauracao do backup em ambiente isolado, nao em producao.
+- **Backup**: cópias SQL no R2 complementam o Time Travel nativo do D1. Automação, restore isolado e política concluídos (5.2.a–5.2.c). Ver `docs/BACKUP_D1.md`.
+- **Restauracao**: manter o procedimento testado exclusivamente em ambiente isolado; produção somente em incidente real.
 - **Validacao periodica**: a cada release maior, executar um restore de teste em ambiente isolado e validar a integridade das 15 tabelas.
-- **Retencao**: definir politica de retencao (minimo 30 dias de backups diarios) e local seguro de armazenamento (R2 separado ou storage externo).
+- **Retencao**: manter 30 dias de backups diários no bucket R2 separado `lensclick-backups`.
 
 **Agentes envolvidos**: Engenheiro de Banco de Dados (Responsavel), Engenheiro DevOps (Automacao), Especialista em Seguranca (Revisor de integridade).
 
