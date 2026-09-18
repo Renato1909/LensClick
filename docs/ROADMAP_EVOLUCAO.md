@@ -2,7 +2,7 @@
 
 > **Premissa**: evoluir sem quebrar. Cada iniciativa e aditiva e reversivel. Nenhuma recomenda reescrita completa - o monolito atual e simples, testavel e adequado ao estadio do produto.
 >
-> **Arquitetura atual**: Worker unico Cloudflare (`src/worker.mjs` como ponto de composicao) com catalogo e despacho declarativos em `src/router.mjs` (37 rotas catalogadas) e handlers extraidos por dominio (`src/auth.mjs`, `src/photographers.mjs`, `src/account.mjs`, `src/account-security.mjs`, `src/portfolio.mjs`, `src/public-input.mjs`, `src/monitoring.mjs`) - D1 `lensclick-db` (15 tabelas: `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`) - R2 `lensclick-profile-images` (bucket privado) - Frontend HTML/JS/CSS vanilla (29 arquivos em `public/`) - suite automatizada de testes (`node --test`; executar `npm test` para consultar o total atual) - Rate limiting hibrido (escudo de rajada nativo na edge + politicas longas autoritativas no D1) - `GET /api/health` para Worker/D1 - Sessoes por cookie (PBKDF2-SHA256, 100k iteracoes) - CSP rigorosa, ainda com `'unsafe-inline'` em `script-src` (tratado na 5.3) - variantes de imagem on-demand via binding `IMAGES` (Decisao 15) - sitemap/robots dinamicos - cache de edge de 60 segundos para descoberta publica - alertas in-worker de disponibilidade, P95 e taxa de 5xx (cron a cada 5 min) - Open Graph e JSON-LD presentes apenas nos perfis SSR (demais paginas tratadas na 5.8).
+> **Arquitetura atual**: Worker unico Cloudflare (`src/worker.mjs` como ponto de composicao) com catalogo e despacho declarativos em `src/router.mjs` (37 rotas catalogadas) e handlers extraidos por dominio (`src/auth.mjs`, `src/photographers.mjs`, `src/account.mjs`, `src/account-security.mjs`, `src/portfolio.mjs`, `src/public-input.mjs`, `src/monitoring.mjs`) - D1 `lensclick-db` (15 tabelas: `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`) - R2 `lensclick-profile-images` (bucket privado) - Frontend HTML/JS/CSS vanilla - suite automatizada de testes (`node --test`; executar `npm test` para consultar o total atual) - Rate limiting hibrido (escudo de rajada nativo na edge + politicas longas autoritativas no D1) - `GET /api/health` para Worker/D1 - Sessoes por cookie (PBKDF2-SHA256, 100k iteracoes, maximo de 5 ativas por usuario) - HSTS sem `preload` e CSP sem `'unsafe-inline'` em `script-src` - variantes de imagem on-demand via binding `IMAGES` (Decisao 15) - sitemap/robots dinamicos - cache de edge de 60 segundos para descoberta publica - alertas in-worker de disponibilidade, P95 e taxa de 5xx (cron a cada 5 min) - Open Graph e JSON-LD presentes apenas nos perfis SSR (demais paginas tratadas na 5.8).
 >
 > **Agentes disponiveis**: Arquiteto de Software, Engenheiro Frontend, Engenheiro Backend, Engenheiro de Banco de Dados, Engenheiro DevOps, Engenheiro de QA, Designer, Especialista em Seguranca, Especialista em SEO e Performance, Especialista em Marketing para Fotografia, Revisor de Codigo.
 
@@ -324,21 +324,22 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 5.3 Endurecimento transversal de seguranca
 
-> **Estado:** não iniciada.
+> **Estado:** concluida e validada em producao em 18 de setembro de 2026 (PRs #104 e #105; versao `0b72f0b4-b525-4b20-bdc3-f474574851bd`).
 
 1. **Nome da iniciativa**: HSTS, CSP sem `unsafe-inline` em scripts e limite de sessoes ativas.
 2. **Objetivo**: Fechar os itens de seguranca que as recomendacoes transversais deste roadmap preveem e que seguem em aberto.
-3. **Problema resolvido**: `SECURITY_HEADERS` em `src/worker.mjs` nao emite `Strict-Transport-Security`; a CSP libera `'unsafe-inline'` em `script-src` e em `style-src`, sustentando o bloco `<script>` inline de `public/index.html`; e nao ha teto de sessoes simultaneas por usuario, embora a rotacao de sessao na troca de senha ja exista em `src/account-security.mjs`.
+3. **Problema resolvido**: antes da iniciativa, `SECURITY_HEADERS` nao emitia `Strict-Transport-Security`; a CSP liberava `'unsafe-inline'` em `script-src`; cinco paginas mantinham JavaScript inline; e nao havia teto de sessoes simultaneas por usuario, embora a rotacao de sessao na troca de senha ja existisse em `src/account-security.mjs`.
 4. **Impacto esperado**: reduz a superficie de XSS e de sequestro de sessao; impede downgrade para HTTP.
-5. **Complexidade**: Media - exige externalizar o script inline de `public/index.html` para `public/home.js` e atualizar `test/html-scripts.test.mjs`, que valida a sintaxe dos scripts listados nominalmente.
+5. **Complexidade**: Media - exigiu externalizar os scripts das paginas inicial e de autenticacao, sincronizar cabecalhos dinamicos e estaticos e ampliar os testes de regressao.
 6. **Riscos**: `preload` no HSTS e praticamente irreversivel por meses - nao adotar nesta entrega; CSP restritiva demais quebra o frontend. Mitigacao: manter `'unsafe-inline'` em `style-src` nesta etapa e validar em preview antes da producao.
 7. **Dependencias**: Nenhuma.
 8. **Agentes envolvidos**: Especialista em Seguranca (Responsavel), Engenheiro Front-end (externalizacao do script), Engenheiro DevOps (cabecalhos), Revisor de Codigo.
 9. **Ordem recomendada**: **19a**.
 10. **Subtarefas**:
-    - 5.3.a: HSTS com `max-age=63072000; includeSubDomains`, sem `preload`.
-    - 5.3.b: externalizar o script inline e remover `'unsafe-inline'` de `script-src`.
-    - 5.3.c: teto de sessoes ativas por usuario em `createSession` (sugestao: 5), preservando a sessao corrente.
+    - 5.3.a (concluida): HSTS com `max-age=63072000; includeSubDomains`, sem `preload`, aplicado pelo Worker e por `public/_headers` aos assets estaticos.
+    - 5.3.b (concluida): scripts inline das cinco paginas afetadas externalizados; `script-src` agora permite apenas `'self'`, enquanto `style-src` preserva temporariamente `'unsafe-inline'`.
+    - 5.3.c (concluida): `createSession` limita cada usuario a 5 sessoes ativas, preserva a sessao nova e remove excedentes em batch atomico no D1.
+11. **Evidencias**: suite com 185/185 testes, CI obrigatorio verde nos PRs #104 e #105, build do Wrangler aprovado e smoke de producao somente leitura com health/D1 `200`, paginas e scripts `200`, sessao anonima `401`, rota desconhecida `404`, HSTS/CSP confirmados e navegador sem erros de console. Nenhuma migration ou dado remoto do D1 foi alterado.
 
 ### 5.4 Verificacao de e-mail e papeis de autorizacao
 
@@ -436,10 +437,10 @@ Estas recomendacoes nao sao iniciativas pontuais, mas praticas continuas que dev
 
 ### Seguranca
 
-- **CSP (Content-Security-Policy)**: a CSP rigorosa ja existe no `worker.mjs`. Auditar sua eficacia; remover excecoes desnecessarias; garantir compatibilidade com SSR (3.2); evitar `unsafe-inline` para scripts; manter `style-src` controlado; documentar alteracoes; validar no ambiente de preview antes de producao.
-- **HSTS**: habilitar `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` em todas as respostas.
-- **Headers de seguranca**: padronizar `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` minimal.
-- **Sessoes**: revisar expiracao e rotacao de `sessions` (tabela ja existe); invalidar ao trocar senha; limite de sessoes ativas por usuario.
+- **CSP (Content-Security-Policy)**: `script-src` ja opera sem `'unsafe-inline'`; auditar continuamente sua eficacia, manter compatibilidade com SSR e tratar a remocao futura de `'unsafe-inline'` em `style-src` como entrega visual separada.
+- **HSTS**: ativo com `Strict-Transport-Security: max-age=63072000; includeSubDomains` em respostas do Worker e assets estaticos. `preload` permanece deliberadamente fora do escopo enquanto nao houver dominio proprio e decisao especifica, pois sua reversao e lenta.
+- **Headers de seguranca**: manter sincronizados `SECURITY_HEADERS` e `public/_headers`: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` e `Permissions-Policy` minimal.
+- **Sessoes**: revisar periodicamente o TTL de sete dias e o teto de cinco sessoes ativas; a troca de senha continua revogando as demais sessoes.
 - **Cookies**: cookies de sessao com `Secure`, `HttpOnly`, `SameSite=Lax` (ou `Strict` se aplicavel); sem cookies cross-site desnecessarios.
 - **Rotacao de segredos**: mapear todos os segredos (JWT secret, API keys, bindings) e definir rotacao periodica; nunca hardcoded no repositorio.
 - **Auditoria periodica**: revisao trimestral de dependencias, permissoes de bindings (R2, D1) e superficie de ataque, conduzida pelo Especialista em Seguranca.
