@@ -8,6 +8,7 @@ import {
 } from './observability.mjs';
 import { createRequestRouter } from './router.mjs';
 import { createAuthHandlers } from './auth.mjs';
+import { createAdminHandlers } from './admin.mjs';
 import { createPhotographerHandlers } from './photographers.mjs';
 import { createAccountHandlers } from './account.mjs';
 import { createPublicInputHandlers } from './public-input.mjs';
@@ -308,6 +309,7 @@ function publicUser(row) {
     age: row.age == null ? null : Number(row.age),
     gender: row.gender,
     emailVerified: row.email_verified_at != null && row.email_verified_at !== '',
+    isAdmin: Number(row.is_admin || 0) === 1,
     profilePic: row.profile_pic_key
       ? `/api/profile-picture/${row.id}?v=${encodeURIComponent(row.updated_at || '')}`
       : ''
@@ -627,6 +629,7 @@ const authHandlers = createAuthHandlers({
 });
 
 const imageService = createImageService({ storedImageResponse });
+const adminHandlers = createAdminHandlers({ json, isRateLimited, authenticatedUser });
 const monitoring = createMonitoringHandlers({ reportOperationalError });
 
 const photographerHandlers = createPhotographerHandlers({
@@ -664,6 +667,12 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'auth.email.resend') return authHandlers.emailResend({ request, env, pathname, context, requestContext });
   if (routeId === 'auth.logout') return authHandlers.logout({ request, env });
   if (routeId === 'auth.me') return authHandlers.me({ request, env });
+  if (routeId === 'admin.overview') return adminHandlers.overview({ request, env, pathname });
+  if (routeId.startsWith('admin.')) {
+    const gate = await adminHandlers.requireAdmin(request, env, pathname);
+    if (!gate.user) return gate.response;
+    return json(404, { error: 'Endpoint nao encontrado.' });
+  }
   if (routeId === 'photographers.list') return photographerHandlers.list({ request, env });
   if (routeId === 'photographers.detail') return photographerHandlers.detail({ params, env });
   if (routeId === 'photographers.photo') return photographerHandlers.photo({ params, env, request });

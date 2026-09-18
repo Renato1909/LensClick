@@ -23,6 +23,7 @@ const STATIC_API_ROUTES = new Set([
   '/api/auth/password-reset/confirm',
   '/api/auth/email/verify',
   '/api/auth/email/resend',
+  '/api/admin/overview',
   '/api/auth/logout',
   '/api/auth/me',
   '/api/health',

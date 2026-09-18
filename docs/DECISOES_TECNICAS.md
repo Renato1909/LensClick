@@ -790,6 +790,44 @@ Contas podiam ser criadas com e-mail não verificado, sem confirmação de titul
 
 ---
 
+## Decisão 19 — Papel administrativo com `is_admin` e guard `requireAdmin` (5.4.b)
+
+### Contexto
+
+`role` (`client`/`photographer`) é dado de perfil com `CHECK` imutável na migração `0001` e nunca autorizou áreas. A moderação de avaliações (3.1) e de conversas (3.3) depende de um papel administrativo que não existia.
+
+### Decisão tomada
+
+- **Modelo**: coluna `users.is_admin` (`INTEGER NOT NULL DEFAULT 0 CHECK (is_admin IN (0, 1))`, migração `0012`) em vez de novo valor em `role`. Contagem existente e `CHECK` original preservados.
+- **Guard**: `requireAdmin` em `src/admin.mjs`, chamado no início de `dispatchApiRoute` para toda rota `admin.*`: sem sessão responde `401`; autenticado sem o papel responde `403` genérico.
+- **Primeiro administrador**: atribuído por SQL pontual (`UPDATE users SET is_admin = 1 WHERE email = '...'`) via `wrangler d1 execute`. Nunca existe endpoint de promoção; o cadastro nunca define o papel.
+- **Exposição**: `publicUser` inclui `isAdmin` para a interface decidir o que exibir; a autorização é sempre verificada no servidor a cada requisição.
+- **Base do painel**: `GET /api/admin/overview` (somente leitura, contagens de usuários, não verificados, publicados, pendências e conversas ativas) como fonte de dados da futura 5.4.c.
+
+### Motivo da escolha
+
+- **Imutabilidade**: alterar o `CHECK` de `role` violaria a regra de migrações imutáveis; coluna própria é aditiva e reversível.
+- **Negação por padrão**: o prefixo `admin.*` passa pelo guard antes de qualquer handler, então rotas futuras já nascem protegidas.
+- **Sem auto-promoção**: sem endpoint de escrita no papel, a classe de escalação por API deixa de existir.
+
+### Alternativas consideradas
+
+- **Novo valor `admin` em `role`**: rejeitado; exigiria reescrever `CHECK` e migração publicada.
+- **Reenvio/promoção por endpoint autenticado**: rejeitado; qualquer falha de guarda viraria escalação remota.
+- **Lista de e-mails admin em variável de ambiente**: rejeitado; espalha controle de acesso para fora do banco auditável.
+
+### Consequências
+
+- **Benefícios:** moderação (5.4.c) desbloqueada; painel futuro já tem fonte de dados.
+- **Limitações:** ainda não há interface nem ações de moderação; o primeiro admin exige acesso ao `wrangler`.
+- **Operação:** promover somente contas com e-mail já verificado; revisar `is_admin = 1` periodicamente.
+
+### Status
+
+**Ativa.** Implementada na iniciativa 5.4.b; validação em produção pendente de deploy.
+
+---
+
 ## Resumo
 
 | # | Decisão | Status |
@@ -812,6 +850,7 @@ Contas podiam ser criadas com e-mail não verificado, sem confirmação de titul
 | 16 | Backup automático do D1 com retenção de 30 dias | Ativa e validada |
 | 17 | HSTS, CSP de scripts e limite de sessões ativas | Ativa e validada |
 | 18 | Verificação de e-mail com login em modo de aviso (5.4.a) | Ativa |
+| 19 | Papel administrativo com `is_admin` e guard `requireAdmin` (5.4.b) | Ativa |
 
 ---
 
@@ -831,5 +870,5 @@ Contas podiam ser criadas com e-mail não verificado, sem confirmação de titul
 Estes pontos **não são decisões tomadas** — são candidatos a formalização conforme o produto evolui:
 
 - **Segundo fator de autenticacao (2FA)**: hoje não existe; formalizar o mecanismo (TOTP, SMS, e-mail) quando for priorizado.
-- **Papéis como autorização**: hoje `client` e `photographer` são dados de perfil, não autorizam áreas; a decisão sobre como papéis passarão a autorizar ainda não foi tomada.
+- **Papéis como autorização**: `client`/`photographer` seguem como dados de perfil; a autorização administrativa foi formalizada na Decisão 19 (`is_admin` + `requireAdmin`). O painel de moderação (5.4.c) segue pendente.
 - **Domínio personalizado**: listado como prioridade média; a decisão sobre o domínio e a configuração ainda não está formalizada.

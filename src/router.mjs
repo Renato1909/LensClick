@@ -9,6 +9,7 @@ const API_ROUTES = Object.freeze([
   { id: 'auth.email.resend', method: 'POST', path: '/api/auth/email/resend' },
   { id: 'auth.logout', method: 'POST', path: '/api/auth/logout' },
   { id: 'auth.me', method: 'GET', path: '/api/auth/me' },
+  { id: 'admin.overview', method: 'GET', path: '/api/admin/overview' },
   { id: 'photographers.list', method: 'GET', path: '/api/photographers' },
   { id: 'photographers.photo', method: 'GET', pattern: /^\/api\/photographers\/([a-z0-9-]{3,80})\/photo$/ },
   { id: 'photographers.portfolio-image', method: 'GET', pattern: /^\/api\/photographers\/([a-z0-9-]{3,80})\/portfolio\/(\d+)$/ },
