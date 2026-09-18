@@ -343,7 +343,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 5.4 Verificacao de e-mail e papeis de autorizacao
 
-> **Estado:** não iniciada. Risco classificado como critico no `HANDOFF.md` (secao 6, item 1).
+> **Estado:** parcial. A subtarefa 5.4.a (verificação de e-mail) está concluída; 5.4.b (papel administrativo) e 5.4.c (painel de moderação) seguem não iniciadas. Risco classificado como critico no `HANDOFF.md` (secao 6, item 1).
 
 1. **Nome da iniciativa**: Confirmacao de e-mail no cadastro e papel administrativo para moderacao.
 2. **Objetivo**: Reduzir abuso na criacao de contas e destravar a moderacao de avaliacoes e conversas.
@@ -355,7 +355,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 8. **Agentes envolvidos**: Especialista em Seguranca (Responsavel), Engenheiro Backend, Engenheiro Front-end, Arquiteto de Software (Aprovador do modelo de papeis).
 9. **Ordem recomendada**: **20a**.
 10. **Subtarefas**:
-    - 5.4.a: tabela `email_verification_tokens` e coluna `email_verified_at` em nova migration, seguindo o padrao de `password_reset_tokens`; rotas de verificacao e reenvio; decidir formalmente se o login bloqueia ou apenas avisa.
+    - 5.4.a (concluída): tabela `email_verification_tokens` e coluna `email_verified_at` na migration `0011`, seguindo o padrao de `password_reset_tokens`; rotas `POST /api/auth/email/verify` e `POST /api/auth/email/resend`; login em modo de aviso formalizado na Decisão 18 (não bloqueia; expõe `emailVerified`).
     - 5.4.b: coluna `is_admin` em nova migration - o `CHECK` de `role` na migration `0001` e imutavel - e guard `requireAdmin` no inicio de `dispatchApiRoute` para as rotas `admin.*`.
     - 5.4.c: painel administrativo minimo para moderacao de avaliacoes e encerramento de conversas.
 

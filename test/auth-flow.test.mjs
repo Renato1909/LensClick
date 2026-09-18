@@ -455,11 +455,11 @@ test('recuperacao troca a senha sem revelar contas e invalida sessoes', async (t
   assert.equal(known.response.status, 202);
   assert.equal(unknown.response.status, 202);
   assert.deepEqual(known.json, unknown.json);
-  assert.equal(sentEmails.length, 1);
+  assert.equal(sentEmails.length, 2);
 
-  assert.deepEqual(sentEmails[0].sender, { name: 'LensClick', email: 'conta@lensclick.test' });
-  assert.equal(sentEmails[0].to[0].email, 'recuperar@example.com');
-  const resetLink = sentEmails[0].textContent.match(/https:\/\/\S+/)?.[0];
+  assert.deepEqual(sentEmails[1].sender, { name: 'LensClick', email: 'conta@lensclick.test' });
+  assert.equal(sentEmails[1].to[0].email, 'recuperar@example.com');
+  const resetLink = sentEmails[1].textContent.match(/https:\/\/\S+/)?.[0];
   assert.ok(resetLink);
   const token = new URL(resetLink).searchParams.get('token');
   assert.match(token, /^[A-Za-z0-9_-]{40,100}$/);

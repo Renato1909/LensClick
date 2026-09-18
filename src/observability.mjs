@@ -4,6 +4,7 @@ const REQUEST_EVENT = 'http.request.completed';
 const OPERATIONAL_EVENTS = new Set([
   'database.health_check.failed',
   'email.password_reset.delivery_failed',
+  'email.verification.delivery_failed',
   'storage.profile_picture.cleanup_failed'
 ]);
 const ERROR_CATEGORIES = new Set([
@@ -20,6 +21,8 @@ const STATIC_API_ROUTES = new Set([
   '/api/auth/login',
   '/api/auth/password-reset/request',
   '/api/auth/password-reset/confirm',
+  '/api/auth/email/verify',
+  '/api/auth/email/resend',
   '/api/auth/logout',
   '/api/auth/me',
   '/api/health',

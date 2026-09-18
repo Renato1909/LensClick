@@ -20,6 +20,7 @@ const SESSION_COOKIE = 'lensclick_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_ACTIVE_SESSIONS = 5;
 const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
+const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_BODY_BYTES = 700_000;
 const MAX_PROFILE_PICTURE_BYTES = 450_000;
 const MAX_PORTFOLIO_IMAGE_BYTES = 4_000_000;
@@ -306,6 +307,7 @@ function publicUser(row) {
     role: row.role,
     age: row.age == null ? null : Number(row.age),
     gender: row.gender,
+    emailVerified: row.email_verified_at != null && row.email_verified_at !== '',
     profilePic: row.profile_pic_key
       ? `/api/profile-picture/${row.id}?v=${encodeURIComponent(row.updated_at || '')}`
       : ''
@@ -556,6 +558,44 @@ async function sendPasswordResetEmail(env, recipient, name, resetUrl, language =
   }
 }
 
+async function sendVerificationEmail(env, recipient, name, verifyUrl, language = 'pt') {
+  if (!env.BREVO_API_KEY || !env.BREVO_SENDER_EMAIL) {
+    throw new Error('Verification email is not configured.');
+  }
+  const safeName = escapeHtml(name || '');
+  const safeUrl = escapeHtml(verifyUrl);
+  const english = language === 'en';
+  const subject = english ? 'Confirm your LensClick email' : 'Confirme seu e-mail da LensClick';
+  const text = english
+    ? `Hello${name ? `, ${name}` : ''}. Use this link to confirm your LensClick email: ${verifyUrl}\n\nThe link expires in 24 hours and can be used only once. If you did not create this account, ignore this email.`
+    : `Ola${name ? `, ${name}` : ''}. Use este link para confirmar seu e-mail da LensClick: ${verifyUrl}\n\nO link expira em 24 horas e pode ser usado somente uma vez. Se voce nao criou esta conta, ignore este e-mail.`;
+  const html = english
+    ? `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17182a"><h1 style="font-size:24px">Confirm your email</h1><p>Hello${safeName ? `, ${safeName}` : ''}.</p><p>We received a LensClick signup with this email address.</p><p><a href="${safeUrl}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#6f4cff;color:#fff;text-decoration:none;font-weight:700">Confirm my email</a></p><p>The link expires in 24 hours and can be used only once.</p><p>If you did not create this account, ignore this email.</p></div>`
+    : `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#17182a"><h1 style="font-size:24px">Confirme seu e-mail</h1><p>Ola${safeName ? `, ${safeName}` : ''}.</p><p>Recebemos um cadastro na LensClick com este endereco de e-mail.</p><p><a href="${safeUrl}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#6f4cff;color:#fff;text-decoration:none;font-weight:700">Confirmar meu e-mail</a></p><p>O link expira em 24 horas e pode ser usado somente uma vez.</p><p>Se voce nao criou esta conta, ignore este e-mail.</p></div>`;
+  const emailFetch = typeof env.BREVO_FETCH === 'function' ? env.BREVO_FETCH : fetch;
+  const response = await emailFetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'api-key': env.BREVO_API_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      sender: {
+        name: env.BREVO_SENDER_NAME || 'LensClick',
+        email: env.BREVO_SENDER_EMAIL
+      },
+      to: [{ email: recipient, ...(name ? { name } : {}) }],
+      subject,
+      textContent: text,
+      htmlContent: html
+    })
+  });
+  if (!response.ok) {
+    throw new Error(`Brevo rejected verification email (${response.status}).`);
+  }
+}
+
 function decodeProfilePicture(dataUrl) {
   const match = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/i.exec(String(dataUrl));
   if (!match) throw Object.assign(new Error('Formato de imagem nao permitido.'), { status: 400 });
@@ -581,8 +621,9 @@ const authHandlers = createAuthHandlers({
   json, cleanText, normalizeEmail, isValidEmail, isValidPassword,
   isRateLimited, readJson, hashPassword, verifyPassword, createSession,
   publicUser, consumeRateLimit, randomToken, sha256, sendPasswordResetEmail,
-  authenticatedUser, parseCookies, sessionCookie, reportOperationalError,
-  sessionCookieName: SESSION_COOKIE, passwordResetTtlMs: PASSWORD_RESET_TTL_MS
+  sendVerificationEmail, authenticatedUser, parseCookies, sessionCookie, reportOperationalError,
+  sessionCookieName: SESSION_COOKIE, passwordResetTtlMs: PASSWORD_RESET_TTL_MS,
+  emailVerificationTtlMs: EMAIL_VERIFICATION_TTL_MS
 });
 
 const imageService = createImageService({ storedImageResponse });
@@ -619,6 +660,8 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'auth.login') return authHandlers.login({ request, env, pathname });
   if (routeId === 'auth.password-reset.request') return authHandlers.passwordResetRequest({ request, env, pathname, context, requestContext });
   if (routeId === 'auth.password-reset.confirm') return authHandlers.passwordResetConfirm({ request, env, pathname });
+  if (routeId === 'auth.email.verify') return authHandlers.emailVerify({ request, env, pathname });
+  if (routeId === 'auth.email.resend') return authHandlers.emailResend({ request, env, pathname, context, requestContext });
   if (routeId === 'auth.logout') return authHandlers.logout({ request, env });
   if (routeId === 'auth.me') return authHandlers.me({ request, env });
   if (routeId === 'photographers.list') return photographerHandlers.list({ request, env });
