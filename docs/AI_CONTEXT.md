@@ -44,11 +44,11 @@ flowchart LR
 ```
 
 - **Worker único** (`src/worker.mjs`) atua como ponto de composição: mantém formatters, sessão, rate limiting, cache de edge e SSR. `src/router.mjs` centraliza o catálogo (37 rotas) e o despacho de `/api/*`, além da separação para os assets de `public/`. Os handlers de domínio foram extraídos na Fase 4.2 (concluída no PR #82) para `src/auth.mjs`, `src/photographers.mjs`, `src/account.mjs`, `src/account-security.mjs`, `src/portfolio.mjs`, `src/public-input.mjs` e `src/monitoring.mjs`.
-- `run_worker_first` força o Worker a interceptar `/api/*`, `/` e `/*.html`.
+- `run_worker_first` força o Worker a interceptar as rotas configuradas; respostas dinâmicas recebem cabeçalhos em `SECURITY_HEADERS` e assets estáticos recebem a mesma política por `public/_headers`.
 - Backend e frontend compartilham o **mesmo domínio** (sem CORS entre origens).
 - Configuração de bindings: `wrangler.jsonc`.
 
-Decisões arquiteturais documentadas (16 decisões em um único documento): `docs/DECISOES_TECNICAS.md`.
+Decisões arquiteturais documentadas (17 decisões em um único documento): `docs/DECISOES_TECNICAS.md`.
 
 ---
 
@@ -61,7 +61,7 @@ A fonte primária depende do tipo de pergunta:
 | Pergunta | Fonte primária | Fonte secundária |
 |---|---|---|
 | O que **ESTÁ** implementado? | Implementação executável/observável: `src/`, `public/`, `migrations/`, `test/`, `wrangler.jsonc`, workflows e estado Git quando aplicável | Documentação (para contexto) |
-| **POR QUE** uma decisão foi tomada? | `docs/DECISOES_TECNICAS.md` (16 decisões arquiteturais documentadas) | `docs/DOCUMENTACAO_TECNICA.md` (seção 14) |
+| **POR QUE** uma decisão foi tomada? | `docs/DECISOES_TECNICAS.md` (17 decisões arquiteturais documentadas) | `docs/DOCUMENTACAO_TECNICA.md` (seção 14) |
 | O que **SERÁ** feito? | `docs/ROADMAP_EVOLUCAO.md` (intenção futura, não implementação) | — |
 | **ONDE ESTAMOS** operacionalmente? | `docs/HANDOFF.md` (validado contra Git/workspace quando necessário) | Estado Git ao vivo |
 | **COMO** uma IA deve trabalhar? | Este `docs/AI_CONTEXT.md` e `CONTRIBUTING.md` | `docs/CONTEXTO_PROJETO.md` |
@@ -94,7 +94,7 @@ A fonte primária depende do tipo de pergunta:
 3. **Segredos nunca entram no código.** Use `wrangler secret put`. Nunca commite `.env`, `.dev.vars`, tokens, senhas, dados pessoais.
 4. **R2 é privado.** Imagens só saem via Worker, com autorização. Nunca exponha URL direta do bucket.
 5. **Senhas usam PBKDF2-SHA-256** (100k iterações, salt individual, Web Crypto). Nunca armazene senha em texto puro.
-6. **Sessões via cookie HttpOnly/Secure/SameSite=Lax**, TTL 7 dias. O banco guarda apenas `SHA-256(token)`.
+6. **Sessões via cookie HttpOnly/Secure/SameSite=Lax**, TTL 7 dias e máximo de cinco sessões ativas por usuário. O banco guarda apenas `SHA-256(token)`.
 7. **Operações de escrita validam origem, formato, tamanho e frequência** (rate limiting).
 8. **Frontend sem framework.** Não introduza React/Vue/etc. sem uma ADR que justifique.
 9. **Tokens visuais `--lc-*`** são a fonte oficial. Código novo não usa `--accent-1`, `--text`, `--radius`, `--shadow` (aliases temporários legados).

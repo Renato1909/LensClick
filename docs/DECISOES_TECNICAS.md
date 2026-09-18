@@ -354,7 +354,7 @@ A autenticação é implementada com os seguintes componentes:
 
 - **Hash de senha**: PBKDF2-SHA-256 com **100.000 iterações** e **salt aleatório de 16 bytes** por usuário. O formato armazenado é `pbkdf2-sha256$100000$<salt>$<hash>`. A senha original nunca é gravada.
 - **Web Crypto API**: `crypto.subtle` (PBKDF2, SHA-256) e `crypto.getRandomValues` (tokens aleatórios) — APIs disponíveis no runtime do Workers.
-- **Sessões**: o navegador recebe um token aleatório; o D1 armazena apenas `SHA-256(token)` (nunca o token em texto). O cookie `lensclick_session` é `HttpOnly`, `Secure` (em HTTPS), `SameSite=Lax`, com TTL de 7 dias. O logout remove a sessão e expira o cookie.
+- **Sessões**: o navegador recebe um token aleatório; o D1 armazena apenas `SHA-256(token)` (nunca o token em texto). O cookie `lensclick_session` é `HttpOnly`, `Secure` (em HTTPS), `SameSite=Lax`, com TTL de 7 dias. Cada usuário mantém no máximo cinco sessões ativas; o logout remove a sessão apresentada e expira o cookie.
 - **Recuperação de senha**: tokens de uso único (`password_reset_tokens`) com expiração, enviados por e-mail via Brevo.
 - **Revogação**: a troca de senha revoga todas as outras sessões do usuário, preservando apenas a sessão usada na alteração.
 - **Comparação constante**: `verifyPassword` percorre todos os bytes para reduzir varição temporal.
@@ -378,7 +378,7 @@ A autenticação é implementada com os seguintes componentes:
 
 - **Benefícios:** senhas protegidas com salt individual, sessões revogáveis, cookie protegido contra XSS, recuperação de senha por token de uso único, runtime compatível.
 - **Limitações:** não existe segundo fator de autenticação (2FA); não existe verificação de e-mail; o rate limiting é híbrido, com escudo de rajada nativo na edge e política de janela longa no D1.
-- **Pontos futuros:** o roadmap recomenda revisar expiração e rotação de sessões, limite de sessões ativas por usuário, e considerar 2FA e verificação de e-mail.
+- **Pontos futuros:** o roadmap recomenda revisar periodicamente a expiração e a rotação de sessões, além de considerar 2FA e verificação de e-mail.
 
 ### Status
 
@@ -537,7 +537,7 @@ A segurança é implementada com os seguintes controles **já em produção**:
 - **Consultas preparadas**: SQL com `.bind(...)` para evitar SQL Injection.
 - **Validação no servidor**: formato, tamanho e MIME validados no Worker, independentemente do navegador.
 - **Rate limit**: tabela `rate_limits` com bucket e expiração para cadastro, login, contato e newsletter.
-- **Cabecalhos de segurança**: `Content-Security-Policy`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` sem câmera, microfone e geolocalização.
+- **Cabecalhos de segurança**: HSTS por dois anos com `includeSubDomains` e sem `preload`; `Content-Security-Policy` sem `'unsafe-inline'` em `script-src`; `X-Content-Type-Options: nosniff`; `X-Frame-Options: DENY`; `Referrer-Policy: strict-origin-when-cross-origin`; `Permissions-Policy` sem câmera, microfone e geolocalização. O Worker cobre respostas dinâmicas e `public/_headers` cobre assets estáticos.
 - **Mensagens de erro interno sem stack trace**: o cliente recebe mensagem genérica, sem detalhes sensíveis.
 - **Exclusão definitiva**: a exclusão da conta remove foto, tokens, sessões e usuário em transação; mensagens de contato e newsletter não são removidas por coincidência de e-mail enquanto não há verificação de titularidade.
 
@@ -563,11 +563,11 @@ A segurança é implementada com os seguintes controles **já em produção**:
   - o rate limiting é híbrido: bindings nativos na edge protegem contra rajadas e o D1 mantém as políticas longas autoritativas;
   - termos e política precisam de revisão institucional antes de uso comercial;
   - papéis `client` e `photographer` são dados de perfil, ainda não autorizam áreas diferentes.
-- **Pontos futuros:** o roadmap recomenda HSTS, rotação periódica de segredos, auditoria trimestral, limite de sessões ativas e 2FA/verificação de e-mail.
+- **Pontos futuros:** o roadmap recomenda rotação periódica de segredos, auditoria trimestral e 2FA/verificação de e-mail. O `'unsafe-inline'` restante em `style-src` deve ser removido apenas após migrar os estilos inline sem regressão visual.
 
 ### Status
 
-**Ativa.** Revisável para HSTS, rate limiting nativo, 2FA e verificação de e-mail.
+**Ativa.** HSTS, CSP de scripts e teto de sessões validados em produção; revisável para 2FA e verificação de e-mail.
 
 ---
 
@@ -709,6 +709,47 @@ A política de continuidade dos dados é:
 
 ---
 
+## Decisão 17 — HSTS, CSP de scripts e limite de sessões ativas
+
+### Contexto
+
+O LensClick já emitia cabeçalhos de segurança e mantinha sessões revogáveis no D1, mas ainda permitia JavaScript inline na CSP, não emitia HSTS e não limitava o número de sessões simultâneas por usuário. Além disso, a Cloudflare pode servir assets estáticos sem executar o Worker, portanto proteger apenas `responseHeaders` não cobriria todas as páginas.
+
+### Decisão tomada
+
+- **HSTS**: emitir `Strict-Transport-Security: max-age=63072000; includeSubDomains` em respostas dinâmicas e estáticas. Não usar `preload` nesta etapa.
+- **CSP de scripts**: usar `script-src 'self'`, sem `'unsafe-inline'`; os scripts das páginas inicial, cadastro, login e recuperação de senha ficam em arquivos externos versionados em `public/`.
+- **CSP de estilos**: manter temporariamente `'unsafe-inline'` em `style-src`, pois removê-lo exige uma migração visual separada.
+- **Cobertura de assets**: manter os cabeçalhos em `SECURITY_HEADERS` para respostas do Worker e replicá-los em `public/_headers` para os assets servidos diretamente pela Cloudflare.
+- **Sessões**: limitar cada usuário a cinco sessões ativas. A criação preserva sempre a sessão nova e remove excedentes do mesmo usuário no mesmo `env.DB.batch` que insere a sessão.
+
+### Motivo da escolha
+
+- **Defesa contra downgrade**: HSTS instrui navegadores a manter HTTPS após a primeira resposta segura.
+- **Redução da superfície de XSS**: remover JavaScript inline permite uma política de scripts mais restritiva e testável.
+- **Cobertura consistente**: `public/_headers` evita que páginas estáticas contornem os cabeçalhos por serem entregues antes do Worker.
+- **Contenção de credenciais**: o teto de cinco sessões limita a persistência de acessos esquecidos ou comprometidos sem impedir o uso normal em múltiplos dispositivos.
+- **Atomicidade**: inserir e podar sessões no mesmo batch evita deixar o limite parcialmente aplicado quando uma das instruções falha.
+
+### Alternativas consideradas
+
+- **HSTS com `preload`**: rejeitado nesta etapa; a inclusão na lista dos navegadores tem efeito duradouro e deve ocorrer somente após domínio próprio e decisão específica.
+- **Executar o Worker antes de todo asset**: rejeitado; aumentaria invocações faturáveis. `_headers` aplica a proteção sem perder o caminho otimizado de assets estáticos.
+- **Remover também `'unsafe-inline'` de `style-src`**: adiado para uma entrega visual própria, evitando quebra ampla de layout.
+- **Sessões ilimitadas ou encerramento de todas no login**: rejeitados; a primeira opção amplia risco e a segunda prejudica o uso legítimo em vários dispositivos.
+
+### Consequências
+
+- **Benefícios:** HSTS e CSP consistentes em todas as páginas, scripts externos auditáveis e limite previsível de sessões por conta.
+- **Limitações:** HSTS só protege após o primeiro acesso HTTPS; `style-src` ainda permite estilos inline; não há 2FA nem verificação de e-mail.
+- **Operação:** alterações futuras na CSP devem manter `src/worker.mjs` e `public/_headers` sincronizados e cobertos por testes.
+
+### Status
+
+**Ativa e validada em produção.** Implementada nos PRs #104 e #105 e publicada na versão `0b72f0b4-b525-4b20-bdc3-f474574851bd` em 18 de setembro de 2026.
+
+---
+
 ## Resumo
 
 | # | Decisão | Status |
@@ -725,10 +766,11 @@ A política de continuidade dos dados é:
 | 10 | i18n por catálogos com `lang.js`/`window.i18n` | Ativa |
 | 11 | Design System com tokens `--lc-*` | Ativa (aliases temporários) |
 | 12 | Agentes especializados do Copilot | Ativa |
-| 13 | Segurança: R2 privado, validação, proteção de dados | Ativa (revisável para HSTS/2FA) |
+| 13 | Segurança: R2 privado, validação, proteção de dados | Ativa (revisável para 2FA) |
 | 14 | Roadmap técnico como documento vivo | Ativa (revisável trimestralmente) |
 | 15 | Variantes de imagem on-demand (Cloudflare Images) | Ativa |
 | 16 | Backup automático do D1 com retenção de 30 dias | Ativa e validada |
+| 17 | HSTS, CSP de scripts e limite de sessões ativas | Ativa e validada |
 
 ---
 
@@ -749,6 +791,5 @@ Estes pontos **não são decisões tomadas** — são candidatos a formalizaçã
 
 - **Verificação de e-mail**: hoje não existe; formalizar a abordagem (link de verificação, expiração, reenvio) quando for implementada.
 - **Segundo fator de autenticacao (2FA)**: hoje não existe; formalizar o mecanismo (TOTP, SMS, e-mail) quando for priorizado.
-- **HSTS e headers adicionais**: o roadmap recomenda HSTS e padronização de headers; a decisão sobre os valores exatos ainda não está formalizada.
 - **Papéis como autorização**: hoje `client` e `photographer` são dados de perfil, não autorizam áreas; a decisão sobre como papéis passarão a autorizar ainda não foi tomada.
 - **Domínio personalizado**: listado como prioridade média; a decisão sobre o domínio e a configuração ainda não está formalizada.

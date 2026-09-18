@@ -246,6 +246,7 @@ O Worker possui duas responsabilidades: atender `/api/*` e entregar os arquivos 
 |---|---:|---|
 | `SESSION_COOKIE` | `lensclick_session` | Nome do cookie |
 | `SESSION_TTL_MS` | 7 dias | Duracao da sessao |
+| `MAX_ACTIVE_SESSIONS` | 5 | Maximo de sessoes ativas por usuario |
 | `MAX_BODY_BYTES` | 700.000 bytes | Limite do JSON recebido |
 | `MAX_PROFILE_PICTURE_BYTES` | 450.000 bytes | Limite da foto |
 | `PBKDF2_ITERATIONS` | 100.000 | Custo do hash compativel com Workers |
@@ -268,7 +269,7 @@ O Worker possui duas responsabilidades: atender `/api/*` e entregar os arquivos 
 - `requestOriginIsAllowed`: permite escrita apenas pela mesma origem.
 - `publicUser`: remove campos internos antes de responder.
 - `authenticatedUser`: valida cookie e busca a sessao ativa.
-- `createSession`: remove sessoes vencidas e cria uma nova.
+- `createSession`: remove sessoes vencidas, cria uma nova e limita a conta a cinco sessoes ativas no mesmo batch.
 - `isRateLimited`: contabiliza tentativas por escopo, IP e janela.
 - `decodeProfilePicture`: valida formato, Base64, tamanho e MIME.
 - `portfolioUpload`: valida multipart, MIME, tamanho e descricao alternativa das imagens do portfolio.
@@ -365,6 +366,7 @@ pbkdf2-sha256$100000$<salt>$<hash>
 - Em HTTPS, o cookie recebe `Secure`.
 - `SameSite=Lax` reduz envio em contextos entre sites.
 - A validade e de sete dias.
+- Cada usuario pode manter no maximo cinco sessoes ativas; a sessao mais nova e sempre preservada.
 - O logout remove a sessao e expira o cookie.
 
 ## 8. Modelo de dados
@@ -577,7 +579,9 @@ O portfolio usa o mesmo principio de privacidade. O upload chega como `multipart
 - Rate limit para cadastro, login, contato e newsletter.
 - Foto privada e restrita ao proprio usuario.
 - Mensagens de erro interno sem stack trace para o cliente.
-- `Content-Security-Policy`.
+- `Content-Security-Policy` com `script-src 'self'`, sem JavaScript inline; `style-src` ainda permite estilos inline nesta etapa.
+- `Strict-Transport-Security: max-age=63072000; includeSubDomains`, sem `preload`.
+- Cabecalhos sincronizados entre respostas do Worker e assets estaticos por `public/_headers`.
 - `X-Content-Type-Options: nosniff`.
 - `X-Frame-Options: DENY`.
 - `Referrer-Policy: strict-origin-when-cross-origin`.

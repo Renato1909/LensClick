@@ -272,7 +272,7 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 4. **Migrações versionadas** — `0001` a `0004`; mudanças futuras criam novos arquivos, nunca editam banco publicado.
 5. **R2 privado** — privacidade tem prioridade sobre URL pública; foto privada passa por autorização do Worker.
 6. **PBKDF2-SHA-256 com 100k iterações** — maior valor aceito pelo Web Crypto do Workers; 120k foi rejeitado em produção.
-7. **Cookie HttpOnly/Secure/SameSite=Lax** — JavaScript da página não lê o cookie de sessão; TTL de 7 dias.
+7. **Cookie HttpOnly/Secure/SameSite=Lax** — JavaScript da página não lê o cookie de sessão; TTL de 7 dias e máximo de cinco sessões ativas por usuário.
 8. **i18n por chaves, preferência em localStorage** — PT é origem, EN por chaves; dados de conta nunca ficam em `localStorage`.
 9. **Rate limit simples no D1** — tabela `rate_limits` com bucket e expiração; suficiente para o volume atual.
 10. **Papéis `client`/`photographer` são dados de perfil** — ainda não autorizam áreas diferentes (limitação conhecida).
@@ -399,7 +399,7 @@ O plano corrente é a **Fase 5**, registrada em `docs/ROADMAP_EVOLUCAO.md` e res
 |---:|---|:---:|
 | 17 | 5.1 Consolidação documental — concluída | Baixa |
 | 18 | 5.2 Backup e restauração do D1 — concluída | Média |
-| 19 | 5.3 Endurecimento transversal de segurança | Média |
+| 19 | 5.3 Endurecimento transversal de segurança — concluída | Média |
 | 20 | 5.4 Verificação de e-mail e papéis de autorização | Alta |
 | 21 | 5.5 Portabilidade de dados do titular (LGPD) | Baixa |
 | 22 | 5.6 Automação da entrega | Média |
@@ -428,7 +428,7 @@ O plano corrente é a **Fase 5**, registrada em `docs/ROADMAP_EVOLUCAO.md` e res
 1. **`docs/AI_CONTEXT.md`** — guia operacional para IAs: regras, fontes de verdade, procedimentos antes/depois de alterar, hotspots e o que não fazer.
 2. **`docs/CONTEXTO_PROJETO.md`** (este documento) — visão geral, arquitetura, convenções, débitos técnicos e próximos passos.
 3. **`docs/HANDOFF.md`** — estado operacional atual (HEAD, branches, PRs, pendências e tarefas prioritárias). Mutável; validar contra Git quando necessário.
-4. **`docs/DECISOES_TECNICAS.md`** — registro das 16 decisões arquiteturais já tomadas, com motivo, alternativas e consequências.
+4. **`docs/DECISOES_TECNICAS.md`** — registro das 17 decisões arquiteturais já tomadas, com motivo, alternativas e consequências.
 5. **`README.md`** — produto, requisitos, execução local, verificações, escopo atual.
 6. **`CONTRIBUTING.md`** — fluxo Git/GitHub de 6 passos, regras de branch e PR.
 7. **`docs/DOCUMENTACAO_TECNICA.md`** — documentação técnica completa (arquitetura, endpoints, modelo de dados, segurança, testes, deploy).
