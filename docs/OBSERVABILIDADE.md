@@ -146,7 +146,7 @@ O sinal de disponibilidade (>= 99,9%) e coberto por uma sonda executada no propr
 - Estado duravel (contador de falhas consecutivas + timestamp do ultimo alerta) persistido na tabela `monitor_state` (migration `0009_monitor_state.sql`).
 - Sem `env.BREVO_*` configurado, a sonda registra o estado mas nao envia e-mail (degradacao limpa, sem quebrar o Worker).
 
-Os sinais de latencia P95 (< 300 ms) e taxa de 5xx (< 0,1%) permanecem no painel Workers Observability, com notificacoes configuradas no dashboard Cloudflare - nao alteram Worker, D1 ou R2.
+Os sinais de latência P95 (< 300 ms) e taxa de 5xx (< 0,1%) são agregados por minuto no D1 e avaliados pelo cron do Worker a cada 5 minutos, com alertas via Brevo e cooldown por sinal. O painel Workers Observability permanece como apoio para investigação, não como mecanismo autoritativo de alerta por limiar.
 
 ## 9.2 Evidencias da validacao operacional (3 de setembro de 2026)
 

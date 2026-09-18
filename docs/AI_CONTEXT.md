@@ -48,7 +48,7 @@ flowchart LR
 - Backend e frontend compartilham o **mesmo domínio** (sem CORS entre origens).
 - Configuração de bindings: `wrangler.jsonc`.
 
-Decisões arquiteturais documentadas (15 decisões em um único documento): `docs/DECISOES_TECNICAS.md`.
+Decisões arquiteturais documentadas (16 decisões em um único documento): `docs/DECISOES_TECNICAS.md`.
 
 ---
 
@@ -61,7 +61,7 @@ A fonte primária depende do tipo de pergunta:
 | Pergunta | Fonte primária | Fonte secundária |
 |---|---|---|
 | O que **ESTÁ** implementado? | Implementação executável/observável: `src/`, `public/`, `migrations/`, `test/`, `wrangler.jsonc`, workflows e estado Git quando aplicável | Documentação (para contexto) |
-| **POR QUE** uma decisão foi tomada? | `docs/DECISOES_TECNICAS.md` (15 decisões arquiteturais documentadas) | `docs/DOCUMENTACAO_TECNICA.md` (seção 14) |
+| **POR QUE** uma decisão foi tomada? | `docs/DECISOES_TECNICAS.md` (16 decisões arquiteturais documentadas) | `docs/DOCUMENTACAO_TECNICA.md` (seção 14) |
 | O que **SERÁ** feito? | `docs/ROADMAP_EVOLUCAO.md` (intenção futura, não implementação) | — |
 | **ONDE ESTAMOS** operacionalmente? | `docs/HANDOFF.md` (validado contra Git/workspace quando necessário) | Estado Git ao vivo |
 | **COMO** uma IA deve trabalhar? | Este `docs/AI_CONTEXT.md` e `CONTRIBUTING.md` | `docs/CONTEXTO_PROJETO.md` |
@@ -83,7 +83,7 @@ A fonte primária depende do tipo de pergunta:
 | `src/worker.mjs` | Implementação real do backend | Alta |
 | `src/router.mjs` | Catálogo e despacho das rotas HTTP | Alta |
 
-**Regra crítica:** quando `db/schema.ts` divergir de `migrations/`, **as migrações vencem**. O `schema.ts` é apenas referência e está desatualizado (ver seção 15).
+**Regra crítica:** quando `db/schema.ts` divergir de `migrations/`, **as migrações vencem**. O `schema.ts` é apenas um catálogo de referência e deve ser atualizado no mesmo PR que adicionar uma migração.
 
 ---
 
@@ -157,7 +157,7 @@ Fluxo oficial (em `CONTRIBUTING.md`):
 - **PRAGMA foreign_keys=ON**; FKs com `ON DELETE CASCADE`.
 - **Statements preparados** com `.bind()` — nunca concatene SQL.
 - **Migrações** em `migrations/` (`0001`–`0010`), imutáveis. Nova alteração = `0011_*.sql`.
-- **`db/schema.ts` está desatualizado** (lista 13 das 15 tabelas; faltam `monitor_state` e `monitor_minute_buckets`) — débito técnico P1, tratado na iniciativa 5.1. **As migrações são a fonte de verdade.**
+- **`db/schema.ts` está sincronizado** na versão 10 e lista as 15 tabelas das migrações `0001`–`0010`. **As migrações continuam sendo a fonte de verdade.**
 - **Índices** em colunas de leitura frequente para reduzir consumo do plano gratuito.
 
 Modelo detalhado (MER/DER/dicionário): `docs/DOCUMENTACAO_TECNICA.md` seção 8.
@@ -240,7 +240,7 @@ Use o agente adequado à natureza da tarefa. Para mudanças transversais, comece
 
 Pontos que exigem atenção especial ou estão em débito técnico conhecido:
 
-- **`db/schema.ts` desatualizado** — lista 13 das 15 tabelas; faltam `monitor_state` e `monitor_minute_buckets`. Débito P1. As **migrações** são a fonte de verdade.
+- **Sincronia do catálogo de schema** — `db/schema.ts` está alinhado às migrações `0001`–`0010`; mudanças futuras devem atualizar o catálogo no mesmo PR, preservando as **migrações** como fonte de verdade.
 - **Helpers compartilhados permanecem em `src/worker.mjs`** — a iniciativa 4.2 extraiu todos os handlers de domínio (blocos legados removidos no PR #82); o worker mantém formatters, sessão, rate limiting, cache de edge e SSR como ponto de composição.
 - **Aliases visuais legados** (`--accent-1`, `--text`, `--radius`, `--shadow`) — devem ser migrados para `--lc-*`.
 - **Termos de Uso e Política de Privacidade** — pendentes de revisão institucional antes de publicação comercial.

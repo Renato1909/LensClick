@@ -59,7 +59,7 @@ O sistema precisa persistir dados estruturados com integridade relacional: usuá
 
 ### Decisão tomada
 
-Os dados estruturados ficam no **Cloudflare D1** (`lensclick-db`), um banco SQL serverless compatível com SQLite, acessado pelo Worker via binding `DB`. O esquema é definido por migrações versionadas e contém 8 tabelas:
+Os dados estruturados ficam no **Cloudflare D1** (`lensclick-db`), um banco SQL serverless compatível com SQLite, acessado pelo Worker via binding `DB`. O esquema é definido por migrações versionadas e contém 15 tabelas:
 
 1. `users`
 2. `sessions`
@@ -69,6 +69,13 @@ Os dados estruturados ficam no **Cloudflare D1** (`lensclick-db`), um banco SQL 
 6. `rate_limits`
 7. `professional_profiles`
 8. `portfolio_items`
+9. `review_requests`
+10. `reviews`
+11. `review_audit`
+12. `conversations`
+13. `messages`
+14. `monitor_state`
+15. `monitor_minute_buckets`
 
 As consultas usam **statements preparados com `.bind(...)`** para evitar SQL Injection, e `PRAGMA foreign_keys=ON` garante integridade referencial. As chaves estrangeiras usam `ON DELETE CASCADE` para que a exclusão de um usuário remova automaticamente sessões, tokens, perfil profissional e portfolio vinculados.
 
@@ -94,7 +101,7 @@ As consultas usam **statements preparados com `.bind(...)`** para evitar SQL Inj
 
 ### Status
 
-**Ativa.** O `db/schema.ts` precisa ser atualizado para refletir as 8 tabelas (débito técnico registrado).
+**Ativa.** O `db/schema.ts` está sincronizado na versão 10 com as 15 tabelas das migrações `0001`–`0010`.
 
 ---
 
@@ -250,12 +257,12 @@ As migrações são **imutáveis**: uma vez publicadas em produção, nunca são
 ### Consequências
 
 - **Benefícios:** esquema reprodutível, evolução auditável, segurança contra alterações silenciosas.
-- **Limitações:** o `db/schema.ts` (referência TypeScript do esquema) está desatualizado — registra `schemaVersion=2` e apenas 6 tabelas, faltando `professional_profiles` e `portfolio_items`. Isso é um débito técnico conhecido, não uma falha das migrações em si.
-- **Pontos futuros:** atualizar `db/schema.ts` para refletir as 8 tabelas; manter a disciplina de criar novas migrações para qualquer alteração de esquema.
+- **Limitações:** `db/schema.ts` é apenas um catálogo TypeScript; as migrações continuam sendo a fonte executável e autoritativa do esquema.
+- **Pontos futuros:** atualizar `db/schema.ts` no mesmo PR que adicionar uma migração, sem modificar migrações já publicadas.
 
 ### Status
 
-**Ativa.** O `db/schema.ts` precisa ser atualizado (débito técnico registrado).
+**Ativa.** O `db/schema.ts` está sincronizado na versão 10 com as 15 tabelas das migrações `0001`–`0010`.
 
 ---
 
@@ -370,7 +377,7 @@ A autenticação é implementada com os seguintes componentes:
 ### Consequências
 
 - **Benefícios:** senhas protegidas com salt individual, sessões revogáveis, cookie protegido contra XSS, recuperação de senha por token de uso único, runtime compatível.
-- **Limitações:** não existe segundo fator de autenticação (2FA); não existe verificação de e-mail; o rate limit de login é simples e armazenado no D1.
+- **Limitações:** não existe segundo fator de autenticação (2FA); não existe verificação de e-mail; o rate limiting é híbrido, com escudo de rajada nativo na edge e política de janela longa no D1.
 - **Pontos futuros:** o roadmap recomenda revisar expiração e rotação de sessões, limite de sessões ativas por usuário, e considerar 2FA e verificação de e-mail.
 
 ### Status
@@ -553,10 +560,10 @@ A segurança é implementada com os seguintes controles **já em produção**:
 - **Limitações conhecidas de segurança**:
   - não existe segundo fator de autenticacao (2FA);
   - não existe verificação de e-mail;
-  - o rate limit é simples e armazenado no D1 (não é o nativo da edge);
+  - o rate limiting é híbrido: bindings nativos na edge protegem contra rajadas e o D1 mantém as políticas longas autoritativas;
   - termos e política precisam de revisão institucional antes de uso comercial;
   - papéis `client` e `photographer` são dados de perfil, ainda não autorizam áreas diferentes.
-- **Pontos futuros:** o roadmap recomenda HSTS, rotação periódica de segredos, auditoria trimestral, rate limiting nativo da edge (Fase 1) e 2FA/verificação de e-mail.
+- **Pontos futuros:** o roadmap recomenda HSTS, rotação periódica de segredos, auditoria trimestral, limite de sessões ativas e 2FA/verificação de e-mail.
 
 ### Status
 
@@ -572,12 +579,13 @@ O projeto precisa de um plano de evolução que oriente as próximas iniciativas
 
 ### Decisão tomada
 
-O roadmap técnico é formalizado em `docs/ROADMAP_EVOLUCAO.md` como **documento vivo**, com 16 iniciativas organizadas em 4 fases:
+O roadmap técnico é formalizado em `docs/ROADMAP_EVOLUCAO.md` como **documento vivo**. As 16 iniciativas originais das Fases 1 a 4 foram concluídas; a Fase 5 acrescentou oito iniciativas de consolidação e prontidão operacional:
 
 - **Fase 1 (Fundação técnica)**: observabilidade/logs, suite de testes por rota, rate limiting nativo, índices e health check do D1. Marco de transição: extrair roteador para `src/router.mjs`.
 - **Fase 2 (Melhorias de experiência)**: onboarding guiado, busca com filtros, galeria de portfolio, i18n real com catálogos.
 - **Fase 3 (Crescimento)**: avaliações/reputação, SEO técnico, mensagens cliente-fotógrafo, sitemap dinâmico e robots.txt.
 - **Fase 4 (Consolidação técnica)**: cache de edge, modularização do Worker por domínio, estratégia de imagens R2 + Image Resizing, alertas e SLOs.
+- **Fase 5 (Consolidação e prontidão operacional)**: documentação confiável, backup e restauração, segurança transversal, autorização, portabilidade, automação de entrega, qualidade e presença digital.
 
 **Princípios de execução:**
 
@@ -605,7 +613,7 @@ O roadmap técnico é formalizado em `docs/ROADMAP_EVOLUCAO.md` como **documento
 
 - **Benefícios:** evolução orientada, reversível, mensurável, com gate de qualidade.
 - **Limitações:** o roadmap é orientativo, não contratual; a ordem dentro de cada fase pode ser reordenada conforme prioridade de produto.
-- **Pontos futuros:** revisar o roadmap a cada trimestre; iniciar pela Fase 1 (observabilidade, testes, rate limiting nativo, índices).
+- **Pontos futuros:** revisar o roadmap a cada trimestre e manter o estado das iniciativas sincronizado com a implementação e as evidências operacionais.
 
 ### Status
 
@@ -706,11 +714,11 @@ A política de continuidade dos dados é:
 | # | Decisão | Status |
 |---:|---|---|
 | 1 | Plataforma serverless na Cloudflare Workers | Ativa |
-| 2 | Cloudflare D1 como banco relacional | Ativa (schema.ts desatualizado) |
+| 2 | Cloudflare D1 como banco relacional | Ativa |
 | 3 | Cloudflare R2 privado para imagens | Ativa |
 | 4 | Frontend HTML/CSS/JS sem framework | Ativa (revisável) |
 | 5 | Mesmo domínio para frontend e API | Ativa |
-| 6 | Migrações versionadas e imutáveis | Ativa (schema.ts desatualizado) |
+| 6 | Migrações versionadas e imutáveis | Ativa |
 | 7 | Pull Requests obrigatórios | Ativa |
 | 8 | Squash merge e proteção estrita de `main` | Ativa |
 | 9 | Autenticação por sessões, PBKDF2 e Web Crypto | Ativa (revisável para 2FA) |
@@ -741,9 +749,7 @@ Estes pontos **não são decisões tomadas** — são candidatos a formalizaçã
 
 - **Verificação de e-mail**: hoje não existe; formalizar a abordagem (link de verificação, expiração, reenvio) quando for implementada.
 - **Segundo fator de autenticacao (2FA)**: hoje não existe; formalizar o mecanismo (TOTP, SMS, e-mail) quando for priorizado.
-- **Rate limiting nativo da edge**: o rate limit atual é simples e no D1; a migração para o rate limiting nativo da Cloudflare (Fase 1) exigirá uma decisão formal.
 - **Restauração isolada do D1**: a política de backup está formalizada na Decisão 16; falta validar o restore isolado (5.2.b).
 - **HSTS e headers adicionais**: o roadmap recomenda HSTS e padronização de headers; a decisão sobre os valores exatos ainda não está formalizada.
 - **Papéis como autorização**: hoje `client` e `photographer` são dados de perfil, não autorizam áreas; a decisão sobre como papéis passarão a autorizar ainda não foi tomada.
 - **Domínio personalizado**: listado como prioridade média; a decisão sobre o domínio e a configuração ainda não está formalizada.
-- **Atualização do `db/schema.ts`**: débito técnico conhecido (desatualizado para 6 tabelas); a decisão sobre como manter o `schema.ts` sincronizado com as migrações ainda não está formalizada como processo.

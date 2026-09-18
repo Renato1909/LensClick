@@ -587,7 +587,7 @@ O portfolio usa o mesmo principio de privacidade. O upload chega como `multipart
 
 - Nao existe segundo fator de autenticacao.
 - Nao existe verificacao de e-mail.
-- O rate limit e simples e armazenado no D1.
+- O rate limiting é híbrido: bindings nativos da Cloudflare protegem contra rajadas na edge, enquanto políticas de janela longa no D1 permanecem autoritativas e funcionam como fallback.
 - Termos e politica precisam de revisao institucional antes de uso comercial.
 - Papeis `client` e `photographer` sao dados de perfil; ainda nao autorizam areas diferentes.
 
