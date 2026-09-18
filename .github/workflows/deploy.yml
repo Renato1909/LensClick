@@ -39,6 +39,29 @@ jobs:
             exit 1
           fi
 
+      # Falha cedo com mensagem acionavel quando o token nao tem acesso ao
+      # Worker (ex.: token criado só para backup/D1). Sem isso, a falha só
+      # aparece no upload, depois de gate e migration já executados.
+      - name: Preflight da permissão de deploy
+        run: |
+          set -euo pipefail
+          CONTA="$(curl --fail --silent --show-error \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts?per_page=100" \
+            | jq -r '.result[0].id')"
+          if [ -z "$CONTA" ] || [ "$CONTA" = "null" ]; then
+            echo "::error::Nao foi possivel resolver a conta. Confira o CLOUDFLARE_API_TOKEN."
+            exit 1
+          fi
+          CODIGO="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CONTA}/workers/services/lensclick")"
+          if [ "$CODIGO" = "403" ]; then
+            echo "::error::O token nao tem acesso ao Worker lensclick (HTTP 403). Amplie o CLOUDFLARE_API_TOKEN com Workers Scripts:Edit. Veja CLOUDFLARE_SETUP.md, secao 8."
+            exit 1
+          fi
+          echo "Preflight ok (servico retornou HTTP ${CODIGO})."
+
       - name: Baixar o código
         uses: actions/checkout@v4
 
