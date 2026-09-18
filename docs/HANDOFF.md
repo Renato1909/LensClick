@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 18 de setembro de 2026, com a base `main` em `62857da`.
+> **Data de referência:** 18 de setembro de 2026, com a base `main` em `91bd1b6`.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, as iniciativas 5.1 (documentação), 5.2 (backup e restauração) e 5.3 (segurança transversal) estão concluídas. A próxima iniciativa é a 5.4, de verificação de e-mail e papéis de autorização. Permanece como condição para publicação comercial a revisão legal formal de Termos de Uso e Política de Privacidade.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, as iniciativas 5.1 (documentação), 5.2 (backup e restauração) e 5.3 (segurança transversal) estão concluídas, e a 5.4 está parcial (5.4.a verificação de e-mail e 5.4.b papel administrativo concluídas; 5.4.c painel de moderação pendente). Permanece como condição para publicação comercial a revisão legal formal de Termos de Uso e Política de Privacidade.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Base da entrega:** `main` → commit `62857da` — "docs: conclude phase 5.3 security hardening" (#106).
+- **Base da entrega:** `main` → commit `91bd1b6` — "feat(auth): admin role with requireAdmin guard (5.4.b)" (#109).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -224,6 +224,9 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #104 | `9b6cf21` | security: enforce HSTS and strict script CSP |
 | #105 | `4adb964` | security: limit active account sessions |
 | #106 | `62857da` | docs: conclude phase 5.3 security hardening |
+| #107 | `6252b5f` | docs: fix HANDOFF base to 62857da with PR 106 |
+| #108 | `365d6b4` | feat(auth): email verification with warn-only login (5.4.a) |
+| #109 | `91bd1b6` | feat(auth): admin role with requireAdmin guard (5.4.b) |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -390,6 +393,16 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - A versão `0b72f0b4-b525-4b20-bdc3-f474574851bd` foi publicada em 18 de setembro de 2026. Smoke somente leitura confirmou páginas e scripts `200`, health/D1 `200`, sessão anônima `401`, rota desconhecida `404`, HSTS/CSP em todas as páginas críticas, tradução funcional e ausência de erros no console. Não houve rollback nem escrita no D1.
 - A política foi formalizada na Decisão 17 de `docs/DECISOES_TECNICAS.md`.
 
+### Fase 5.4.a — concluída (verificação de e-mail)
+- O PR #108 criou a migration `0011` (`email_verification_tokens` + `users.email_verified_at`), as rotas `POST /api/auth/email/verify` e `POST /api/auth/email/resend`, a página `verificar-email.html` e 14 chaves `verify.*` em PT/EN.
+- Decisão 18: login em modo de aviso — não bloqueia contas não verificadas; `publicUser` expõe `emailVerified`.
+- Versão `18f14b0f-cd05-4c48-9bea-4a88efb54f08` publicada em 18 de setembro de 2026 com 193/193 testes e smoke de produção aprovado.
+
+### Fase 5.4.b — concluída (papel administrativo)
+- O PR #109 criou a migration `0012` (`users.is_admin`), o módulo `src/admin.mjs` com `requireAdmin` (401/403) aplicado a toda rota `admin.*`, e `GET /api/admin/overview` como base de leitura do painel.
+- Decisão 19: primeiro admin somente por SQL pontual; nenhum endpoint de promoção; `publicUser` expõe `isAdmin`.
+- Versão `f046a3dc-ef72-402b-b774-7bf0aa5441e5` publicada em 18 de setembro de 2026 com 197/197 testes e smoke de produção aprovado. Conta oficial `lensclick.fotografias@gmail.com` promovida a administradora verificada por SQL pontual.
+
 ### P4 — SEO e presença (médio prazo, baixo risco)
 - Open Graph e JSON-LD nas páginas que não são SSR — nos perfis públicos já existem desde a Fase 3.2.
 - Cache via `caches.default` para assets e respostas imutáveis.
@@ -398,7 +411,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 ### P5 — Segurança (médio/longo prazo, alto risco)
 - Verificação de e-mail no cadastro.
 - 2FA opcional.
-- Autorização por papel (roles) — risco latente: a moderação de avaliações e de conversas depende de um papel administrativo que ainda não existe.
+- Autorização por papel (roles) — parcialmente resolvida: `is_admin` + `requireAdmin` ativos desde a 5.4.b; falta o painel de moderação (5.4.c) para avaliações e conversas.
 - Revisão legal formal de termos e política (divulgações LGPD de alta prioridade — PR #89 — e itens de média prioridade — PR #91 — já implementados).
 
 ### Fase 5 — em execução (registrada em `docs/ROADMAP_EVOLUCAO.md`)
@@ -410,7 +423,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 | 17 | 5.1 Consolidação documental — concluída | Baixa |
 | 18 | 5.2 Backup e restauração do D1 — concluída | Média |
 | 19 | 5.3 Endurecimento transversal de segurança — concluída | Média |
-| 20 | 5.4 Verificação de e-mail e papéis de autorização | Alta |
+| 20 | 5.4 Verificação de e-mail e papéis de autorização — parcial (5.4.a e 5.4.b concluídas) | Alta |
 | 21 | 5.5 Portabilidade de dados do titular (LGPD) | Baixa |
 | 22 | 5.6 Automação da entrega | Média |
 | 23 | 5.7 Qualidade e débitos técnicos | Média |
@@ -421,7 +434,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 ## 8. Ordem recomendada de execução
 
 ```
-1. [5.4] Verificação de e-mail e papéis de autorização ← alta criticidade; revisão dedicada.
+1. [5.4.c] Painel de moderação ← alta criticidade; revisão dedicada.
 2. [5.5] Portabilidade de dados (LGPD) + revisão legal formal antes da publicação comercial.
 3. [5.6] Automação da entrega — dependência de backup e restore atendida pela 5.2.
 4. [5.7] Qualidade: aliases --lc-*, lint, testes em navegador real.
@@ -439,10 +452,10 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 - A Fase 4.2 foi concluída: todos os handlers de domínio foram extraídos e os blocos legados removidos no PR #82.
 - A Fase 4.3 foi concluída com transformação on-demand (Decisão 15) e publicada em produção na versão `e271e165`.
 - A Fase 4.4 foi concluída: além da sonda de disponibilidade (versão `51d056b4`), os sinais de P95 e taxa de 5xx passaram a ser cobertos in-worker pelo PR #95, publicado na versão `9c72c288` em 3 de setembro de 2026.
-- A consolidação documental 5.1 foi concluída: `db/schema.ts` está na versão 10 com 15 tabelas, e as fontes permanentes refletem as decisões e o progresso do projeto.
+- A consolidação documental 5.1 foi concluída: `db/schema.ts` está na versão 12 com 16 tabelas, e as fontes permanentes refletem as decisões e o progresso do projeto.
 - A iniciativa 5.2 foi concluída integralmente: backup remoto, política formal e restore isolado validados. A dependência crítica da 5.6 está atendida.
 - A iniciativa 5.3 foi concluída: HSTS e CSP foram validados nas respostas públicas, e o teto de cinco sessões foi coberto por testes de isolamento entre usuários.
-- A próxima iniciativa é a 5.4 (alta criticidade), que exige revisão dedicada e não deve ser adiada indefinidamente.
+- As iniciativas 5.4.a (verificação de e-mail, Decisão 18) e 5.4.b (papel administrativo, Decisão 19) foram concluídas e publicadas; resta a 5.4.c (painel de moderação), que exige revisão dedicada e não deve ser adiada indefinidamente.
 
 ---
 
@@ -459,7 +472,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 
 ### Convenções do projeto
 
-- **Migrações imutáveis** — nunca editar `0001`–`0010`. Nova alteração de schema = novo arquivo `0011_*.sql`.
+- **Migrações imutáveis** — nunca editar `0001`–`0012`. Nova alteração de schema = novo arquivo `0013_*.sql`.
 - **Fast-forward only** — `main` não aceita merge commits. Todo PR é squash-mergeado.
 - **Status check obrigatório** — o CI "Qualidade" precisa passar antes do merge. Rodar `npm test` e `npm run check` localmente antes de abrir PR.
 - **i18n** — toda string visível ao usuário deve passar por `window.i18n`; cada chave precisa existir em `public/locales/pt-BR.json` e `public/locales/en-US.json`. Não hardcoded em PT ou EN.
@@ -474,7 +487,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 ### Documentação de referência
 
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
-- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fases 1 a 4 concluídas; Fase 5 em execução, com 5.1, 5.2 e 5.3 concluídas).
+- `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fases 1 a 4 concluídas; Fase 5 em execução, com 5.1, 5.2, 5.3 e 5.4.a/5.4.b concluídas).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
@@ -492,4 +505,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 18 de setembro de 2026, com base `main` em `62857da` (encerramento documental da Fase 5.3 pelo PR #106); as iniciativas 5.1, 5.2 e 5.3 estão concluídas e validadas. A próxima iniciativa é a 5.4.
+**Última atualização deste handoff:** 18 de setembro de 2026, com base `main` em `91bd1b6` (Fase 5.4 parcial: 5.4.a pelo PR #108 e 5.4.b pelo PR #109, ambas publicadas); resta a 5.4.c (painel de moderação).
