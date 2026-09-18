@@ -40,10 +40,10 @@ function resetTokenFrom(fixture) {
   return match[1];
 }
 
-test('manifesto da API registra 39 rotas e 44 contratos sem duplicatas', () => {
-  assert.equal(API_CONTRACTS.length, 44);
-  assert.equal(new Set(API_CONTRACTS.map(({ method, route }) => `${method} ${route}`)).size, 44);
-  assert.equal(new Set(API_CONTRACTS.map(({ route }) => route)).size, 39);
+test('manifesto da API registra 40 rotas e 45 contratos sem duplicatas', () => {
+  assert.equal(API_CONTRACTS.length, 45);
+  assert.equal(new Set(API_CONTRACTS.map(({ method, route }) => `${method} ${route}`)).size, 45);
+  assert.equal(new Set(API_CONTRACTS.map(({ route }) => route)).size, 40);
   assert.deepEqual(
     AUTH_CONTRACTS.map(({ method, route }) => `${method} ${route}`),
     [

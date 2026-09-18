@@ -48,11 +48,12 @@ function editableProfile(user, overrides = {}) {
   };
 }
 
-test('manifesto da API registra os sete contratos autenticados de conta desta entrega', () => {
+test('manifesto da API registra os oito contratos autenticados de conta desta entrega', () => {
   const contracts = API_CONTRACTS
     .filter(({ area }) => ['account', 'professional-profile'].includes(area))
     .map(({ method, route }) => `${method} ${route}`);
   assert.deepEqual(contracts, [
+    'GET /api/account/export',
     'GET /api/account/professional-profile',
     'PUT /api/account/professional-profile',
     'PUT /api/profile',

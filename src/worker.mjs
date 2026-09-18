@@ -692,6 +692,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'account.reviews.update') return photographerHandlers.reviewUpdate({ params, request, env, pathname });
   if (routeId === 'account.reviews.delete') return photographerHandlers.reviewDelete({ params, request, env, pathname });
   if (routeId === 'account.conversations.list') return accountHandlers.listConversations({ request, env, url });
+  if (routeId === 'account.export') return accountHandlers.exportData({ request, env, pathname });
   if (routeId === 'account.conversations.messages') return accountHandlers.messages({ params, request, env, url });
   if (routeId === 'account.conversations.messages.create') return accountHandlers.createMessage({ params, request, env, pathname });
   if (routeId === 'account.conversations.read') return accountHandlers.markRead({ params, request, env });

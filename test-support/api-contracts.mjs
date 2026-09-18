@@ -21,6 +21,7 @@ export const API_CONTRACTS = Object.freeze([
   { area: 'reputation', method: 'POST', route: '/api/photographers/:slug/review-requests' },
   { area: 'messaging', method: 'POST', route: '/api/photographers/:slug/conversations' },
   { area: 'messaging', method: 'GET', route: '/api/account/conversations' },
+  { area: 'account', method: 'GET', route: '/api/account/export' },
   { area: 'messaging', method: 'GET', route: '/api/account/conversations/:id/messages' },
   { area: 'messaging', method: 'POST', route: '/api/account/conversations/:id/messages' },
   { area: 'messaging', method: 'PUT', route: '/api/account/conversations/:id/read' },
