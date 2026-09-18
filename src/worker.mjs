@@ -18,6 +18,7 @@ import { createMonitoringHandlers, recordRequestSample } from './monitoring.mjs'
 
 const SESSION_COOKIE = 'lensclick_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_ACTIVE_SESSIONS = 5;
 const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
 const MAX_BODY_BYTES = 700_000;
 const MAX_PROFILE_PICTURE_BYTES = 450_000;
@@ -465,11 +466,23 @@ async function authenticatedUser(request, env) {
 
 async function createSession(userId, request, env) {
   const token = randomToken();
+  const tokenHash = await sha256(token);
   const now = Date.now();
-  await env.DB.prepare('DELETE FROM sessions WHERE expires_at <= ?').bind(now).run();
-  await env.DB.prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
-    .bind(await sha256(token), userId, now + SESSION_TTL_MS)
-    .run();
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM sessions WHERE expires_at <= ?').bind(now),
+    env.DB.prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
+      .bind(tokenHash, userId, now + SESSION_TTL_MS),
+    env.DB.prepare(`
+      DELETE FROM sessions
+      WHERE user_id = ? AND token_hash <> ?
+        AND token_hash NOT IN (
+          SELECT token_hash FROM sessions
+          WHERE user_id = ? AND token_hash <> ?
+          ORDER BY expires_at DESC, created_at DESC, token_hash DESC
+          LIMIT ?
+        )
+    `).bind(userId, tokenHash, userId, tokenHash, MAX_ACTIVE_SESSIONS - 1)
+  ]);
   return sessionCookie(token, request);
 }
 
