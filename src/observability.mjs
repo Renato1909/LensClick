@@ -24,6 +24,8 @@ const STATIC_API_ROUTES = new Set([
   '/api/auth/email/verify',
   '/api/auth/email/resend',
   '/api/admin/overview',
+  '/api/admin/reviews',
+  '/api/admin/conversations',
   '/api/auth/logout',
   '/api/auth/me',
   '/api/health',
@@ -87,6 +89,8 @@ export function normalizeRoute(input) {
   if (/^\/api\/photographers\/[^/]+\/review-requests$/.test(pathname)) return '/api/photographers/:slug/review-requests';
   if (/^\/api\/photographers\/[^/]+\/conversations$/.test(pathname)) return '/api/photographers/:slug/conversations';
   if (/^\/api\/photographers\/[^/]+$/.test(pathname)) return '/api/photographers/:slug';
+  if (/^\/api\/admin\/reviews\/[^/]+$/.test(pathname)) return '/api/admin/reviews/:id';
+  if (/^\/api\/admin\/conversations\/[^/]+$/.test(pathname)) return '/api/admin/conversations/:id';
   if (/^\/api\/account\/review-requests\/[^/]+\/review$/.test(pathname)) return '/api/account/review-requests/:id/review';
   if (/^\/api\/account\/review-requests\/[^/]+$/.test(pathname)) return '/api/account/review-requests/:id';
   if (/^\/api\/account\/conversations\/[^/]+\/messages$/.test(pathname)) return '/api/account/conversations/:id/messages';

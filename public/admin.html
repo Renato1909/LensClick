@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="admin.pageTitle">Moderação | LensClick</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="refinements.css">
+  <link rel="stylesheet" href="auth-recovery.css">
+</head>
+<body class="auth-page">
+  <button class="recovery-language" id="langToggle" type="button" aria-label="Trocar idioma">PT</button>
+  <main class="recovery-shell" id="main-content">
+    <section class="recovery-card" aria-labelledby="adminTitle">
+      <div class="recovery-logo" aria-hidden="true"><i class="fas fa-shield-halved"></i></div>
+      <div class="recovery-header">
+        <h1 id="adminTitle" data-i18n="admin.title">Moderação</h1>
+        <p data-i18n="admin.lead">Avaliações e conversas que precisam de atenção.</p>
+      </div>
+      <div class="recovery-message" id="adminMessage" role="status" aria-live="polite" hidden></div>
+      <section id="adminOverview" hidden>
+        <h2 data-i18n="admin.overviewTitle">Visão geral</h2>
+        <ul id="overviewList"></ul>
+      </section>
+      <section id="adminReviews" hidden>
+        <h2 data-i18n="admin.reviewsTitle">Avaliações</h2>
+        <div id="reviewsList"></div>
+      </section>
+      <section id="adminConversations" hidden>
+        <h2 data-i18n="admin.conversationsTitle">Conversas</h2>
+        <div id="conversationsList"></div>
+      </section>
+      <div class="recovery-footer">
+        <a class="recovery-link" href="perfil.html" data-i18n="admin.backProfile">Voltar para a conta</a>
+      </div>
+    </section>
+  </main>
+  <script src="lang.js"></script>
+  <script src="ux.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
