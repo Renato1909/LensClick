@@ -88,6 +88,16 @@ O nome visivel usa `LensClick` por padrao. Se precisar altera-lo, configure opci
 - Conferir metricas, erros e consumo dos limites gratuitos.
 - Solicitar uma recuperacao, abrir o e-mail e confirmar que o link expira e nao pode ser reutilizado.
 
-## Dados locais antigos
+## 8. Token do GitHub Actions (backup + deploy)
+
+Os workflows `backup.yml` e `deploy.yml` usam o segredo `CLOUDFLARE_API_TOKEN` do repositório. O token precisa destes escopos:
+
+- Workers Scripts: Edit (publicar o Worker; sem isso o deploy falha com `No access to the specified service`)
+- D1: Edit (export do backup e `db:migrate:remote`)
+- R2: leitura e escrita no bucket `lensclick-backups` (backup diário)
+
+Atenção: o token criado na 5.2 só para backup não tem Workers e quebra o deploy. Amplie o mesmo token em dash.cloudflare.com → Manage Account → Account API Tokens em vez de criar outro.
+
+## 9. Dados locais antigos
 
 O arquivo `data/lensclick.sqlite`, se existir, nao e enviado automaticamente. Como a versao anterior usava outro algoritmo de senha, as contas locais devem ser recadastradas ou passar por uma redefinicao de senha planejada. Mensagens e newsletters podem ser exportadas e importadas separadamente quando fizermos a configuracao.

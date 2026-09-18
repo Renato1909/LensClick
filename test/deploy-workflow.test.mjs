@@ -28,3 +28,14 @@ test('deploy publica em push para main com gate e migracao antes do upload', asy
   assert.match(workflow, /\/api\/health/);
   assert.match(workflow, /cancel-in-progress: false/);
 });
+
+test('deploy falha cedo quando o token nao tem acesso ao Worker', async () => {
+  const workflow = await readFile(deployUrl, 'utf8');
+
+  assert.match(workflow, /Preflight da permissão de deploy/);
+  assert.match(workflow, /workers\/services\/lensclick/);
+  assert.match(workflow, /Workers Scripts:Edit/);
+  const preflightAt = workflow.indexOf('Preflight da permissão de deploy');
+  const deployAt = workflow.indexOf('npx wrangler deploy');
+  assert.ok(preflightAt !== -1 && preflightAt < deployAt);
+});
