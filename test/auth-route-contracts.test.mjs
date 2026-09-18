@@ -136,6 +136,61 @@ test('POST /api/auth/login autentica sem revelar a causa de credenciais invalida
   assert.deepEqual(wrongPassword.json, unknownEmail.json);
 });
 
+test('novos acessos limitam cada conta a cinco sessoes ativas sem afetar outros usuarios', async (t) => {
+  const fixture = await fixtureFor(t);
+  const primary = await register(fixture);
+  const primaryCookies = [primary.response.headers.get('set-cookie').split(';')[0]];
+
+  const secondary = await register(fixture, {
+    ...VALID_REGISTRATION,
+    name: 'Pessoa Secundaria',
+    email: 'secundaria@example.com'
+  });
+  const secondaryCookie = secondary.response.headers.get('set-cookie').split(';')[0];
+
+  for (let index = 0; index < 6; index += 1) {
+    const login = await fixture.request('/api/auth/login', {
+      method: 'POST',
+      json: { email: VALID_REGISTRATION.email, password: VALID_REGISTRATION.password },
+      useCookie: false
+    });
+    assertJsonContract(login, 200);
+    primaryCookies.push(login.response.headers.get('set-cookie').split(';')[0]);
+  }
+
+  const primaryUserId = fixture.DB.prepare('SELECT id FROM users WHERE email = ?')
+    .bind(VALID_REGISTRATION.email).first('id');
+  assert.equal(
+    fixture.DB.prepare('SELECT COUNT(*) AS total FROM sessions WHERE user_id = ?')
+      .bind(primaryUserId).first('total'),
+    5
+  );
+  assert.equal(countRows(fixture.DB, 'sessions'), 6);
+
+  let activePrimarySessions = 0;
+  for (const cookie of primaryCookies) {
+    const session = await fixture.request('/api/auth/me', {
+      headers: { Cookie: cookie },
+      useCookie: false
+    });
+    if (session.response.status === 200) activePrimarySessions += 1;
+  }
+  assert.equal(activePrimarySessions, 5);
+
+  const newest = await fixture.request('/api/auth/me', {
+    headers: { Cookie: primaryCookies.at(-1) },
+    useCookie: false
+  });
+  assertJsonContract(newest, 200);
+
+  const otherUser = await fixture.request('/api/auth/me', {
+    headers: { Cookie: secondaryCookie },
+    useCookie: false
+  });
+  assertJsonContract(otherUser, 200);
+  assert.equal(otherUser.json.user.email, 'secundaria@example.com');
+});
+
 test('POST /api/auth/logout remove apenas a sessao apresentada e limpa o cookie', async (t) => {
   const fixture = await fixtureFor(t);
   await register(fixture);
