@@ -1,0 +1,96 @@
+name: Deploy em produção
+
+# Iniciativa 5.6 do roadmap: entrega automatizada sem abrir mão do gate de qualidade.
+# Executa em push para main (após o merge, com o Qualidade já verde no PR) e
+# também pode ser disparado manualmente. A dependência crítica de backup e
+# restore (5.2) está atendida: o D1 remoto tem export diário no R2.
+# Segredo obrigatório: CLOUDFLARE_API_TOKEN.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-producao
+  # Um deploy em andamento nunca deve ser cancelado no meio: isso deixaria
+  # a versão publicada em estado indefinido entre upload e troca de tráfego.
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    name: Migrar o D1 e publicar o Worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+    steps:
+      - name: Conferir o token
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "::error::O segredo CLOUDFLARE_API_TOKEN nao esta configurado."
+            exit 1
+          fi
+
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Preparar o Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependências de forma reproduzível
+        run: npm ci
+
+      - name: Gate de qualidade antes de publicar
+        run: |
+          set -euo pipefail
+          npm test
+          npm run check
+
+      # Migrations aditivas e versionadas: falhar aqui interrompe o deploy
+      # antes de qualquer upload, com o backup diário (5.2) como rede.
+      - name: Aplicar migrations no D1 remoto
+        run: npm run db:migrate:remote
+
+      - name: Publicar o Worker em produção
+        id: deploy
+        run: |
+          set -euo pipefail
+          SAIDA="$(npx wrangler deploy 2>&1 | tee /dev/stderr)"
+          VERSAO="$(printf '%s' "$SAIDA" | grep -oE 'Current Version ID: [0-9a-f-]+' | head -n 1 || true)"
+          echo "versao=${VERSAO}" >> "$GITHUB_OUTPUT"
+          echo "Versao publicada: ${VERSAO}"
+
+      - name: Smoke de produção somente leitura
+        run: |
+          set -euo pipefail
+          BASE="https://lensclick.renato-aparecido-business.workers.dev"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' "${BASE}/api/health")" = "200"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' "${BASE}/")" = "200"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' -X POST \
+            -H 'Content-Type: application/json' -H "Origin: ${BASE}" \
+            --data '{"token":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}' \
+            "${BASE}/api/auth/email/verify")" = "400"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            "${BASE}/api/admin/overview")" = "401"
+          echo "Smoke de producao aprovado."
+
+      - name: Resumo da entrega
+        run: |
+          {
+            echo "### Deploy em produção"
+            echo ""
+            echo "- ${{ steps.deploy.outputs.versao }}"
+            echo "- Migrations remotas aplicadas antes do upload"
+            echo "- Smoke somente leitura aprovado"
+          } >> "$GITHUB_STEP_SUMMARY"

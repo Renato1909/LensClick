@@ -378,7 +378,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 5.6 Automacao da entrega
 
-> **Estado:** não iniciada.
+> **Estado:** concluída. O job `preview` no CI sobe o Worker local com D1 migrado e executa `npm run test:smoke` contra ele; o workflow `deploy.yml` publica em `push` para `main` com gate (`npm test` + `npm run check`), migration remota antes do upload e smoke somente leitura.
 
 1. **Nome da iniciativa**: Ambiente de preview e deploy automatizado.
 2. **Objetivo**: Sair do deploy manual via `wrangler deploy` sem abrir mao do gate de qualidade.
