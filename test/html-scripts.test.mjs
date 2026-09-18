@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { readCatalogs } from '../test-utils/i18n.mjs';
 
-const pages = ['index.html', 'cadastro.html', 'login.html', 'recuperar-senha.html', 'redefinir-senha.html', 'verificar-email.html', 'perfil.html', 'fotografo.html', 'privacidade.html', 'termos.html'];
+const pages = ['index.html', 'cadastro.html', 'login.html', 'recuperar-senha.html', 'redefinir-senha.html', 'verificar-email.html', 'admin.html', 'perfil.html', 'fotografo.html', 'privacidade.html', 'termos.html'];
 
 for (const page of pages) {
   test(`${page} não possui scripts inline`, () => {
@@ -23,7 +23,7 @@ test('as páginas ativas não usam dados de conta no localStorage', () => {
 
 for (const script of [
   'lang.js', 'ux.js', 'profile-api.js', 'photographer-profile.js',
-  'home.js', 'signup.js', 'login.js', 'password-recovery.js', 'password-reset.js', 'verificar-email.js'
+  'home.js', 'signup.js', 'login.js', 'password-recovery.js', 'password-reset.js', 'verificar-email.js', 'admin.js'
 ]) {
   test(`${script} possui sintaxe válida`, () => {
     const source = readFileSync(resolve('public', script), 'utf8');
@@ -39,6 +39,7 @@ test('a camada visual da Fase 2 está vinculada às páginas principais', () => 
     'recuperar-senha.html': 'auth-page',
     'redefinir-senha.html': 'auth-page',
     'verificar-email.html': 'auth-page',
+    'admin.html': 'auth-page',
     'perfil.html': 'profile-page',
     'fotografo.html': 'photographer-page',
     'privacidade.html': 'legal-page',

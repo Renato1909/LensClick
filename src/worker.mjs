@@ -629,7 +629,7 @@ const authHandlers = createAuthHandlers({
 });
 
 const imageService = createImageService({ storedImageResponse });
-const adminHandlers = createAdminHandlers({ json, isRateLimited, authenticatedUser });
+const adminHandlers = createAdminHandlers({ json, cleanText, readJson, isRateLimited, authenticatedUser });
 const monitoring = createMonitoringHandlers({ reportOperationalError });
 
 const photographerHandlers = createPhotographerHandlers({
@@ -668,6 +668,10 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'auth.logout') return authHandlers.logout({ request, env });
   if (routeId === 'auth.me') return authHandlers.me({ request, env });
   if (routeId === 'admin.overview') return adminHandlers.overview({ request, env, pathname });
+  if (routeId === 'admin.reviews.list') return adminHandlers.reviewsList({ request, env, url, pathname });
+  if (routeId === 'admin.reviews.update') return adminHandlers.reviewUpdate({ params, request, env, pathname });
+  if (routeId === 'admin.conversations.list') return adminHandlers.conversationsList({ request, env, url, pathname });
+  if (routeId === 'admin.conversations.update') return adminHandlers.conversationUpdate({ params, request, env, pathname });
   if (routeId.startsWith('admin.')) {
     const gate = await adminHandlers.requireAdmin(request, env, pathname);
     if (!gate.user) return gate.response;

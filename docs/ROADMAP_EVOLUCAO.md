@@ -343,7 +343,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 5.4 Verificacao de e-mail e papeis de autorizacao
 
-> **Estado:** parcial. As subtarefas 5.4.a (verificação de e-mail) e 5.4.b (papel administrativo) estão concluídas; a 5.4.c (painel de moderação) segue não iniciada. Risco classificado como critico no `HANDOFF.md` (secao 6, item 1).
+> **Estado:** concluída. As subtarefas 5.4.a (verificação de e-mail), 5.4.b (papel administrativo) e 5.4.c (painel de moderação) estão concluídas e a Fase 5.4 está encerrada.
 
 1. **Nome da iniciativa**: Confirmacao de e-mail no cadastro e papel administrativo para moderacao.
 2. **Objetivo**: Reduzir abuso na criacao de contas e destravar a moderacao de avaliacoes e conversas.
@@ -357,7 +357,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 10. **Subtarefas**:
     - 5.4.a (concluída): tabela `email_verification_tokens` e coluna `email_verified_at` na migration `0011`, seguindo o padrao de `password_reset_tokens`; rotas `POST /api/auth/email/verify` e `POST /api/auth/email/resend`; login em modo de aviso formalizado na Decisão 18 (não bloqueia; expõe `emailVerified`).
     - 5.4.b (concluída): coluna `is_admin` na migration `0012` - o `CHECK` de `role` na migration `0001` é imutável - e guard `requireAdmin` no inicio de `dispatchApiRoute` para as rotas `admin.*`, com `GET /api/admin/overview` como base de leitura do painel.
-    - 5.4.c: painel administrativo minimo para moderacao de avaliacoes e encerramento de conversas.
+    - 5.4.c (concluída): painel administrativo minimo (`public/admin.html` + `admin.js`, chaves `admin.*` em PT/EN) com `GET /api/admin/reviews` + `PUT /api/admin/reviews/:id` (moderate/restore com trilha em `review_audit`) e `GET /api/admin/conversations` + `PUT /api/admin/conversations/:id` (close/reopen; conversa encerrada bloqueia novas mensagens com `409`).
 
 ### 5.5 Portabilidade de dados do titular (LGPD)
 

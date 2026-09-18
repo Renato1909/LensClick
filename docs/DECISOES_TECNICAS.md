@@ -828,6 +828,44 @@ Contas podiam ser criadas com e-mail não verificado, sem confirmação de titul
 
 ---
 
+## Decisão 20 — Moderação administrativa de avaliações e conversas (5.4.c)
+
+### Contexto
+
+Com o papel administrativo criado (Decisão 19), faltava a operação: remover do público avaliações abusivas e encerrar conversas problemáticas, com reversão possível e trilha auditável.
+
+### Decisão tomada
+
+- **Avaliações**: `PUT /api/admin/reviews/:id` com `moderate` (`active` → `moderated`) e `restore` (`moderated` → `active`); cada transição grava `review_audit` com ator, nota, comentário e motivo. Avaliações `deleted` pelo autor não são tocadas pela moderação.
+- **Efeito público**: agregados e listagens já filtram `status = 'active'`; moderar remove imediatamente de perfil, busca e médias, sem recalcular nada.
+- **Conversas**: `PUT /api/admin/conversations/:id` com `close`/`reopen`; conversa encerrada bloqueia novas mensagens com `409` (comportamento já existente para participantes).
+- **Listas**: `GET /api/admin/reviews` e `GET /api/admin/conversations` com filtro `status` e `limit` máximo de 50; sem conteúdo de mensagens no payload do admin.
+- **Painel**: `public/admin.html` + `admin.js` externos (CSP `script-src 'self'`), com gate em `me.isAdmin` e chaves `admin.*` em PT/EN.
+
+### Motivo da escolha
+
+- **Reversibilidade**: `restore`/`reopen` evitam moderação irreversível por erro ou conta comprometida.
+- **Auditoria**: ator e motivo registrados permitem contestação futura sem expor dados além do necessário.
+- **Mínimo suficiente**: sem notificações, sem moderação de texto automática, sem edição de conteúdo alheio.
+
+### Alternativas consideradas
+
+- **Excluir a avaliação em vez de moderar**: rejeitado; apagaria a trilha e impediria restauração.
+- **Editar comentário do autor**: rejeitado; viola autoria e impede auditoria fiel.
+- **Incluir corpo das mensagens no painel**: rejeitado; amplia exposição de dados privados sem necessidade para encerrar uma conversa.
+
+### Consequências
+
+- **Benefícios:** Fase 5.4 encerrada; riscos residuais de 3.1/3.3 endereçados operacionalmente.
+- **Limitações:** sem fluxo de denúncia pelo usuário; sem contestação formal; sem notificação às partes.
+- **Operação:** moderar com motivo preenchido; revisar `moderated` periodicamente.
+
+### Status
+
+**Ativa.** Implementada na iniciativa 5.4.c; validação em produção pendente de deploy.
+
+---
+
 ## Resumo
 
 | # | Decisão | Status |
@@ -851,6 +889,7 @@ Contas podiam ser criadas com e-mail não verificado, sem confirmação de titul
 | 17 | HSTS, CSP de scripts e limite de sessões ativas | Ativa e validada |
 | 18 | Verificação de e-mail com login em modo de aviso (5.4.a) | Ativa |
 | 19 | Papel administrativo com `is_admin` e guard `requireAdmin` (5.4.b) | Ativa |
+| 20 | Moderação administrativa de avaliações e conversas (5.4.c) | Ativa |
 
 ---
 
