@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="verify.pageTitle">Verificar e-mail | LensClick</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="refinements.css">
+  <link rel="stylesheet" href="auth-recovery.css">
+</head>
+<body class="auth-page">
+  <button class="recovery-language" id="langToggle" type="button" aria-label="Trocar idioma">PT</button>
+  <main class="recovery-shell" id="main-content">
+    <section class="recovery-card" aria-labelledby="verifyTitle">
+      <div class="recovery-logo" aria-hidden="true"><i class="fas fa-envelope-circle-check"></i></div>
+      <div class="recovery-header">
+        <h1 id="verifyTitle" data-i18n="verify.title">Verifique seu e-mail</h1>
+        <p data-i18n="verify.lead">Clique no botão abaixo para confirmar o seu e-mail.</p>
+      </div>
+      <form class="recovery-form" id="emailVerifyForm">
+        <button class="recovery-submit" type="submit" data-i18n="verify.submit">Confirmar meu e-mail</button>
+      </form>
+      <div class="recovery-message" id="verifyMessage" role="status" aria-live="polite" hidden></div>
+      <div class="recovery-footer">
+        <p data-i18n="verify.resendLead">Não recebeu o e-mail? Solicite um novo link.</p>
+        <button class="recovery-link" id="resendButton" type="button" data-i18n="verify.resend">Reenviar link de verificação</button>
+        <a class="recovery-link" href="login.html" data-i18n="verify.backLogin">Voltar para o login</a>
+      </div>
+    </section>
+  </main>
+  <script src="lang.js"></script>
+  <script src="ux.js"></script>
+  <script src="verificar-email.js"></script>
+</body>
+</html>

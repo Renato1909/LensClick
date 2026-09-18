@@ -40,10 +40,10 @@ function resetTokenFrom(fixture) {
   return match[1];
 }
 
-test('manifesto da API registra 32 rotas e 37 contratos sem duplicatas', () => {
-  assert.equal(API_CONTRACTS.length, 37);
-  assert.equal(new Set(API_CONTRACTS.map(({ method, route }) => `${method} ${route}`)).size, 37);
-  assert.equal(new Set(API_CONTRACTS.map(({ route }) => route)).size, 32);
+test('manifesto da API registra 34 rotas e 39 contratos sem duplicatas', () => {
+  assert.equal(API_CONTRACTS.length, 39);
+  assert.equal(new Set(API_CONTRACTS.map(({ method, route }) => `${method} ${route}`)).size, 39);
+  assert.equal(new Set(API_CONTRACTS.map(({ route }) => route)).size, 34);
   assert.deepEqual(
     AUTH_CONTRACTS.map(({ method, route }) => `${method} ${route}`),
     [
@@ -51,6 +51,8 @@ test('manifesto da API registra 32 rotas e 37 contratos sem duplicatas', () => {
       'POST /api/auth/login',
       'POST /api/auth/password-reset/request',
       'POST /api/auth/password-reset/confirm',
+      'POST /api/auth/email/verify',
+      'POST /api/auth/email/resend',
       'POST /api/auth/logout',
       'GET /api/auth/me'
     ]
@@ -240,15 +242,17 @@ test('POST /api/auth/password-reset/request mantem resposta generica e entrega a
   assertJsonContract(known, 202);
   assertJsonContract(unknown, 202);
   assert.deepEqual(known.json, unknown.json);
-  assert.equal(fixture.sentEmails.length, 1);
+  assert.equal(fixture.sentEmails.length, 2);
   assert.equal(fixture.sentEmails[0].url, 'https://api.brevo.com/v3/smtp/email');
+  assert.equal(fixture.sentEmails[1].url, 'https://api.brevo.com/v3/smtp/email');
+  assert.match(fixture.sentEmails[0].body.subject, /Confirme|Confirm/i);
   assert.equal(countRows(fixture.DB, 'password_reset_tokens'), 1);
 
   const invalid = await fixture.request('/api/auth/password-reset/request', {
     method: 'POST', json: { email: 'invalido' }, useCookie: false
   });
   assertJsonContract(invalid, 400);
-  assert.equal(fixture.sentEmails.length, 1);
+  assert.equal(fixture.sentEmails.length, 2);
 });
 
 test('POST /api/auth/password-reset/request falha fechado sem configuracao e limpa token se o Brevo rejeitar', async (t) => {

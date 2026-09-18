@@ -5,6 +5,8 @@ const API_ROUTES = Object.freeze([
   { id: 'auth.login', method: 'POST', path: '/api/auth/login' },
   { id: 'auth.password-reset.request', method: 'POST', path: '/api/auth/password-reset/request' },
   { id: 'auth.password-reset.confirm', method: 'POST', path: '/api/auth/password-reset/confirm' },
+  { id: 'auth.email.verify', method: 'POST', path: '/api/auth/email/verify' },
+  { id: 'auth.email.resend', method: 'POST', path: '/api/auth/email/resend' },
   { id: 'auth.logout', method: 'POST', path: '/api/auth/logout' },
   { id: 'auth.me', method: 'GET', path: '/api/auth/me' },
   { id: 'photographers.list', method: 'GET', path: '/api/photographers' },

@@ -750,6 +750,46 @@ O LensClick já emitia cabeçalhos de segurança e mantinha sessões revogáveis
 
 ---
 
+## Decisão 18 — Verificação de e-mail com login em modo de aviso (5.4.a)
+
+### Contexto
+
+Contas podiam ser criadas com e-mail não verificado, sem confirmação de titularidade e sem base para moderação futura. A iniciativa 5.4 do roadmap exige link de verificação, expiração e reenvio, além da decisão formal sobre bloquear ou apenas avisar no login.
+
+### Decisão tomada
+
+- **Modelo**: tabela `email_verification_tokens` (`token_hash` PK, `user_id` FK com `ON DELETE CASCADE`, `expires_at`, `used_at`) no padrão de `password_reset_tokens`, mais coluna `users.email_verified_at` (migração `0011`, imutável daqui em diante).
+- **Token**: 32 bytes aleatórios em base64url, guardado como SHA-256, uso único via `UPDATE ... RETURNING`, TTL de 24 horas.
+- **Rotas**: `POST /api/auth/email/verify` (pública, com token) e `POST /api/auth/email/resend` (autenticada, `SENSITIVE_RATE_LIMITER`).
+- **Cadastro**: cria o token e envia o e-mail via Brevo em modo best-effort; falha no envio nunca quebra o `201`.
+- **Reenvio**: exige sessão; conta já verificada recebe `200` sem novo e-mail; sem Brevo configurado responde `503`.
+- **Login em modo de aviso**: login e `GET /api/auth/me` NÃO bloqueiam contas não verificadas; expõem `emailVerified` em `publicUser` para a interface avisar. Contas legadas (`email_verified_at IS NULL`) seguem funcionando.
+- **Anti-enumeração**: verificação usa erro genérico; reenvio exige autenticação, portanto não expõe existência de contas.
+
+### Motivo da escolha
+
+- **Continuidade**: bloquear o login travaria toda a base existente, que não tem carimbo de verificação; o aviso preserva acesso enquanto a verificação é adotada progressivamente.
+- **Bloqueio futuro**: o bloqueio passa a ser possível na 5.4.b/c, quando houver reenvio visível no perfil e papel administrativo para suporte.
+- **Reuso**: o fluxo copia o padrão auditado de recuperação de senha (hash, consumo atômico, limpeza em falha de entrega, `waitUntil`).
+
+### Alternativas consideradas
+
+- **Bloquear login até verificar**: rejeitado nesta etapa; exigiria backfill e janela de suporte para contas legadas.
+- **Reenvio público por e-mail**: rejeitado; reintroduziria enumeração; a versão autenticada elimina a classe de ataque.
+- **TTL de 30 minutos como no reset**: rejeitado; verificação compete com caixa de entrada e filtros de spam — 24 horas equilibra segurança e conversão.
+
+### Consequências
+
+- **Benefícios:** titularidade confirmável, base para moderação (5.4.b/c) e portabilidade LGPD (5.5).
+- **Limitações:** sem bloqueio, contas não verificadas continuam operando; sem 2FA; sem papel administrativo.
+- **Operação:** expiração e uso único cobertos por testes; falha de entrega do Brevo gera `email.verification.delivery_failed`.
+
+### Status
+
+**Ativa.** Implementada na iniciativa 5.4.a; validação em produção pendente de deploy.
+
+---
+
 ## Resumo
 
 | # | Decisão | Status |
@@ -771,6 +811,7 @@ O LensClick já emitia cabeçalhos de segurança e mantinha sessões revogáveis
 | 15 | Variantes de imagem on-demand (Cloudflare Images) | Ativa |
 | 16 | Backup automático do D1 com retenção de 30 dias | Ativa e validada |
 | 17 | HSTS, CSP de scripts e limite de sessões ativas | Ativa e validada |
+| 18 | Verificação de e-mail com login em modo de aviso (5.4.a) | Ativa |
 
 ---
 
@@ -789,7 +830,6 @@ O LensClick já emitia cabeçalhos de segurança e mantinha sessões revogáveis
 
 Estes pontos **não são decisões tomadas** — são candidatos a formalização conforme o produto evolui:
 
-- **Verificação de e-mail**: hoje não existe; formalizar a abordagem (link de verificação, expiração, reenvio) quando for implementada.
 - **Segundo fator de autenticacao (2FA)**: hoje não existe; formalizar o mecanismo (TOTP, SMS, e-mail) quando for priorizado.
 - **Papéis como autorização**: hoje `client` e `photographer` são dados de perfil, não autorizam áreas; a decisão sobre como papéis passarão a autorizar ainda não foi tomada.
 - **Domínio personalizado**: listado como prioridade média; a decisão sobre o domínio e a configuração ainda não está formalizada.

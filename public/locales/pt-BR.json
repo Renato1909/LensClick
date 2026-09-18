@@ -585,5 +585,19 @@
   "terms.sec11.li1": "Estes termos constituem o acordo integral entre você e a Lens Click sobre o uso do site, substituindo quaisquer condições previamente combinadas.",
   "terms.sec11.li2": "Se qualquer disposição for considerada inválida ou inaplicável, as demais continuam em pleno vigor.",
   "terms.sec11.li3": "O não exercício de qualquer direito previsto nestes termos não constitui renúncia ao direito.",
-  "terms.sec11.li4": "A Lens Click pode ceder ou transferir seus direitos e obrigações aqui expressos a qualquer affiliate, sucessor ou transmissor autorizado, sem necessidade de notificação prévia."
+  "terms.sec11.li4": "A Lens Click pode ceder ou transferir seus direitos e obrigações aqui expressos a qualquer affiliate, sucessor ou transmissor autorizado, sem necessidade de notificação prévia.",
+  "verify.alreadyVerified": "Este e-mail já foi verificado. Você já pode entrar.",
+  "verify.backLogin": "Voltar para o login",
+  "verify.error": "Não foi possível verificar o e-mail.",
+  "verify.invalidLink": "Este link é inválido ou expirou. Entre na sua conta e solicite um novo link.",
+  "verify.lead": "Clique no botão abaixo para confirmar o seu e-mail.",
+  "verify.pageTitle": "Verificar e-mail | LensClick",
+  "verify.rateLimited": "Muitas tentativas. Aguarde alguns minutos.",
+  "verify.resend": "Reenviar link de verificação",
+  "verify.resendLead": "Não recebeu o e-mail? Solicite um novo link.",
+  "verify.resent": "Se a conta ainda não foi verificada, você receberá um novo link em instantes.",
+  "verify.submit": "Confirmar meu e-mail",
+  "verify.success": "E-mail verificado com sucesso. Você já pode entrar.",
+  "verify.title": "Verifique seu e-mail",
+  "verify.unavailable": "A verificação está temporariamente indisponível."
 }

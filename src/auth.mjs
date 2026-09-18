@@ -4,9 +4,18 @@ export function createAuthHandlers(deps) {
     json, cleanText, normalizeEmail, isValidEmail, isValidPassword,
     isRateLimited, readJson, hashPassword, verifyPassword, createSession,
     publicUser, consumeRateLimit, randomToken, sha256, sendPasswordResetEmail,
-    authenticatedUser, parseCookies, sessionCookie, reportOperationalError,
-    sessionCookieName, passwordResetTtlMs
+    sendVerificationEmail, authenticatedUser, parseCookies, sessionCookie, reportOperationalError,
+    sessionCookieName, passwordResetTtlMs, emailVerificationTtlMs
   } = deps;
+
+  async function issueVerificationToken(env, userId) {
+    const token = randomToken();
+    const now = Date.now();
+    await env.DB.prepare('DELETE FROM email_verification_tokens WHERE expires_at <= ? OR user_id = ?').bind(now, userId).run();
+    await env.DB.prepare('INSERT INTO email_verification_tokens (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
+      .bind(await sha256(token), userId, now + emailVerificationTtlMs).run();
+    return token;
+  }
 
   return {
     async register({ request, env, pathname }) {
@@ -34,6 +43,21 @@ export function createAuthHandlers(deps) {
           RETURNING *
         `).bind(name, email, phone, await hashPassword(password)).first();
         const cookie = await createSession(Number(user.id), request, env);
+        if (env.BREVO_API_KEY && env.BREVO_SENDER_EMAIL) {
+          try {
+            const token = await issueVerificationToken(env, Number(user.id));
+            const verifyUrl = new URL('/verificar-email.html', request.url);
+            verifyUrl.searchParams.set('token', token);
+            const language = body.language === 'en' ? 'en' : 'pt';
+            await sendVerificationEmail(env, email, name, verifyUrl.toString(), language);
+          } catch {
+            try {
+              reportOperationalError({ requestId: 'register', sink: () => {} }, 'email.verification.delivery_failed', 'email_delivery_error');
+            } catch {
+              // Observability is best-effort and must never break registration.
+            }
+          }
+        }
         return json(201, { user: publicUser(user) }, { 'Set-Cookie': cookie });
       } catch (error) {
         if (String(error?.message).toUpperCase().includes('UNIQUE')) return json(409, { error: 'Este e-mail ja esta cadastrado.' });
@@ -106,6 +130,49 @@ export function createAuthHandlers(deps) {
         env.DB.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').bind(consumed.user_id)
       ]);
       return json(200, { message: 'Senha alterada com sucesso. Faca login novamente.' });
+    },
+
+    async emailVerify({ request, env, pathname }) {
+      if (await isRateLimited(request, env, pathname, 10, 15 * 60 * 1000, env.AUTH_RATE_LIMITER)) {
+        return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });
+      }
+      const body = await readJson(request);
+      const token = String(body.token || '');
+      if (!/^[A-Za-z0-9_-]{40,100}$/.test(token)) return json(400, { error: 'Este link de verificacao e invalido ou expirou.' });
+      const consumed = await env.DB.prepare(`
+        UPDATE email_verification_tokens SET used_at = CURRENT_TIMESTAMP
+        WHERE token_hash = ? AND used_at IS NULL AND expires_at > ? RETURNING user_id
+      `).bind(await sha256(token), Date.now()).first();
+      if (!consumed) return json(400, { error: 'Este link de verificacao e invalido ou expirou.' });
+      await env.DB.batch([
+        env.DB.prepare('UPDATE users SET email_verified_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND email_verified_at IS NULL').bind(consumed.user_id),
+        env.DB.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').bind(consumed.user_id)
+      ]);
+      return json(200, { message: 'E-mail verificado com sucesso.' });
+    },
+
+    async emailResend({ request, env, pathname, context, requestContext }) {
+      const user = await authenticatedUser(request, env);
+      if (!user) return json(401, { error: 'Sessao nao encontrada.' });
+      if (!env.BREVO_API_KEY || !env.BREVO_SENDER_EMAIL) {
+        return json(503, { error: 'A verificacao de e-mail esta temporariamente indisponivel.' });
+      }
+      if (await isRateLimited(request, env, pathname, 5, 60 * 60 * 1000, env.SENSITIVE_RATE_LIMITER)) {
+        return json(429, { error: 'Muitas solicitacoes. Aguarde antes de tentar novamente.' });
+      }
+      if (user.email_verified_at) return json(200, { message: 'Este e-mail ja foi verificado.' });
+      const body = await readJson(request).catch(() => ({}));
+      const language = body.language === 'en' ? 'en' : 'pt';
+      const token = await issueVerificationToken(env, Number(user.id));
+      const verifyUrl = new URL('/verificar-email.html', request.url);
+      verifyUrl.searchParams.set('token', token);
+      const delivery = sendVerificationEmail(env, user.email, user.name, verifyUrl.toString(), language).catch(async () => {
+        reportOperationalError(requestContext, 'email.verification.delivery_failed', 'email_delivery_error');
+        await env.DB.prepare('DELETE FROM email_verification_tokens WHERE token_hash = ?').bind(await sha256(token)).run();
+      });
+      if (context?.waitUntil) context.waitUntil(delivery);
+      else await delivery;
+      return json(202, { message: 'Se a conta ainda nao foi verificada, enviaremos um novo link de verificacao.' });
     },
 
     async logout({ request, env }) {

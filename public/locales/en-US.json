@@ -585,5 +585,19 @@
   "terms.sec11.li1": "These Terms constitute the entire agreement between you and Lens Click regarding the use of the Site, superseding any prior or contemporaneous communication, proposal, or agreement, whether oral or written.",
   "terms.sec11.li2": "If any provision of these Terms is held to be invalid or unenforceable, the remaining provisions remain in full force and effect.",
   "terms.sec11.li3": "Failure to exercise or enforce any right or provision of these Terms does not constitute a waiver of such right.",
-  "terms.sec11.li4": "Lens Click may assign its rights and obligations under these Terms to any affiliate, successor, or authorized assignee, without prior notice."
+  "terms.sec11.li4": "Lens Click may assign its rights and obligations under these Terms to any affiliate, successor, or authorized assignee, without prior notice.",
+  "verify.alreadyVerified": "This email has already been verified. You can sign in.",
+  "verify.backLogin": "Back to sign in",
+  "verify.error": "Could not verify the email.",
+  "verify.invalidLink": "This link is invalid or has expired. Sign in and request a new link.",
+  "verify.lead": "Click the button below to confirm your email.",
+  "verify.pageTitle": "Verify email | LensClick",
+  "verify.rateLimited": "Too many attempts. Please wait a few minutes.",
+  "verify.resend": "Resend verification link",
+  "verify.resendLead": "Did not receive the email? Request a new link.",
+  "verify.resent": "If the account is still unverified, you will receive a new link shortly.",
+  "verify.submit": "Confirm my email",
+  "verify.success": "Email verified successfully. You can now sign in.",
+  "verify.title": "Verify your email",
+  "verify.unavailable": "Verification is temporarily unavailable."
 }
