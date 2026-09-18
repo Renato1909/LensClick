@@ -69,7 +69,6 @@
   --lc-ease-standard: cubic-bezier(0.2, 0.75, 0.25, 1);
 
   /* Compatibilidade com os estilos originais */
-  --accent-1: var(--lc-color-brand-primary);
   --accent-2: var(--lc-color-brand-secondary);
   --bg-1: #161311;
   --bg-2: #24201d;
@@ -77,12 +76,7 @@
   --bg-4: #d8cec2;
   --surface: var(--lc-color-bg);
   --card: var(--lc-color-bg-elevated);
-  --card-bg: rgba(15, 18, 32, 0.85);
-  --text: var(--lc-color-text);
   --muted: var(--lc-color-text-muted);
-  --radius: var(--lc-radius-lg);
-  --shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
-  --shadow-soft: 0 6px 16px rgba(0, 0, 0, 0.22);
   --maxw: var(--lc-content-max);
   --transition: all 0.3s ease;
   --lc-line: var(--lc-color-line);
@@ -420,7 +414,7 @@ form label:focus-within .eyebrow {
 .home-page .contact-tab {
   appearance: none;
   font: inherit;
-  color: var(--text);
+  color: var(--lc-color-text);
 }
 
 /* Mantém a transição original de idioma mesmo quando o sistema reduz as

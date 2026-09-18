@@ -395,7 +395,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 5.7 Qualidade e debitos tecnicos
 
-> **Estado:** não iniciada.
+> **Estado:** concluída. Aliases `--accent-1`, `--text`, `--radius`, `--shadow`, `--shadow-soft` e `--card-bg` migrados para tokens `--lc-*` e removidos do `:root`; `npm run lint` (aliases, inline, localStorage, sintaxe) ligado ao CI e ao gate de deploy; `npm run test:e2e` (Playwright, chromium) cobre cadastro, publicação de perfil e envio de mensagem contra o preview.
 
 1. **Nome da iniciativa**: Aliases visuais legados, lint e testes em navegador real.
 2. **Objetivo**: Reduzir a divida tecnica declarada na secao 15 (Hotspots) do `docs/AI_CONTEXT.md`.
@@ -407,9 +407,9 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 8. **Agentes envolvidos**: Designer (tokens), Engenheiro Front-end, Engenheiro de QA (testes de interface), Revisor de Codigo (lint).
 9. **Ordem recomendada**: **23a**.
 10. **Subtarefas**:
-    - 5.7.a: migrar os usos dos aliases legados para os tokens `--lc-*` e remover as declaracoes temporarias.
-    - 5.7.b: script de lint e sua inclusao no workflow "Qualidade".
-    - 5.7.c: testes de interface em navegador real para os fluxos criticos (cadastro, publicacao de perfil e envio de mensagem).
+    - 5.7.a (concluída): usos de `--accent-1`, `--text`, `--radius`, `--shadow`, `--shadow-soft` e `--card-bg` (este último sem nenhum uso) migrados para `--lc-color-brand-primary`, `--lc-color-text`, `--lc-radius-lg`, `--lc-shadow-brand`, `--lc-shadow-sm`, com declarações removidas do `:root`. Compat restantes (`--accent-2`, `--bg-*`, `--muted` etc.) ficam como débito documentado.
+    - 5.7.b (concluída): `scripts/lint.mjs` (`npm run lint`) verifica aliases, scripts inline, conta no localStorage e sintaxe JS; incluído no workflow "Qualidade" e no gate do deploy; auto-coberto por `test/lint.test.mjs`.
+    - 5.7.c (concluída): `npm run test:e2e` (Playwright + chromium, `e2e/critical-flows.spec.mjs`) cobre cadastro, publicação de perfil e envio de mensagem contra o preview local; executa no CI após o smoke.
 
 ### 5.8 Produto e presenca digital
 

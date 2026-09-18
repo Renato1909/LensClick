@@ -22,8 +22,9 @@ test('a Fase 7 centraliza os tokens visuais da LensClick', () => {
   ];
 
   requiredTokens.forEach(token => assert.match(styles, new RegExp(`${token}:`)));
-  assert.match(styles, /--accent-1:\s*var\(--lc-color-brand-primary\)/);
-  assert.match(styles, /--radius:\s*var\(--lc-radius-lg\)/);
+  for (const alias of ['--accent-1', '--text', '--radius', '--shadow', '--shadow-soft', '--card-bg']) {
+    assert.doesNotMatch(styles, new RegExp(`${alias}\\s*:`));
+  }
 });
 
 test('paginas ativas consomem uma unica fonte de tokens', () => {
