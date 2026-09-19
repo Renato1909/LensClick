@@ -360,6 +360,8 @@ function portfolioItem(row, slug = '') {
     caption: row.caption || '',
     altText: row.alt_text || '',
     position: Number(row.position),
+    isCover: Boolean(row.is_cover),
+    category: row.category || 'other',
     imageUrl: slug
       ? `/api/photographers/${encodeURIComponent(slug)}/portfolio/${id}?v=${encodeURIComponent(row.updated_at || '')}`
       : `/api/account/portfolio/${id}/image?v=${encodeURIComponent(row.updated_at || '')}`
