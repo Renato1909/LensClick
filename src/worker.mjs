@@ -197,6 +197,38 @@ export function renderMissingProfilePage(template) {
     .replace('<section class="profile-error" id="profileError" hidden', '<section class="profile-error" id="profileError"');
 }
 
+const STATIC_METADATA_PATHS = new Set([
+  '/', '/index.html', '/busca.html', '/cadastro.html', '/login.html',
+  '/recuperar-senha.html', '/redefinir-senha.html', '/verificar-email.html',
+  '/privacidade.html', '/termos.html'
+]);
+
+function renderStaticPageMetadata(html, requestUrl) {
+  const url = new URL(requestUrl);
+  const canonicalUrl = url.toString();
+  const titleMatch = html.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i);
+  const descriptionMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i);
+  const title = String(titleMatch?.[1] || 'LensClick').replace(/<[^>]+>/g, '').trim();
+  const description = String(descriptionMatch?.[1] || 'Encontre fotógrafos profissionais e apresente seu trabalho na LensClick.').trim();
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'LensClick',
+    url: new URL('/', requestUrl).toString(),
+    description,
+    publisher: { '@type': 'Organization', name: 'LensClick', url: new URL('/', requestUrl).toString() }
+  };
+  const head = [
+    `<link rel="canonical" href="${escapeHtml(canonicalUrl)}">`,
+    `<meta property="og:type" content="website">`,
+    `<meta property="og:title" content="${escapeHtml(title)}">`,
+    `<meta property="og:description" content="${escapeHtml(description)}">`,
+    `<meta property="og:url" content="${escapeHtml(canonicalUrl)}">`,
+    `<script type="application/ld+json">${escapeJsonForHtml(structuredData)}</script>`
+  ].join('\\n  ');
+  return html.replace('</head>', `  ${head}\\n</head>`);
+}
+
 function bytesToBase64Url(bytes) {
   let binary = '';
   for (const byte of bytes) binary += String.fromCharCode(byte);
@@ -789,6 +821,11 @@ async function handleAssetRequest(request, env) {
   const headers = new Headers(assetResponse.headers);
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
   if (headers.get('Content-Type')?.startsWith('text/html')) headers.set('Cache-Control', 'no-cache');
+  if (assetResponse.ok && headers.get('Content-Type')?.startsWith('text/html') && STATIC_METADATA_PATHS.has(url.pathname)) {
+    const html = await assetResponse.text();
+    const body = renderStaticPageMetadata(html, url);
+    return new Response(request.method === 'HEAD' ? null : body, { status: assetResponse.status, statusText: assetResponse.statusText, headers });
+  }
   return new Response(assetResponse.body, { status: assetResponse.status, statusText: assetResponse.statusText, headers });
 }
 
