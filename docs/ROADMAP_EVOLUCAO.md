@@ -414,7 +414,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 5.8 Produto e presenca digital
 
-> **Estado:** não iniciada. É a próxima iniciativa de código após a conclusão da 5.7. A 5.5 permanece parcial por depender de revisão legal externa.
+ > **Estado:** parcial. As subtarefas 5.8.a e 5.8.b estão concluídas nesta iniciativa; a 5.8.c permanece pendente até a definição/configuração do domínio próprio e do DNS/e-mail.
 
 1. **Nome da iniciativa**: Capa e categorias no portfolio, metadados sociais nas demais paginas e dominio proprio.
 2. **Objetivo**: Fechar lacunas de produto e de descoberta identificadas apos a conclusao da Fase 4.
@@ -426,9 +426,9 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 8. **Agentes envolvidos**: Especialista em SEO e Performance (Responsavel), Engenheiro Front-end, Engenheiro Backend, Engenheiro DevOps (dominio e DNS), Designer (capa e categorias), Especialista em Marketing para Fotografia (copy dos metadados).
 9. **Ordem recomendada**: **24a** - pode ser antecipada conforme a prioridade de produto.
 10. **Subtarefas**:
-    - 5.8.a: `is_cover` e `category` em `portfolio_items` via nova migration, garantindo um unico item de capa por usuario.
-    - 5.8.b: Open Graph e JSON-LD (`WebSite` e `Organization`) nas paginas publicas que nao sao SSR.
-    - 5.8.c: dominio proprio em `wrangler.jsonc`, com SPF, DKIM e DMARC, e remetente Brevo no dominio.
+    - 5.8.a (concluída): migration `0013_portfolio_cover_category.sql` adiciona `is_cover` e `category`, com índice único parcial para garantir no máximo uma capa por fotógrafo; a conta permite selecionar categoria e capa e a API persiste ambos.
+    - 5.8.b (concluída): páginas públicas estáticas recebem canonical, Open Graph e JSON-LD com `WebSite` e `Organization`; perfis SSR continuam usando seu metadado específico.
+    - 5.8.c: domínio próprio em `wrangler.jsonc`, com SPF, DKIM e DMARC, e remetente Brevo no domínio. Requer domínio escolhido/registrado e configuração DNS; não foi inventado nenhum domínio ou registro de DNS.
 
 ---
 

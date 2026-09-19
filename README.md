@@ -72,7 +72,7 @@ O antigo banco local em `data/lensclick.sqlite`, quando existente, foi preservad
 - Recuperacao de senha ativa com token unico de 30 minutos e envio transacional pela Brevo.
 - Central autenticada para editar dados, trocar a senha e gerenciar a imagem privada do perfil.
 - Perfil profissional com especialidades, localizacao, disponibilidade, faixa inicial e contatos opcionais.
-- Portfolio profissional com ate 12 imagens, descricoes acessiveis, legendas e ordenacao.
+- Portfolio profissional com ate 12 imagens, descricoes acessiveis, legendas, categorias, capa opcional e ordenacao.
 - Pagina publica do fotografo, publicada somente por consentimento explicito.
 - Exclusao definitiva da conta e dos dados controlados por ela, protegida por senha e confirmacao textual.
 - Mensagens de contato persistidas.

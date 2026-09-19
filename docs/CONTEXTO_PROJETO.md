@@ -98,14 +98,15 @@ LensClick/
 │   ├── workflows/deploy.yml
 │   └── pull_request_template.md
 ├── data/                    # D1 local (NÃO commitar)
-├── db/schema.ts             # Catálogo TypeScript do schema (versão 12)
+├── db/schema.ts             # Catálogo TypeScript do schema (versão 13)
 ├── docs/
 │   ├── DOCUMENTACAO_TECNICA.md   # Documentação técnica completa
 │   └── CONTEXTO_PROJETO.md       # Este documento
 ├── migrations/             # Migrações SQL versionadas
 │   ├── 0001_initial.sql ... 0010_monitor_minute_buckets.sql
 │   ├── 0011_email_verification.sql
-│   └── 0012_admin_role.sql
+│   ├── 0012_admin_role.sql
+│   └── 0013_portfolio_cover_category.sql
 ├── public/                 # Frontend (assets estáticos)
 │   ├── index.html          # Landing
 │   ├── cadastro.html       # Cadastro

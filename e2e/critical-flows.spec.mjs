@@ -66,7 +66,8 @@ test('publicacao do perfil profissional pelo navegador', async ({ page }) => {
     '#professionalBio',
     'Fotografo de casamentos e ensaios externos ha mais de dez anos, com olhar documental e entrega pontual.'
   );
-  await page.check('input[name="specialties"][value="wedding"]', { force: true });
+  const weddingSpecialty = page.locator('input[name="specialties"][value="wedding"]');
+  if (!(await weddingSpecialty.isChecked())) await weddingSpecialty.check({ force: true });
   await page.click('button[data-onboarding-step="2"]');
   await expect(page.locator('[data-onboarding-panel="2"]')).toBeVisible();
   await page.fill('#professionalCity', 'Sao Paulo');
