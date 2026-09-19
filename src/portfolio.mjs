@@ -55,13 +55,13 @@ export function createPortfolioHandlers({ json, cleanText, authenticatedUser, is
       const owned = await env.DB.prepare(`SELECT id FROM portfolio_items WHERE user_id = ? AND id IN (${ids.map(() => '?').join(',')})`).bind(current.id, ...ids).all();
       if (owned.results.length !== ids.length) return json(403, { error: 'Item de portfolio nao autorizado.' });
     }
-    const statements = body.items.map((item, position) => {
+    const statements = [env.DB.prepare('UPDATE portfolio_items SET is_cover = 0, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?').bind(current.id), ...body.items.map((item, position) => {
       const altText = cleanText(item.altText, 160);
       const category = String(item.category || 'other');
       if (!PORTFOLIO_CATEGORIES.has(category)) throw Object.assign(new Error('Categoria de portfolio invalida.'), { status: 400 });
       if (altText.length < 3) throw Object.assign(new Error('Descreva todas as imagens para acessibilidade.'), { status: 400 });
       return env.DB.prepare('UPDATE portfolio_items SET caption = ?, alt_text = ?, position = ?, is_cover = ?, category = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?').bind(cleanText(item.caption, 240), altText, position, item.isCover === true ? 1 : 0, category, Number(item.id), current.id);
-    });
+    })];
     if (statements.length) await env.DB.batch(statements);
     const portfolio = await env.DB.prepare('SELECT id, caption, alt_text, position, updated_at FROM portfolio_items WHERE user_id = ? ORDER BY position, id').bind(current.id).all();
     return json(200, { portfolio: portfolio.results.map((item) => portfolioItem(item)), message: 'Portfolio atualizado.' });
