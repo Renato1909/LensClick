@@ -76,7 +76,7 @@ export function createPhotographerHandlers({
       WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
     `).bind(slug).first();
     if (!profile) return json(404, { error: 'Perfil profissional nao encontrado.' });
-    const portfolio = await env.DB.prepare('SELECT id, caption, alt_text, position, updated_at FROM portfolio_items WHERE user_id = ? ORDER BY position, id').bind(profile.user_id).all();
+    const portfolio = await env.DB.prepare('SELECT id, caption, alt_text, position, is_cover, category, updated_at FROM portfolio_items WHERE user_id = ? ORDER BY position, id').bind(profile.user_id).all();
     return json(200, { profile: { ...professionalProfile(profile), portfolio: portfolio.results.map((item) => portfolioItem(item, profile.slug)) } }, { 'Cache-Control': 'public, max-age=60' });
   }
 
