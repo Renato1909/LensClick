@@ -221,22 +221,23 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #98 | `128c295` | fix: enviar backup do D1 ao R2 remoto |
 | #99 | `87f11db` | fix: tornar retencao do backup robusta |
 | #100 | `dcfb5fd` | docs: registra backup remoto validado |
-| #101 | `0c3253b` | docs: conclude phase 5.1 consolidation |
-| #102 | `e906b14` | docs: record isolated D1 restore validation |
-| #103 | `8305f38` | security: enforce HSTS and strict script CSP |
-| #104 | `546b132` | security: limit active account sessions |
-| #105 | `24ed0ad` | docs: conclude phase 5.3 security hardening |
-| #106 | `ae57a98` | docs: fix HANDOFF base to 62857da with PR 106 |
-| #107 | `3a1a3b5` | feat(auth): email verification with warn-only login (5.4.a) |
-| #108 | `bf430d5` | feat(auth): admin role with requireAdmin guard (5.4.b) |
-| #109 | `5ee3f1e` | docs: record 5.4.a and 5.4.b production rollout |
-| #110 | `1ed173d` | feat(admin): moderation panel for reviews and conversations (5.4.c) |
-| #111 | `192d4c3` | docs: record 5.4.c production rollout and close Phase 5.4 |
-| #112 | `b59a681` | feat(account): titular data export for LGPD portability (5.5.a) |
-| #113 | `8dd9e66` | feat(ci): local preview with smoke and automated production deploy (5.6) |
-| #114 | `6c02df8` | fix(ci): fail fast when token lacks Workers deploy access |
-| #115 | `7b0f228` | feat(quality): single-source tokens, frontend lint and real-browser e2e (5.7) |
-| #116 | `775eafa` | fix(e2e): prevent professional profile loading race |
+| #101 | — | docs: formaliza backup do D1 como Decisão 16 (5.2.c) |
+| #102 | `0c3253b` | docs: conclude phase 5.1 consolidation |
+| #103 | `e906b14` | docs: record isolated D1 restore validation |
+| #104 | `8305f38` | security: enforce HSTS and strict script CSP |
+| #105 | `546b132` | security: limit active account sessions |
+| #106 | `24ed0ad` | docs: conclude phase 5.3 security hardening |
+| #107 | `ae57a98` | docs: fix HANDOFF base to 62857da with PR 106 |
+| #108 | `3a1a3b5` | feat(auth): email verification with warn-only login (5.4.a) |
+| #109 | `bf430d5` | feat(auth): admin role with requireAdmin guard (5.4.b) |
+| #110 | `5ee3f1e` | docs: record 5.4.a and 5.4.b production rollout |
+| #111 | `1ed173d` | feat(admin): moderation panel for reviews and conversations (5.4.c) |
+| #112 | `192d4c3` | docs: record 5.4.c production rollout and close Phase 5.4 |
+| #113 | `b59a681` | feat(account): titular data export for LGPD portability (5.5.a) |
+| #114 | `8dd9e66` | feat(ci): local preview with smoke and automated production deploy (5.6) |
+| #115 | `6c02df8` | fix(ci): fail fast when token lacks Workers deploy access |
+| #116 | `7b0f228` | feat(quality): single-source tokens, frontend lint and real-browser e2e (5.7) |
+| #117 | `775eafa` | fix(e2e): prevent professional profile loading race |
 | #101 | `bbd4c34` | docs: formaliza backup do D1 como Decisão 16 (5.2.c) |
 | #102 | `7ee0870` | docs: conclude phase 5.1 consolidation |
 | #103 | `d1c984d` | docs: conclude isolated D1 restore validation |
