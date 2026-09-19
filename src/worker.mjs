@@ -206,7 +206,7 @@ const STATIC_METADATA_PATHS = new Set([
 function renderStaticPageMetadata(html, requestUrl) {
   const url = new URL(requestUrl);
   const canonicalUrl = url.toString();
-  const titleMatch = html.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i);
+  const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   const descriptionMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i);
   const title = String(titleMatch?.[1] || 'LensClick').replace(/<[^>]+>/g, '').trim();
   const description = String(descriptionMatch?.[1] || 'Encontre fotógrafos profissionais e apresente seu trabalho na LensClick.').trim();
@@ -225,8 +225,8 @@ function renderStaticPageMetadata(html, requestUrl) {
     `<meta property="og:description" content="${escapeHtml(description)}">`,
     `<meta property="og:url" content="${escapeHtml(canonicalUrl)}">`,
     `<script type="application/ld+json">${escapeJsonForHtml(structuredData)}</script>`
-  ].join('\\n  ');
-  return html.replace('</head>', `  ${head}\\n</head>`);
+  ].join('\n  ');
+  return html.replace('</head>', `  ${head}\n</head>`);
 }
 
 function bytesToBase64Url(bytes) {
