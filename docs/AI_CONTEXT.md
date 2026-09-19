@@ -23,7 +23,7 @@ Ele deve **envelhecer mais lentamente** que `docs/HANDOFF.md`: evita números mu
 - Dados estruturados no **D1**; imagens profissionais no **R2** (bucket privado, nunca público por URL direta).
 - Frontend em **HTML/CSS/JS vanilla**, sem framework, com i18n PT/EN.
 - Ambiente oficial: `https://lensclick.renato-aparecido-business.workers.dev`.
-- Escopo atual: landing page, cadastro/login reais, recuperação de senha via Brevo, central autenticada de conta, perfil profissional com onboarding guiado, portfolio (até 12 imagens), página pública indexável do fotógrafo, busca com filtros e ordenação, avaliações verificadas, mensagens internas, sitemap e robots dinâmicos, observabilidade e alertas in-worker. **Não há** dashboard de agendamentos nem painel administrativo.
+- Escopo atual: landing page, cadastro/login reais, recuperação de senha via Brevo, central autenticada de conta, perfil profissional com onboarding guiado, portfolio (até 12 imagens, com categoria e capa), página pública indexável do fotógrafo, busca com filtros e ordenação, avaliações verificadas, mensagens internas, sitemap e robots dinâmicos, observabilidade e alertas in-worker. **Não há** dashboard de agendamentos nem painel administrativo.
 - Termos de Uso e Política de Privacidade ainda requerem revisão institucional antes de publicação comercial.
 
 Detalhes de visão e escopo: `docs/CONTEXTO_PROJETO.md`.
