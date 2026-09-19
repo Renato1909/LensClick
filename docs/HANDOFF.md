@@ -10,7 +10,7 @@
 
 ## 1. Situação atual da main
 
-- **Base da entrega:** `main` → commit `eea0009` — "feat: advance roadmap 5.8 product and digital presence" (#119).
+- **Base da entrega:** `main` → commit `9252f9c` — "fix(e2e): assert personal save success and persisted role before publish" (#122).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -257,6 +257,9 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #117 | `6ec4631` | fix(e2e): prevent professional profile loading race |
 | #118 | `02dd814` | docs: sync roadmap and project documentation after PR 117 |
 | #119 | `eea0009` | feat: advance roadmap 5.8 product and digital presence |
+| #120 | `90e67f7` | docs+test: sync HANDOFF to 5.8 partial and harden e2e checkbox handling |
+| #121 | `6fcbcfb` | fix(e2e): explicit waits for professional section and panels |
+| #122 | `9252f9c` | fix(e2e): assert personal save success and persisted role before publish |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -538,4 +541,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 19 de setembro de 2026, com base `main` em `eea0009` (PR #119); 5.6 e 5.7 concluídas, 5.5 parcial e 5.8 parcial (5.8.a e 5.8.b concluídas).
+**Última atualização deste handoff:** 19 de setembro de 2026, com base `main` em `9252f9c` (PR #122); 5.6 e 5.7 concluídas, 5.5 parcial e 5.8 parcial (5.8.a e 5.8.b concluídas).
