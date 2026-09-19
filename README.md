@@ -25,7 +25,7 @@ npm run check
 
 A suite automatizada de testes cobre cadastro, hash de senha, sessao, recuperacao de senha, gerenciamento e exclusao da conta, perfil profissional publico, controles de privacidade, foto no R2, portfolio profissional, contato, newsletter, protecao de origem e scripts das paginas. Execute `npm test` para consultar o total atual.
 
-O GitHub Actions executa essas verificacoes automaticamente em todo Pull Request direcionado a `main` e em cada atualizacao da branch principal. O fluxo de contribuicao da equipe esta documentado em `CONTRIBUTING.md`.
+O GitHub Actions executa essas verificações automaticamente em todo Pull Request direcionado a `main` e em cada atualização da branch principal. O preview do CI também executa smoke HTTP e Playwright em Chromium; o deploy de produção é automatizado após o merge em `main`. O fluxo de contribuicao da equipe esta documentado em `CONTRIBUTING.md`.
 
 Com `npm start` em execucao, a verificacao HTTP completa pode ser repetida em outro terminal:
 
@@ -78,8 +78,11 @@ O antigo banco local em `data/lensclick.sqlite`, quando existente, foi preservad
 - Mensagens de contato persistidas.
 - Inscricoes de newsletter persistidas.
 - Traducao em portugues e ingles.
+- Verificacao de e-mail em modo de aviso.
+- Papel administrativo protegido por `requireAdmin` e painel de moderacao.
+- Exportacao dos dados do titular em JSON por `GET /api/account/export`.
 
-O projeto ainda nao contem um dashboard de agendamentos. A tela pos-login e uma area de perfil, conforme o escopo aprovado para a Fase 1.
+O projeto ainda nao contem um dashboard de agendamentos. A tela pos-login e uma area de perfil. As Fases 5.6 e 5.7 adicionaram preview/deploy automatizados, lint e E2E em navegador real; o PR #117 corrigiu a corrida de carregamento do perfil profissional.
 
 Os Termos de Uso e a Politica de Privacidade devem receber revisao institucional antes de uma publicacao comercial.
 
