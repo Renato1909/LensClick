@@ -10,7 +10,7 @@
 
 ## 1. Situação atual da main
 
-- **Base da entrega:** `main` → commit `9252f9c` — "fix(e2e): assert personal save success and persisted role before publish" (#122).
+- **Base da entrega:** `main` → commit `8a3a66f` — "docs: sync HANDOFF to base 9252f9c with PRs 120-122" (#123).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -59,7 +59,7 @@
 
 `0001_initial.sql` … `0010_monitor_minute_buckets.sql`, `0011_email_verification.sql`, `0012_admin_role.sql`, `0013_portfolio_cover_category.sql`.
 
-> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0013_*.sql` para qualquer alteração de schema.
+> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0014_*.sql` para qualquer alteração de schema.
 
 ---
 
@@ -105,13 +105,11 @@ A iniciativa 5.1 está em entrega documental; não há funcionalidade de produto
 
 ### Não implementado / pendente
 
-- 5.8.a: capa destacada e categoria no portfolio.
-- 5.8.b: Open Graph e JSON-LD nas páginas públicas que não são SSR.
 - 5.8.c: domínio próprio, DNS e remetente Brevo no domínio.
 - 5.5.b: revisão legal formal dos Termos de Uso e da Política de Privacidade.
 - 2FA continua fora do escopo atual.
 - O rate limiting permanece deliberadamente híbrido: escudo de rajada nativo na edge e políticas longas autoritativas no D1.
-- A suíte de contratos cobre os 22 padrões de rota e os 25 contratos HTTP catalogados; testes ponta a ponta com serviços reais permanecem fora do escopo atual.
+- A suíte de contratos cobre as 40 rotas e os 45 contratos HTTP catalogados; apenas os 3 fluxos críticos têm cobertura em navegador real, e testes ponta a ponta com serviços reais permanecem fora do escopo atual.
 - O endpoint `GET /api/health` verifica Worker e D1; o R2 é monitorado pelas rotas reais de imagem para evitar operações artificiais de armazenamento.
 
 ---
@@ -260,6 +258,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #120 | `90e67f7` | docs+test: sync HANDOFF to 5.8 partial and harden e2e checkbox handling |
 | #121 | `6fcbcfb` | fix(e2e): explicit waits for professional section and panels |
 | #122 | `9252f9c` | fix(e2e): assert personal save success and persisted role before publish |
+| #123 | `8a3a66f` | docs: sync HANDOFF to base 9252f9c with PRs 120-122 |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -508,7 +507,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 
 ### Convenções do projeto
 
-- **Migrações imutáveis** — nunca editar `0001`–`0012`. Nova alteração de schema = novo arquivo `0013_*.sql`.
+- **Migrações imutáveis** — nunca editar `0001`–`0013`. Nova alteração de schema = novo arquivo `0014_*.sql`.
 - **Fast-forward only** — `main` não aceita merge commits. Todo PR é squash-mergeado.
 - **Status check obrigatório** — o CI "Qualidade" precisa passar antes do merge. Rodar `npm test` e `npm run check` localmente antes de abrir PR.
 - **i18n** — toda string visível ao usuário deve passar por `window.i18n`; cada chave precisa existir em `public/locales/pt-BR.json` e `public/locales/en-US.json`. Não hardcoded em PT ou EN.
@@ -541,4 +540,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 19 de setembro de 2026, com base `main` em `9252f9c` (PR #122); 5.6 e 5.7 concluídas, 5.5 parcial e 5.8 parcial (5.8.a e 5.8.b concluídas).
+**Última atualização deste handoff:** 19 de setembro de 2026, com base `main` em `8a3a66f` (PR #123); 5.6 e 5.7 concluídas, 5.5 parcial e 5.8 parcial (5.8.a e 5.8.b concluídas).

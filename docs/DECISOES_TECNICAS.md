@@ -786,7 +786,7 @@ Contas podiam ser criadas com e-mail não verificado, sem confirmação de titul
 
 ### Status
 
-**Ativa.** Implementada na iniciativa 5.4.a; validação em produção pendente de deploy.
+**Ativa.** Implementada na iniciativa 5.4.a; validada em produção.
 
 ---
 
@@ -824,7 +824,7 @@ Contas podiam ser criadas com e-mail não verificado, sem confirmação de titul
 
 ### Status
 
-**Ativa.** Implementada na iniciativa 5.4.b; validação em produção pendente de deploy.
+**Ativa.** Implementada na iniciativa 5.4.b; validada em produção.
 
 ---
 
@@ -862,7 +862,7 @@ Com o papel administrativo criado (Decisão 19), faltava a operação: remover d
 
 ### Status
 
-**Ativa.** Implementada na iniciativa 5.4.c; validação em produção pendente de deploy.
+**Ativa.** Implementada na iniciativa 5.4.c; validada em produção.
 
 ---
 
@@ -899,7 +899,7 @@ A LGPD garante ao titular a portabilidade dos dados, mas não existia endpoint d
 
 ### Status
 
-**Ativa.** Implementada na iniciativa 5.5.a; validação em produção pendente de deploy.
+**Ativa.** Implementada na iniciativa 5.5.a; validada em produção.
 
 ---
 

@@ -409,7 +409,7 @@ O plano corrente é a **Fase 5**, registrada em `docs/ROADMAP_EVOLUCAO.md` e res
 
 ### Estado de `db/schema.ts`
 
-- `schemaVersion=10`, com as 15 tabelas das migrações `0001`–`0010`.
+- `schemaVersion=13`, com as 16 tabelas das migrações `0001`–`0013`.
 - As migrações permanecem como fonte executável; o catálogo TypeScript deve acompanhar novas migrações no mesmo PR.
 
 ### Antes de qualquer alteração
