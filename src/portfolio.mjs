@@ -1,5 +1,6 @@
 const MAX_PORTFOLIO_IMAGE_BYTES = 4_000_000;
 const MAX_PORTFOLIO_ITEMS = 12;
+const PORTFOLIO_CATEGORIES = new Set(['wedding', 'events', 'portrait', 'family', 'corporate', 'product', 'fashion', 'newborn', 'nature', 'real-estate', 'other']);
 
 export function createPortfolioHandlers({ json, cleanText, authenticatedUser, isRateLimited, readJson, portfolioItem, responsiveImage }) {
   const PRIVATE_IMAGE_CACHE = { storedCacheControl: 'private, max-age=300, must-revalidate', transformedCacheControl: 'private, max-age=300, must-revalidate' };
@@ -12,11 +13,13 @@ export function createPortfolioHandlers({ json, cleanText, authenticatedUser, is
     const file = form.get('image');
     const altText = cleanText(form.get('altText'), 160);
     const caption = cleanText(form.get('caption'), 240);
+    const category = String(form.get('category') || 'other');
+    if (!PORTFOLIO_CATEGORIES.has(category)) throw Object.assign(new Error('Categoria de portfolio invalida.'), { status: 400 });
     if (!(file instanceof File) || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw Object.assign(new Error('Escolha uma imagem JPG, PNG ou WebP.'), { status: 400 });
     if (file.size < 1 || file.size > MAX_PORTFOLIO_IMAGE_BYTES) throw Object.assign(new Error('A imagem deve ter no maximo 4 MB.'), { status: 413 });
     if (altText.length < 3) throw Object.assign(new Error('Descreva a imagem para acessibilidade.'), { status: 400 });
     const extension = file.type === 'image/jpeg' ? 'jpg' : file.type.split('/')[1];
-    return { bytes: await file.arrayBuffer(), contentType: file.type, extension, altText, caption };
+    return { bytes: await file.arrayBuffer(), contentType: file.type, extension, altText, caption, category };
   }
 
   async function create({ request, env, pathname }) {
@@ -30,7 +33,7 @@ export function createPortfolioHandlers({ json, cleanText, authenticatedUser, is
     const objectKey = `portfolio/${current.id}/${crypto.randomUUID()}.${itemUpload.extension}`;
     await env.PROFILE_IMAGES.put(objectKey, itemUpload.bytes, { httpMetadata: { contentType: itemUpload.contentType } });
     try {
-      const result = await env.DB.prepare('INSERT INTO portfolio_items (user_id, object_key, caption, alt_text, position) VALUES (?, ?, ?, ?, ?)').bind(current.id, objectKey, itemUpload.caption, itemUpload.altText, count).run();
+      const result = await env.DB.prepare('INSERT INTO portfolio_items (user_id, object_key, caption, alt_text, position, category) VALUES (?, ?, ?, ?, ?, ?)').bind(current.id, objectKey, itemUpload.caption, itemUpload.altText, count, itemUpload.category).run();
       const item = await env.DB.prepare('SELECT id, caption, alt_text, position, updated_at FROM portfolio_items WHERE id = ? AND user_id = ?').bind(Number(result.meta.last_row_id), current.id).first();
       return json(201, { item: portfolioItem(item), message: 'Imagem adicionada ao portfolio.' });
     } catch (error) {
@@ -45,6 +48,8 @@ export function createPortfolioHandlers({ json, cleanText, authenticatedUser, is
     const body = await readJson(request);
     if (!Array.isArray(body.items) || body.items.length > MAX_PORTFOLIO_ITEMS) return json(400, { error: 'Organizacao do portfolio invalida.' });
     const ids = body.items.map((item) => Number(item.id));
+    const covers = body.items.filter((item) => item.isCover === true);
+    if (covers.length > 1) return json(400, { error: 'Escolha apenas uma imagem de capa.' });
     if (ids.some((id) => !Number.isInteger(id) || id < 1) || new Set(ids).size !== ids.length) return json(400, { error: 'Organizacao do portfolio invalida.' });
     if (ids.length) {
       const owned = await env.DB.prepare(`SELECT id FROM portfolio_items WHERE user_id = ? AND id IN (${ids.map(() => '?').join(',')})`).bind(current.id, ...ids).all();
@@ -52,8 +57,10 @@ export function createPortfolioHandlers({ json, cleanText, authenticatedUser, is
     }
     const statements = body.items.map((item, position) => {
       const altText = cleanText(item.altText, 160);
+      const category = String(item.category || 'other');
+      if (!PORTFOLIO_CATEGORIES.has(category)) throw Object.assign(new Error('Categoria de portfolio invalida.'), { status: 400 });
       if (altText.length < 3) throw Object.assign(new Error('Descreva todas as imagens para acessibilidade.'), { status: 400 });
-      return env.DB.prepare('UPDATE portfolio_items SET caption = ?, alt_text = ?, position = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?').bind(cleanText(item.caption, 240), altText, position, Number(item.id), current.id);
+      return env.DB.prepare('UPDATE portfolio_items SET caption = ?, alt_text = ?, position = ?, is_cover = ?, category = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?').bind(cleanText(item.caption, 240), altText, position, item.isCover === true ? 1 : 0, category, Number(item.id), current.id);
     });
     if (statements.length) await env.DB.batch(statements);
     const portfolio = await env.DB.prepare('SELECT id, caption, alt_text, position, updated_at FROM portfolio_items WHERE user_id = ? ORDER BY position, id').bind(current.id).all();
