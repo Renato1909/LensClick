@@ -67,7 +67,9 @@ test('publicacao do perfil profissional pelo navegador', async ({ page }) => {
     )
   });
   await page.click('#saveProfile');
-  await expect(page.locator('#profileMsg')).not.toBeHidden({ timeout: 15_000 });
+  await expect(page.locator('#profileMsg[data-type="success"]')).toBeVisible({ timeout: 15_000 });
+  const savedRole = await api(page.request, 'GET', '/api/auth/me');
+  expect(savedRole.body.user.role).toBe('photographer');
   await page.reload();
   await expect(page.locator('#professionalForm')).not.toHaveAttribute('aria-busy', 'true', { timeout: 15_000 });
   // Em runners lentos a seção só aparece após o carregamento assíncrono do
