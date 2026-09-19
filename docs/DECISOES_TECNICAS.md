@@ -464,12 +464,12 @@ O Design System é formalizado em `public/refinements.css` com **tokens oficiais
 ### Consequências
 
 - **Benefícios:** consistência visual, acessibilidade, manutenção centralizada, compatibilidade com legado via aliases.
-- **Limitações:** os aliases temporários (`--accent-1`, etc.) devem ser migrados gradualmente para `--lc-*` para evitar duplicação de longo prazo.
-- **Pontos futuros:** concluir a migração dos aliases para tokens `--lc-*` oficiais.
+- **Limitações:** aliases residuais como `--accent-2`, `--bg-*` e `--muted` ainda são dívida técnica documentada.
+- **Pontos futuros:** migrar somente os aliases residuais que permanecerem em uso real, sem reabrir a iniciativa 5.7 principal.
 
 ### Status
 
-**Ativa.** Os aliases temporários são **Temporários** (devem ser migrados).
+**Ativa.** A migração principal da iniciativa 5.7 foi concluída; aliases residuais permanecem documentados como dívida técnica.
 
 ---
 
