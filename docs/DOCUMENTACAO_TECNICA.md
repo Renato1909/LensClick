@@ -31,7 +31,7 @@ A aplicacao utiliza uma arquitetura serverless na Cloudflare:
 - Central autenticada com edicao de dados e confirmacao da senha para trocar o e-mail.
 - Troca de senha com encerramento das outras sessoes.
 - Foto privada de perfil em JPG, PNG ou WebP, limitada a 450 KB.
-- Portfolio profissional com ate 12 imagens no R2, descricoes acessiveis, legendas e ordenacao.
+- Portfolio profissional com ate 12 imagens no R2, descricoes acessiveis, legendas, categorias, capa opcional e ordenacao.
 - Remocao permanente da foto no R2 pelo proprio usuario.
 - Exclusao definitiva da conta, sessoes, tokens, foto privada e portfolio.
 - Perfil profissional em rascunho ou publicado, com contatos controlados individualmente.
@@ -48,7 +48,7 @@ A aplicacao utiliza uma arquitetura serverless na Cloudflare:
 - Verificacao de e-mail.
 - Agendamentos, pagamentos ou galerias de entrega.
 - Aplicativo Android nativo.
-- Dominio personalizado.
+- Dominio personalizado (configuracao da 5.8.c ainda pendente).
 
 ## 2. Explicacao do sistema em cinco minutos
 
