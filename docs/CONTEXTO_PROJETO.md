@@ -269,7 +269,7 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 1. **D1 para dados + R2 para imagens** — imagens não são Base64 no banco; cada serviço cumpre sua finalidade.
 2. **Mesmo domínio para frontend e API** — simplifica cookies, origem e deploy; rotas relativas como `/api/auth/me`.
 3. **HTML/CSS/JS sem framework** — preserva a base original e reduz dependências; maior responsabilidade manual na organização.
-4. **Migrações versionadas** — `0001` a `0004`; mudanças futuras criam novos arquivos, nunca editam banco publicado.
+4. **Migrações versionadas** — `0001` a `0012`; mudanças futuras criam novos arquivos, nunca editam banco publicado.
 5. **R2 privado** — privacidade tem prioridade sobre URL pública; foto privada passa por autorização do Worker.
 6. **PBKDF2-SHA-256 com 100k iterações** — maior valor aceito pelo Web Crypto do Workers; 120k foi rejeitado em produção.
 7. **Cookie HttpOnly/Secure/SameSite=Lax** — JavaScript da página não lê o cookie de sessão; TTL de 7 dias e máximo de cinco sessões ativas por usuário.
