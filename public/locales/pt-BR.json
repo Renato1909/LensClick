@@ -621,5 +621,15 @@
   "verify.submit": "Confirmar meu e-mail",
   "verify.success": "E-mail verificado com sucesso. Você já pode entrar.",
   "verify.title": "Verifique seu e-mail",
-  "verify.unavailable": "A verificação está temporariamente indisponível."
+  "verify.unavailable": "A verificação está temporariamente indisponível.",
+  "profile.portfolio.category": "Categoria",
+  "profile.portfolio.cover": "Definir como capa",
+  "portfolio.category.other": "Outro",
+  "portfolio.category.events": "Eventos",
+  "portfolio.category.family": "Família",
+  "portfolio.category.corporate": "Corporativo",
+  "portfolio.category.fashion": "Moda",
+  "portfolio.category.newborn": "Recém-nascido",
+  "portfolio.category.nature": "Natureza",
+  "portfolio.category.realEstate": "Imóveis"
 }
