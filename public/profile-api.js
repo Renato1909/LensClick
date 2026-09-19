@@ -395,6 +395,7 @@
     professionalSection.hidden = roleInput.value !== 'photographer';
     if (professionalSection.hidden) return;
     professionalForm.setAttribute('aria-busy', 'true');
+    professionalForm.setAttribute('inert', '');
     saveProfessionalProfile.disabled = true;
     try {
       const { data } = await UX.apiFetch(
@@ -412,6 +413,7 @@
       UX.showMessage(professionalMessage, error.message, 'error');
     } finally {
       professionalForm.removeAttribute('aria-busy');
+      professionalForm.removeAttribute('inert');
       saveProfessionalProfile.disabled = false;
     }
   }

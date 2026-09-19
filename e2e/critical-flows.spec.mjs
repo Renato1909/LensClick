@@ -60,6 +60,7 @@ test('publicacao do perfil profissional pelo navegador', async ({ page }) => {
   await page.click('#saveProfile');
   await expect(page.locator('#profileMsg')).not.toBeHidden({ timeout: 15_000 });
   await page.reload();
+  await expect(page.locator('#professionalForm')).not.toHaveAttribute('aria-busy', 'true', { timeout: 15_000 });
 
   await page.fill(
     '#professionalBio',
@@ -67,6 +68,7 @@ test('publicacao do perfil profissional pelo navegador', async ({ page }) => {
   );
   await page.check('input[name="specialties"][value="wedding"]', { force: true });
   await page.click('button[data-onboarding-step="2"]');
+  await expect(page.locator('[data-onboarding-panel="2"]')).toBeVisible();
   await page.fill('#professionalCity', 'Sao Paulo');
   await page.fill('#professionalState', 'SP');
   await page.click('button[data-onboarding-step="3"]');
