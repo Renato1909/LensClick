@@ -70,6 +70,7 @@
   const portfolioFileLabel = document.getElementById('portfolioFileLabel');
   const portfolioAltText = document.getElementById('portfolioAltText');
   const portfolioCaption = document.getElementById('portfolioCaption');
+  const portfolioCategory = document.getElementById('portfolioCategory');
   const portfolioUploadButton = document.getElementById('portfolioUploadButton');
   const portfolioUploadMessage = document.getElementById('portfolioUploadMsg');
   const portfolioList = document.getElementById('portfolioList');
@@ -319,6 +320,27 @@
       altInput.value = item.altText;
       altInput.addEventListener('input', () => { item.altText = altInput.value; image.alt = altInput.value; });
       altLabel.append(altInput);
+      const coverLabel = document.createElement('label');
+      coverLabel.className = 'visibility-option';
+      const coverInput = document.createElement('input');
+      coverInput.type = 'checkbox';
+      coverInput.checked = Boolean(item.isCover);
+      coverInput.setAttribute('aria-label', portfolioLabel('profile.portfolio.cover'));
+      coverInput.addEventListener('change', () => {
+        portfolioItems.forEach((entry) => { entry.isCover = false; });
+        item.isCover = coverInput.checked;
+        renderPortfolio();
+      });
+      const coverText = document.createElement('span');
+      coverText.textContent = portfolioLabel('profile.portfolio.cover');
+      coverLabel.append(coverInput, coverText);
+      const categoryLabel = document.createElement('label');
+      categoryLabel.textContent = portfolioLabel('profile.portfolio.category');
+      const categorySelect = document.createElement('select');
+      [['other','portfolio.category.other'],['wedding','portfolio.category.wedding'],['events','portfolio.category.events'],['portrait','portfolio.category.portrait'],['family','portfolio.category.family'],['corporate','portfolio.category.corporate'],['product','portfolio.category.product'],['fashion','portfolio.category.fashion'],['newborn','portfolio.category.newborn'],['nature','portfolio.category.nature'],['real-estate','portfolio.category.realEstate']].forEach(([value,key]) => { const option=document.createElement('option'); option.value=value; option.textContent=portfolioLabel(key); categorySelect.append(option); });
+      categorySelect.value = item.category || 'other';
+      categorySelect.addEventListener('change', () => { item.category = categorySelect.value; });
+      categoryLabel.append(categorySelect);
       const captionLabel = document.createElement('label');
       captionLabel.textContent = portfolioLabel('profile.portfolio.caption');
       const captionInput = document.createElement('input');
@@ -327,7 +349,7 @@
       captionInput.value = item.caption;
       captionInput.addEventListener('input', () => { item.caption = captionInput.value; });
       captionLabel.append(captionInput);
-      fields.append(altLabel, captionLabel);
+      fields.append(altLabel, captionLabel, categoryLabel, coverLabel);
 
       const controls = document.createElement('div');
       controls.className = 'portfolio-item-controls';
@@ -541,6 +563,7 @@
     formData.append('image', file);
     formData.append('altText', portfolioAltText.value.trim());
     formData.append('caption', portfolioCaption.value.trim());
+    formData.append('category', portfolioCategory.value);
     UX.setBusy(portfolioUploadButton, true, { pt: 'Enviando...', en: 'Uploading...' });
     UX.showMessage(portfolioUploadMessage, '');
     try {
@@ -570,7 +593,7 @@
       const { data } = await UX.apiFetch('/api/account/portfolio', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: portfolioItems.map(({ id, caption, altText }) => ({ id, caption, altText })) })
+        body: JSON.stringify({ items: portfolioItems.map(({ id, caption, altText, category, isCover }) => ({ id, caption, altText, category, isCover: Boolean(isCover) })) })
       }, portfolioLabel('profile.portfolio.saveError'));
       portfolioItems = data.portfolio;
       renderPortfolio();
