@@ -23,7 +23,7 @@ Ele deve **envelhecer mais lentamente** que `docs/HANDOFF.md`: evita números mu
 - Dados estruturados no **D1**; imagens profissionais no **R2** (bucket privado, nunca público por URL direta).
 - Frontend em **HTML/CSS/JS vanilla**, sem framework, com i18n PT/EN.
 - Ambiente oficial: `https://lensclick.renato-aparecido-business.workers.dev`.
-- Escopo atual: landing page, cadastro/login reais, recuperação de senha via Brevo, central autenticada de conta, perfil profissional com onboarding guiado, portfolio (até 12 imagens, com categoria e capa), página pública indexável do fotógrafo, busca com filtros e ordenação, avaliações verificadas, mensagens internas, sitemap e robots dinâmicos, observabilidade e alertas in-worker. **Não há** dashboard de agendamentos nem painel administrativo.
+- Escopo atual: landing page, cadastro/login reais, recuperação de senha via Brevo, central autenticada de conta, perfil profissional com onboarding guiado, portfolio (até 12 imagens, com categoria e capa), página pública indexável do fotógrafo, busca com filtros e ordenação, avaliações verificadas, mensagens internas, sitemap e robots dinâmicos, observabilidade e alertas in-worker, painel administrativo com moderação de avaliações e conversas, e exportação de dados do titular (LGPD). **Não há** dashboard de agendamentos.
 - Termos de Uso e Política de Privacidade ainda requerem revisão institucional antes de publicação comercial.
 
 Detalhes de visão e escopo: `docs/CONTEXTO_PROJETO.md`.
@@ -43,12 +43,12 @@ flowchart LR
     H -->|e-mail transacional| E[Brevo]
 ```
 
-- **Worker único** (`src/worker.mjs`) atua como ponto de composição: mantém formatters, sessão, rate limiting, cache de edge e SSR. `src/router.mjs` centraliza o catálogo (37 rotas) e o despacho de `/api/*`, além da separação para os assets de `public/`. Os handlers de domínio foram extraídos na Fase 4.2 (concluída no PR #82) para `src/auth.mjs`, `src/photographers.mjs`, `src/account.mjs`, `src/account-security.mjs`, `src/portfolio.mjs`, `src/public-input.mjs` e `src/monitoring.mjs`.
+- **Worker único** (`src/worker.mjs`) atua como ponto de composição: mantém formatters, sessão, rate limiting, cache de edge e SSR. `src/router.mjs` centraliza o catálogo (40 rotas) e o despacho de `/api/*`, além da separação para os assets de `public/`. Os handlers de domínio foram extraídos na Fase 4.2 (concluída no PR #82) para `src/auth.mjs`, `src/photographers.mjs`, `src/account.mjs`, `src/account-security.mjs`, `src/portfolio.mjs`, `src/public-input.mjs`, `src/monitoring.mjs` e `src/admin.mjs`.
 - `run_worker_first` força o Worker a interceptar as rotas configuradas; respostas dinâmicas recebem cabeçalhos em `SECURITY_HEADERS` e assets estáticos recebem a mesma política por `public/_headers`.
 - Backend e frontend compartilham o **mesmo domínio** (sem CORS entre origens).
 - Configuração de bindings: `wrangler.jsonc`.
 
-Decisões arquiteturais documentadas (17 decisões em um único documento): `docs/DECISOES_TECNICAS.md`.
+Decisões arquiteturais documentadas (23 decisões em um único documento): `docs/DECISOES_TECNICAS.md`.
 
 ---
 
@@ -61,7 +61,7 @@ A fonte primária depende do tipo de pergunta:
 | Pergunta | Fonte primária | Fonte secundária |
 |---|---|---|
 | O que **ESTÁ** implementado? | Implementação executável/observável: `src/`, `public/`, `migrations/`, `test/`, `wrangler.jsonc`, workflows e estado Git quando aplicável | Documentação (para contexto) |
-| **POR QUE** uma decisão foi tomada? | `docs/DECISOES_TECNICAS.md` (17 decisões arquiteturais documentadas) | `docs/DOCUMENTACAO_TECNICA.md` (seção 14) |
+| **POR QUE** uma decisão foi tomada? | `docs/DECISOES_TECNICAS.md` (23 decisões arquiteturais documentadas) | `docs/DOCUMENTACAO_TECNICA.md` (seção 14) |
 | O que **SERÁ** feito? | `docs/ROADMAP_EVOLUCAO.md` (intenção futura, não implementação) | — |
 | **ONDE ESTAMOS** operacionalmente? | `docs/HANDOFF.md` (validado contra Git/workspace quando necessário) | Estado Git ao vivo |
 | **COMO** uma IA deve trabalhar? | Este `docs/AI_CONTEXT.md` e `CONTRIBUTING.md` | `docs/CONTEXTO_PROJETO.md` |
@@ -153,11 +153,11 @@ Fluxo oficial (em `CONTRIBUTING.md`):
 ## 9. Banco de dados
 
 - **Cloudflare D1** (`lensclick-db`), binding `DB`.
-- **15 tabelas:** `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`.
+- **16 tabelas:** `users`, `sessions`, `password_reset_tokens`, `email_verification_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`.
 - **PRAGMA foreign_keys=ON**; FKs com `ON DELETE CASCADE`.
 - **Statements preparados** com `.bind()` — nunca concatene SQL.
-- **Migrações** em `migrations/` (`0001`–`0010`), imutáveis. Nova alteração = `0011_*.sql`.
-- **`db/schema.ts` está sincronizado** na versão 10 e lista as 15 tabelas das migrações `0001`–`0010`. **As migrações continuam sendo a fonte de verdade.**
+- **Migrações** em `migrations/` (`0001`–`0013`), imutáveis. Nova alteração = `0014_*.sql`.
+- **`db/schema.ts` está sincronizado** na versão 13 e lista as 16 tabelas das migrações `0001`–`0013`. **As migrações continuam sendo a fonte de verdade.**
 - **Índices** em colunas de leitura frequente para reduzir consumo do plano gratuito.
 
 Modelo detalhado (MER/DER/dicionário): `docs/DOCUMENTACAO_TECNICA.md` seção 8.
@@ -240,9 +240,9 @@ Use o agente adequado à natureza da tarefa. Para mudanças transversais, comece
 
 Pontos que exigem atenção especial ou estão em débito técnico conhecido:
 
-- **Sincronia do catálogo de schema** — `db/schema.ts` está alinhado às migrações `0001`–`0010`; mudanças futuras devem atualizar o catálogo no mesmo PR, preservando as **migrações** como fonte de verdade.
+- **Sincronia do catálogo de schema** — `db/schema.ts` está alinhado às migrações `0001`–`0013`; mudanças futuras devem atualizar o catálogo no mesmo PR, preservando as **migrações** como fonte de verdade.
 - **Helpers compartilhados permanecem em `src/worker.mjs`** — a iniciativa 4.2 extraiu todos os handlers de domínio (blocos legados removidos no PR #82); o worker mantém formatters, sessão, rate limiting, cache de edge e SSR como ponto de composição.
-- **Aliases visuais legados** (`--accent-1`, `--text`, `--radius`, `--shadow`) — devem ser migrados para `--lc-*`.
+- **Aliases visuais legados** (`--accent-2`, `--bg-*`, `--muted` etc.) — o lote principal (`--accent-1`, `--text`, `--radius`, `--shadow`) foi migrado para `--lc-*` na 5.7; o restante segue como débito documentado.
 - **Termos de Uso e Política de Privacidade** — pendentes de revisão institucional antes de publicação comercial.
 - **Auth git remoto no ambiente Windows** — pode estar indisponível; comandos git sensíveis podem precisar do usuário.
 
