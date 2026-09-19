@@ -2,9 +2,9 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 19 de setembro de 2026, com a base `main` em `6ec4631` (PR #117).
+> **Data de referência:** 19 de setembro de 2026, com a iniciativa 5.8 em desenvolvimento na branch `feat/5-8-product-presence`, baseada na `main` após a PR #118.
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, as iniciativas 5.1, 5.2, 5.3, 5.4, 5.6 e 5.7 estão concluídas. A 5.5 está parcial: 5.5.a (exportação LGPD) concluída e 5.5.b (revisão legal formal) pendente por ser atividade externa. A próxima iniciativa de código é a **5.8 — Produto e presença digital**.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, as iniciativas 5.1, 5.2, 5.3, 5.4, 5.6 e 5.7 estão concluídas. A 5.5 está parcial: 5.5.a (exportação LGPD) concluída e 5.5.b (revisão legal formal) pendente por ser atividade externa. A iniciativa de código em andamento é a **5.8 — Produto e presença digital**; 5.8.a e 5.8.b estão implementadas nesta branch e 5.8.c depende de domínio/DNS.
 
 ---
 
@@ -53,11 +53,11 @@
 
 ### Tabelas D1 (15)
 
-`users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`.
+`users`, `sessions`, `password_reset_tokens`, `email_verification_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`.
 
-### Migrações publicadas (12)
+### Migrações publicadas (13)
 
-`0001_initial.sql` … `0010_monitor_minute_buckets.sql`, `0011_email_verification.sql`, `0012_admin_role.sql`.
+`0001_initial.sql` … `0010_monitor_minute_buckets.sql`, `0011_email_verification.sql`, `0012_admin_role.sql`, `0013_portfolio_cover_category.sql`.
 
 > ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0013_*.sql` para qualquer alteração de schema.
 
@@ -88,7 +88,7 @@ A iniciativa 5.1 está em entrega documental; não há funcionalidade de produto
 - **Upload de foto de perfil** — armazenamento em R2 (bucket privado).
 - **Exclusão definitiva da conta** — com confirmação e limpeza de dados.
 - **Perfil profissional público** (`public/fotografo.html`) — `professional_profiles`.
-- **Portfólio** — até 12 itens por fotógrafo, imagens em R2 (`portfolio_items`).
+- **Portfólio** — até 12 itens por fotógrafo, imagens em R2 (`portfolio_items`), com legenda, descrição alternativa, categoria e uma capa opcional.
 - **Página pública do fotógrafo** — exibe perfil + portfólio.
 - **Busca** (`public/busca.html`) — filtros por cidade/estado, preservação de cidade ao trocar estado.
 - **Contato** — formulário com `contact_messages`.
