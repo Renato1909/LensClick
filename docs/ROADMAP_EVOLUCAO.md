@@ -39,7 +39,7 @@
 9. **Ordem recomendada**: **2a** - protege as refatoracoes subsequentes e habilita a extracao do roteador no marco de transicao entre Fase 1 e Fase 2.
 10. **Subtarefas**:
     - 1.2.a: Cobertura de testes por rota (caminho feliz + erro + validacao de entrada).
-    - 1.2.b: Testes de contrato por rota; fixtures alinhadas as migrations 0001-0004.
+    - 1.2.b: Testes de contrato por rota; fixtures alinhadas as migrations 0001-0012.
 
 ### 1.3 Migracao de rate limiting para Cloudflare Rate Limiting Rules
 
