@@ -966,6 +966,7 @@ O único workflow validava sem publicar; deploys manuais via `wrangler deploy` v
 | 20 | Moderação administrativa de avaliações e conversas (5.4.c) | Ativa |
 | 21 | Exportação de dados do titular (5.5.a) | Ativa |
 | 22 | Entrega automatizada com preview e deploy (5.6) | Ativa |
+| 23 | Qualidade com tokens únicos, lint e e2e em navegador real (5.7) | Ativa |
 
 ---
 

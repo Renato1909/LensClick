@@ -11,7 +11,9 @@
     "predev": "npm run db:migrate:local",
     "dev": "wrangler dev --local --port 4174",
     "check": "wrangler deploy --dry-run --outdir dist",
+    "lint": "node scripts/lint.mjs",
     "test:smoke": "node scripts/http-smoke.mjs",
+    "test:e2e": "playwright test",
     "test": "node --test"
   },
   "engines": {
@@ -22,6 +24,7 @@
     "workerd@1.20260730.1": true
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "wrangler": "^4.0.0"
   }
 }

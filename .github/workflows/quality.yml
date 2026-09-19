@@ -38,6 +38,9 @@ jobs:
       - name: Executar testes automatizados
         run: npm test
 
+      - name: Executar o lint do frontend
+        run: npm run lint
+
       - name: Validar a configuração do Worker
         run: npm run check
 
@@ -82,6 +85,12 @@ jobs:
 
       - name: Executar o smoke contra o preview
         run: npm run test:smoke
+
+      - name: Executar os testes de navegador contra o preview
+        run: |
+          set -euo pipefail
+          npx playwright install --with-deps chromium
+          npm run test:e2e
 
       - name: Encerrar o Worker local
         if: always()
