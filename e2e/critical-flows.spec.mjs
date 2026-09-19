@@ -70,6 +70,10 @@ test('publicacao do perfil profissional pelo navegador', async ({ page }) => {
   await expect(page.locator('#profileMsg')).not.toBeHidden({ timeout: 15_000 });
   await page.reload();
   await expect(page.locator('#professionalForm')).not.toHaveAttribute('aria-busy', 'true', { timeout: 15_000 });
+  // Em runners lentos a seção só aparece após o carregamento assíncrono do
+  // perfil; sem esta espera o preenchimento estoura o timeout do teste.
+  await expect(page.locator('#professionalSection')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('#professionalBio')).toBeVisible({ timeout: 15_000 });
 
   await page.fill(
     '#professionalBio',
@@ -78,13 +82,15 @@ test('publicacao do perfil profissional pelo navegador', async ({ page }) => {
   const weddingSpecialty = page.locator('input[name="specialties"][value="wedding"]');
   if (!(await weddingSpecialty.isChecked())) await checkViaLabel(page, 'input[name="specialties"][value="wedding"]');
   await page.click('button[data-onboarding-step="2"]');
-  await expect(page.locator('[data-onboarding-panel="2"]')).toBeVisible();
+  await expect(page.locator('[data-onboarding-panel="2"]').first()).toBeVisible();
   await page.fill('#professionalCity', 'Sao Paulo');
   await page.fill('#professionalState', 'SP');
   await page.click('button[data-onboarding-step="3"]');
+  await expect(page.locator('[data-onboarding-panel="3"]').first()).toBeVisible();
   await page.fill('#professionalEmail', email);
   await checkViaLabel(page, '#professionalShowEmail');
   await page.click('button[data-onboarding-step="4"]');
+  await expect(page.locator('[data-onboarding-panel="4"]').first()).toBeVisible();
   await checkViaLabel(page, '#professionalPublished');
   await page.click('#saveProfessionalProfile');
   await expect(page.locator('#professionalMsg')).not.toBeHidden({ timeout: 15_000 });
