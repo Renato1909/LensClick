@@ -739,7 +739,7 @@ O projeto preserva a base original e reduz dependencias. A troca e uma maior res
 
 ### 14.4 Migracoes versionadas
 
-O banco nao e criado manualmente em producao. `migrations/0001_initial.sql` representa a base, `0002_password_reset.sql` adiciona recuperacao, `0003_professional_profiles.sql` adiciona o perfil profissional e `0004_portfolio_items.sql` adiciona o portfolio. Mudancas futuras devem criar novos arquivos, nunca editar silenciosamente um banco publicado.
+O banco nao e criado manualmente em producao. `migrations/0001_initial.sql` representa a base; `0002` adiciona recuperação de senha; `0003` perfil profissional; `0004` portfolio; `0007` avaliações; `0008` conversas; `0009`/`0010` observabilidade; `0011` verificação de e-mail; `0012` papel administrativo. As migrações publicadas são imutáveis. Mudancas futuras devem criar novos arquivos, nunca editar silenciosamente um banco publicado.
 
 ### 14.5 R2 privado
 
@@ -747,14 +747,21 @@ A privacidade tem prioridade sobre uma URL publica simples. A foto privada passa
 
 ## 15. Limitacoes e roadmap futuro
 
-### Prioridade alta
+### Entregas recentes da Fase 5
 
-- Busca real por cidade, especialidade, preco e disponibilidade.
-- Verificacao de e-mail.
-- Capa destacada e categorias internas para o portfolio.
-- Exportacao de dados pelo usuario.
-- Painel administrativo protegido por papel real.
-- Revisao juridica da politica e dos termos.
+- Verificação de e-mail em modo de aviso (5.4.a).
+- Papel administrativo e painel de moderação (5.4.b/c).
+- Exportação de dados do titular (5.5.a).
+- Preview, smoke e deploy automatizados (5.6), com preflight de permissões do token Cloudflare (5.6 correção operacional).
+- Tokens `--lc-*`, lint e E2E em navegador real (5.7), incluindo a correção da corrida de carregamento do perfil profissional no PR #117.
+
+### Pendências atuais
+
+- 5.5.b: revisão legal formal dos Termos de Uso e da Política de Privacidade, externa ao código e condição para publicação comercial.
+- 5.8.a: capa destacada e categorias internas para o portfolio.
+- 5.8.b: Open Graph e JSON-LD nas páginas públicas que não são SSR.
+- 5.8.c: domínio próprio, DNS e remetente Brevo no domínio.
+- 2FA permanece fora do escopo atual.
 
 ### Prioridade media
 

@@ -2,7 +2,7 @@
 
 > **Premissa**: evoluir sem quebrar. Cada iniciativa e aditiva e reversivel. Nenhuma recomenda reescrita completa - o monolito atual e simples, testavel e adequado ao estadio do produto.
 >
-> **Arquitetura atual**: Worker unico Cloudflare (`src/worker.mjs` como ponto de composicao) com catalogo e despacho declarativos em `src/router.mjs` (37 rotas catalogadas) e handlers extraidos por dominio (`src/auth.mjs`, `src/photographers.mjs`, `src/account.mjs`, `src/account-security.mjs`, `src/portfolio.mjs`, `src/public-input.mjs`, `src/monitoring.mjs`) - D1 `lensclick-db` (15 tabelas: `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`) - R2 `lensclick-profile-images` (bucket privado) - Frontend HTML/JS/CSS vanilla - suite automatizada de testes (`node --test`; executar `npm test` para consultar o total atual) - Rate limiting hibrido (escudo de rajada nativo na edge + politicas longas autoritativas no D1) - `GET /api/health` para Worker/D1 - Sessoes por cookie (PBKDF2-SHA256, 100k iteracoes, maximo de 5 ativas por usuario) - HSTS sem `preload` e CSP sem `'unsafe-inline'` em `script-src` - variantes de imagem on-demand via binding `IMAGES` (Decisao 15) - sitemap/robots dinamicos - cache de edge de 60 segundos para descoberta publica - alertas in-worker de disponibilidade, P95 e taxa de 5xx (cron a cada 5 min) - Open Graph e JSON-LD presentes apenas nos perfis SSR (demais paginas tratadas na 5.8).
+> **Arquitetura atual**: Worker unico Cloudflare (`src/worker.mjs` como ponto de composicao) com catalogo e despacho declarativos em `src/router.mjs` (37 rotas catalogadas) e handlers extraidos por dominio (`src/auth.mjs`, `src/photographers.mjs`, `src/account.mjs`, `src/account-security.mjs`, `src/portfolio.mjs`, `src/public-input.mjs`, `src/monitoring.mjs`, `src/admin.mjs`) - D1 `lensclick-db` (16 tabelas: `users`, `sessions`, `password_reset_tokens`, `email_verification_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`) - R2 `lensclick-profile-images` (bucket privado) - Frontend HTML/JS/CSS vanilla - suite automatizada de testes (`node --test`; executar `npm test` para consultar o total atual) - Rate limiting hibrido (escudo de rajada nativo na edge + politicas longas autoritativas no D1) - `GET /api/health` para Worker/D1 - Sessoes por cookie (PBKDF2-SHA256, 100k iteracoes, maximo de 5 ativas por usuario) - HSTS sem `preload` e CSP sem `'unsafe-inline'` em `script-src` - variantes de imagem on-demand via binding `IMAGES` (Decisao 15) - sitemap/robots dinamicos - cache de edge de 60 segundos para descoberta publica - alertas in-worker de disponibilidade, P95 e taxa de 5xx (cron a cada 5 min) - Open Graph e JSON-LD presentes apenas nos perfis SSR (demais paginas tratadas na 5.8).
 >
 > **Agentes disponiveis**: Arquiteto de Software, Engenheiro Frontend, Engenheiro Backend, Engenheiro de Banco de Dados, Engenheiro DevOps, Engenheiro de QA, Designer, Especialista em Seguranca, Especialista em SEO e Performance, Especialista em Marketing para Fotografia, Revisor de Codigo.
 
@@ -39,7 +39,7 @@
 9. **Ordem recomendada**: **2a** - protege as refatoracoes subsequentes e habilita a extracao do roteador no marco de transicao entre Fase 1 e Fase 2.
 10. **Subtarefas**:
     - 1.2.a: Cobertura de testes por rota (caminho feliz + erro + validacao de entrada).
-    - 1.2.b: Testes de contrato por rota; fixtures alinhadas as migrations 0001-0004.
+    - 1.2.b: Testes de contrato por rota; fixtures alinhadas as migrations 0001-0012.
 
 ### 1.3 Migracao de rate limiting para Cloudflare Rate Limiting Rules
 
@@ -395,7 +395,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 5.7 Qualidade e debitos tecnicos
 
-> **Estado:** concluída. Aliases `--accent-1`, `--text`, `--radius`, `--shadow`, `--shadow-soft` e `--card-bg` migrados para tokens `--lc-*` e removidos do `:root`; `npm run lint` (aliases, inline, localStorage, sintaxe) ligado ao CI e ao gate de deploy; `npm run test:e2e` (Playwright, chromium) cobre cadastro, publicação de perfil e envio de mensagem contra o preview.
+> **Estado:** concluída. A iniciativa 5.7 foi entregue pelos PRs #116 e #117: tokens `--lc-*`, lint, E2E em Chromium no preview e correção da condição de corrida do carregamento do perfil profissional.
 
 1. **Nome da iniciativa**: Aliases visuais legados, lint e testes em navegador real.
 2. **Objetivo**: Reduzir a divida tecnica declarada na secao 15 (Hotspots) do `docs/AI_CONTEXT.md`.
@@ -409,11 +409,12 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 10. **Subtarefas**:
     - 5.7.a (concluída): usos de `--accent-1`, `--text`, `--radius`, `--shadow`, `--shadow-soft` e `--card-bg` (este último sem nenhum uso) migrados para `--lc-color-brand-primary`, `--lc-color-text`, `--lc-radius-lg`, `--lc-shadow-brand`, `--lc-shadow-sm`, com declarações removidas do `:root`. Compat restantes (`--accent-2`, `--bg-*`, `--muted` etc.) ficam como débito documentado.
     - 5.7.b (concluída): `scripts/lint.mjs` (`npm run lint`) verifica aliases, scripts inline, conta no localStorage e sintaxe JS; incluído no workflow "Qualidade" e no gate do deploy; auto-coberto por `test/lint.test.mjs`.
-    - 5.7.c (concluída): `npm run test:e2e` (Playwright + chromium, `e2e/critical-flows.spec.mjs`) cobre cadastro, publicação de perfil e envio de mensagem contra o preview local; executa no CI após o smoke.
+    - 5.7.c (concluída): `npm run test:e2e` (Playwright + Chromium, `e2e/critical-flows.spec.mjs`) cobre cadastro, publicação de perfil e envio de mensagem contra o preview local; executa no CI após o smoke.
+    - 5.7.d (concluída): PR #117 tornou o formulário profissional `inert` durante o carregamento e fez o E2E aguardar `aria-busy=false` e a visibilidade da etapa seguinte, eliminando a corrida identificada na primeira execução real do CI.
 
 ### 5.8 Produto e presenca digital
 
-> **Estado:** não iniciada. Itens de menor risco, que podem ser antecipados conforme a prioridade de produto.
+> **Estado:** não iniciada. É a próxima iniciativa de código após a conclusão da 5.7. A 5.5 permanece parcial por depender de revisão legal externa.
 
 1. **Nome da iniciativa**: Capa e categorias no portfolio, metadados sociais nas demais paginas e dominio proprio.
 2. **Objetivo**: Fechar lacunas de produto e de descoberta identificadas apos a conclusao da Fase 4.
@@ -450,10 +451,10 @@ Estas recomendacoes nao sao iniciativas pontuais, mas praticas continuas que dev
 ### CI/CD
 
 - **PRs obrigatorios**: nenhuma alteracao em `main` sem PR. Ja praticado - manter como regra inegociavel.
-- **Validacoes automaticas no PR**: `npm test` (14 arquivos de teste), lint, verificacao de tipos/estrutura e build devem passar antes do merge.
+- **Validacoes automaticas no PR**: `npm test`, `npm run lint`, `npm run check` e, no preview, `npm run test:smoke` + `npm run test:e2e` devem passar antes do merge.
 - **Testes antes do deploy**: nenhuma iniciativa avanca para producao sem a suite de testes verde (1.2 e pre-requisito transversal).
 - **Deploy automatizado Cloudflare**: manter o fluxo `branch -> PR -> CI -> merge -> deploy via Wrangler/GitHub Actions`. Evitar deploys manuais via `wrangler deploy` em `main`.
-- **Ambiente de preview**: usar `wrangler pages dev` ou ambiente de preview do Cloudflare para validar PRs antes do merge em iniciativas de alto risco (3.1, 3.3, 4.3).
+- **Ambiente de preview**: o workflow `Qualidade` já sobe `wrangler dev --local`, migra D1, executa smoke HTTP e Playwright/Chromium antes do merge.
 
 **Agentes envolvidos**: Engenheiro DevOps (Responsavel), Revisor de Codigo (Aprovador), Engenheiro de QA (Validacao), Arquiteto de Software (Aprovador arquitetural).
 

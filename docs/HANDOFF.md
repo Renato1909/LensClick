@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 18 de setembro de 2026, com a base `main` em `33ad80f`.
+> **Data de referência:** 19 de setembro de 2026, com a base `main` em `6ec4631` (PR #117).
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, as iniciativas 5.1 (documentação), 5.2 (backup e restauração), 5.3 (segurança transversal) e 5.4 (verificação de e-mail e papéis de autorização) estão concluídas. A próxima iniciativa é a 5.5, de portabilidade de dados do titular (LGPD). Permanece como condição para publicação comercial a revisão legal formal de Termos de Uso e Política de Privacidade.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, as iniciativas 5.1, 5.2, 5.3, 5.4, 5.6 e 5.7 estão concluídas. A 5.5 está parcial: 5.5.a (exportação LGPD) concluída e 5.5.b (revisão legal formal) pendente por ser atividade externa. A próxima iniciativa de código é a **5.8 — Produto e presença digital**.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Base da entrega:** `main` → commit `33ad80f` — "feat(admin): moderation panel for reviews and conversations (5.4.c)" (#111).
+- **Base da entrega:** `main` → commit `6ec4631` — "fix(e2e): prevent professional profile loading race" (#117).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -20,7 +20,7 @@
   - `allow_force_pushes`: false; `allow_deletions`: false.
   - `required_conversation_resolution`: true.
   - Revisões aprovadoras exigidas: 0 (mas o fluxo de PR é obrigatório).
-- **CI:** workflow "Qualidade" — `npm ci` → `npm test` → `npm run check` (deploy dry-run). Concorrência cancela execuções antigas do mesmo PR/branch. Timeout de 10 min.
+- **CI:** workflow "Qualidade" executa instalação, `npm test`, lint, validação do Worker, preview local com D1, smoke HTTP e Playwright/Chromium. O deploy de produção é automatizado por `.github/workflows/deploy.yml` após push em `main`.
 - **Ambiente de produção:** Cloudflare Worker em https://lensclick.renato-aparecido-business.workers.dev.
 - **Repositório:** https://github.com/Renato1909/LensClick.git.
 
@@ -55,11 +55,11 @@
 
 `users`, `sessions`, `password_reset_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`.
 
-### Migrações publicadas (10)
+### Migrações publicadas (12)
 
-`0001_initial.sql`, `0002_password_reset.sql`, `0003_professional_profiles.sql`, `0004_portfolio_items.sql`, `0005_search_indexes.sql`, `0006_search_price_radius_indexes.sql`, `0007_reviews_and_reputation.sql`, `0008_conversations_and_messages.sql`, `0009_monitor_state.sql`, `0010_monitor_minute_buckets.sql`.
+`0001_initial.sql` … `0010_monitor_minute_buckets.sql`, `0011_email_verification.sql`, `0012_admin_role.sql`.
 
-> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0011_*.sql` para qualquer alteração de schema.
+> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0013_*.sql` para qualquer alteração de schema.
 
 ---
 
@@ -103,10 +103,13 @@ A iniciativa 5.1 está em entrega documental; não há funcionalidade de produto
 - **Header redesign** — botão de busca responsivo.
 - **Redesign editorial** — textura de fundo premium.
 
-### Não implementado (gaps identificados)
+### Não implementado / pendente
 
-- Open Graph e JSON-LD presentes apenas nos perfis públicos SSR (Fase 3.2); as demais páginas seguem sem metadados (iniciativa 5.8).
-- Sem 2FA / verificação de e-mail.
+- 5.8.a: capa destacada e categoria no portfolio.
+- 5.8.b: Open Graph e JSON-LD nas páginas públicas que não são SSR.
+- 5.8.c: domínio próprio, DNS e remetente Brevo no domínio.
+- 5.5.b: revisão legal formal dos Termos de Uso e da Política de Privacidade.
+- 2FA continua fora do escopo atual.
 - O rate limiting permanece deliberadamente híbrido: escudo de rajada nativo na edge e políticas longas autoritativas no D1.
 - A suíte de contratos cobre os 22 padrões de rota e os 25 contratos HTTP catalogados; testes ponta a ponta com serviços reais permanecem fora do escopo atual.
 - O endpoint `GET /api/health` verifica Worker e D1; o R2 é monitorado pelas rotas reais de imagem para evitar operações artificiais de armazenamento.
@@ -218,6 +221,23 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #98 | `128c295` | fix: enviar backup do D1 ao R2 remoto |
 | #99 | `87f11db` | fix: tornar retencao do backup robusta |
 | #100 | `dcfb5fd` | docs: registra backup remoto validado |
+| #101 | — | docs: formaliza backup do D1 como Decisão 16 (5.2.c) |
+| #102 | `0c3253b` | docs: conclude phase 5.1 consolidation |
+| #103 | `e906b14` | docs: record isolated D1 restore validation |
+| #104 | `8305f38` | security: enforce HSTS and strict script CSP |
+| #105 | `546b132` | security: limit active account sessions |
+| #106 | `24ed0ad` | docs: conclude phase 5.3 security hardening |
+| #107 | `ae57a98` | docs: fix HANDOFF base to 62857da with PR 106 |
+| #108 | `3a1a3b5` | feat(auth): email verification with warn-only login (5.4.a) |
+| #109 | `bf430d5` | feat(auth): admin role with requireAdmin guard (5.4.b) |
+| #110 | `5ee3f1e` | docs: record 5.4.a and 5.4.b production rollout |
+| #111 | `1ed173d` | feat(admin): moderation panel for reviews and conversations (5.4.c) |
+| #112 | `192d4c3` | docs: record 5.4.c production rollout and close Phase 5.4 |
+| #113 | `b59a681` | feat(account): titular data export for LGPD portability (5.5.a) |
+| #114 | `8dd9e66` | feat(ci): local preview with smoke and automated production deploy (5.6) |
+| #115 | `6c02df8` | fix(ci): fail fast when token lacks Workers deploy access |
+| #116 | `7b0f228` | feat(quality): single-source tokens, frontend lint and real-browser e2e (5.7) |
+| #117 | `775eafa` | fix(e2e): prevent professional profile loading race |
 | #101 | `bbd4c34` | docs: formaliza backup do D1 como Decisão 16 (5.2.c) |
 | #102 | `7ee0870` | docs: conclude phase 5.1 consolidation |
 | #103 | `d1c984d` | docs: conclude isolated D1 restore validation |
@@ -431,21 +451,19 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 | 18 | 5.2 Backup e restauração do D1 — concluída | Média |
 | 19 | 5.3 Endurecimento transversal de segurança — concluída | Média |
 | 20 | 5.4 Verificação de e-mail e papéis de autorização — concluída | Alta |
-| 21 | 5.5 Portabilidade de dados do titular (LGPD) | Baixa |
-| 22 | 5.6 Automação da entrega | Média |
-| 23 | 5.7 Qualidade e débitos técnicos | Média |
-| 24 | 5.8 Produto e presença digital | Média |
+| 21 | 5.5 Portabilidade de dados do titular (LGPD) | Baixa | **Parcial** |
+| 22 | 5.6 Automação da entrega | Média | **Concluída** |
+| 23 | 5.7 Qualidade e débitos técnicos | Média | **Concluída** |
+| 24 | 5.8 Produto e presença digital | Média | **Não iniciada** |
 
 ---
 
 ## 8. Ordem recomendada de execução
 
 ```
-1. [5.5] Portabilidade de dados (LGPD) + revisão legal formal antes da publicação comercial ← próximo.
-2. [5.5] Portabilidade de dados (LGPD) + revisão legal formal antes da publicação comercial.
-3. [5.6] Automação da entrega — dependência de backup e restore atendida pela 5.2.
-4. [5.7] Qualidade: aliases --lc-*, lint, testes em navegador real.
-5. [5.8] Produto e presença digital — capa do portfólio, OG/JSON-LD, domínio próprio.
+1. [5.5.b] Revisão legal formal — pendência externa e condição para publicação comercial.
+2. [5.8] Produto e presença digital — próxima iniciativa de código.
+3. Evoluções posteriores devem ser priorizadas conforme produto, segurança e métricas.
 ```
 
 **Justificativa da ordem:**
@@ -462,7 +480,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 - A consolidação documental 5.1 foi concluída: `db/schema.ts` está na versão 12 com 16 tabelas, e as fontes permanentes refletem as decisões e o progresso do projeto.
 - A iniciativa 5.2 foi concluída integralmente: backup remoto, política formal e restore isolado validados. A dependência crítica da 5.6 está atendida.
 - A iniciativa 5.3 foi concluída: HSTS e CSP foram validados nas respostas públicas, e o teto de cinco sessões foi coberto por testes de isolamento entre usuários.
-- As iniciativas 5.4.a (verificação de e-mail, Decisão 18), 5.4.b (papel administrativo, Decisão 19) e 5.4.c (painel de moderação, Decisão 20) foram concluídas e publicadas. A Fase 5.4 está encerrada; a próxima é a 5.5 (portabilidade LGPD + revisão legal formal).
+- As iniciativas 5.4.a (verificação de e-mail, Decisão 18), 5.4.b (papel administrativo, Decisão 19) e 5.4.c (painel de moderação, Decisão 20) foram concluídas e publicadas. A 5.5.a foi concluída pelo PR #113; a 5.5.b continua pendente por ser revisão legal externa. A 5.6 foi concluída pelos PRs #114/#115 e a 5.7 pelos PRs #116/#117. Portanto, a próxima iniciativa de código é a 5.8.
 
 ---
 
@@ -512,4 +530,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 18 de setembro de 2026, com base `main` em `33ad80f` (Fase 5.4 encerrada pelo PR #111, publicado); a próxima iniciativa é a 5.5.
+**Última atualização deste handoff:** 19 de setembro de 2026, com base `main` em `6ec4631` (PR #117); 5.6 e 5.7 concluídas, 5.5 parcial e 5.8 como próxima iniciativa de código.
