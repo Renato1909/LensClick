@@ -13,7 +13,7 @@ test('paginas publicas estaticas recebem metadados sociais e JSON-LD', async () 
   assert.match(body, /rel="canonical"/);
   assert.match(body, /property="og:title"/);
   assert.match(body, /property="og:description"/);
-  assert.match(body, /application/ld+json/);
+  assert.match(body, /application\/ld\+json/);
   assert.match(body, /"@type":"WebSite"/);
   assert.match(body, /"@type":"Organization"/);
 });
