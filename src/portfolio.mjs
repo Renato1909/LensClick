@@ -34,7 +34,7 @@ export function createPortfolioHandlers({ json, cleanText, authenticatedUser, is
     await env.PROFILE_IMAGES.put(objectKey, itemUpload.bytes, { httpMetadata: { contentType: itemUpload.contentType } });
     try {
       const result = await env.DB.prepare('INSERT INTO portfolio_items (user_id, object_key, caption, alt_text, position, category) VALUES (?, ?, ?, ?, ?, ?)').bind(current.id, objectKey, itemUpload.caption, itemUpload.altText, count, itemUpload.category).run();
-      const item = await env.DB.prepare('SELECT id, caption, alt_text, position, updated_at FROM portfolio_items WHERE id = ? AND user_id = ?').bind(Number(result.meta.last_row_id), current.id).first();
+      const item = await env.DB.prepare('SELECT id, caption, alt_text, position, is_cover, category, updated_at FROM portfolio_items WHERE id = ? AND user_id = ?').bind(Number(result.meta.last_row_id), current.id).first();
       return json(201, { item: portfolioItem(item), message: 'Imagem adicionada ao portfolio.' });
     } catch (error) {
       await env.PROFILE_IMAGES.delete(objectKey);
@@ -63,7 +63,7 @@ export function createPortfolioHandlers({ json, cleanText, authenticatedUser, is
       return env.DB.prepare('UPDATE portfolio_items SET caption = ?, alt_text = ?, position = ?, is_cover = ?, category = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?').bind(cleanText(item.caption, 240), altText, position, item.isCover === true ? 1 : 0, category, Number(item.id), current.id);
     })];
     if (statements.length) await env.DB.batch(statements);
-    const portfolio = await env.DB.prepare('SELECT id, caption, alt_text, position, updated_at FROM portfolio_items WHERE user_id = ? ORDER BY position, id').bind(current.id).all();
+    const portfolio = await env.DB.prepare('SELECT id, caption, alt_text, position, is_cover, category, updated_at FROM portfolio_items WHERE user_id = ? ORDER BY position, id').bind(current.id).all();
     return json(200, { portfolio: portfolio.results.map((item) => portfolioItem(item)), message: 'Portfolio atualizado.' });
   }
 
