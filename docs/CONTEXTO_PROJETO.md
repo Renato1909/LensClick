@@ -45,7 +45,7 @@ O produto prioriza:
 | Criptografia | Web Crypto API (PBKDF2-SHA-256, 100k iterações) |
 | Dev tooling | Wrangler ^4.0.0, Node.js >=22.13.0 |
 | Testes | Node.js test runner (`node --test`) — execute `npm test` para consultar o estado atual da suíte |
-| CI/CD | GitHub Actions (workflow "Qualidade") |
+| CI/CD | GitHub Actions (workflow "Qualidade" + deploy automatizado) |
 | Versionamento | Git (branch `main` protegida, fast-forward only) |
 
 ---
@@ -95,17 +95,17 @@ LensClick/
 ├── .github/
 │   ├── agents/              # 11 agentes Copilot (.agent.md)
 │   ├── workflows/quality.yml
+│   ├── workflows/deploy.yml
 │   └── pull_request_template.md
 ├── data/                    # D1 local (NÃO commitar)
-├── db/schema.ts             # Schema TypeScript (DESATUALIZADO — ver seção 13)
+├── db/schema.ts             # Catálogo TypeScript do schema (versão 12)
 ├── docs/
 │   ├── DOCUMENTACAO_TECNICA.md   # Documentação técnica completa
 │   └── CONTEXTO_PROJETO.md       # Este documento
 ├── migrations/             # Migrações SQL versionadas
-│   ├── 0001_initial.sql
-│   ├── 0002_password_reset.sql
-│   ├── 0003_professional_profiles.sql
-│   └── 0004_portfolio_items.sql
+│   ├── 0001_initial.sql ... 0010_monitor_minute_buckets.sql
+│   ├── 0011_email_verification.sql
+│   └── 0012_admin_role.sql
 ├── public/                 # Frontend (assets estáticos)
 │   ├── index.html          # Landing
 │   ├── cadastro.html       # Cadastro
@@ -383,8 +383,8 @@ O estado atual de branches, branches órfãs, PRs e pendências Git é mantido e
 3. **Sem verificação de e-mail** — cadastro não confirma o e-mail. Iniciativa 5.4.
 4. **Rate limit híbrido** — escudo de rajada nativo na edge (PR #30) combinado a políticas longas no D1; atende o volume atual.
 5. **Termos/política precisam de revisão jurídica** — divulgações LGPD de alta prioridade (PR #89), de média prioridade (PR #91) e cláusulas opcionais (PR #93) já publicadas; resta a revisão legal formal antes do uso comercial. Iniciativa 5.5.
-6. **Papéis não autorizam áreas** — `client`/`photographer` são dados de perfil; a autorização ocorre por propriedade do recurso. Um papel administrativo continua necessário para moderação e é risco latente. Iniciativa 5.4.
-7. **Aliases visuais legados** — `--accent-1`, `--text`, `--radius` e `--shadow` seguem em uso e devem migrar para os tokens `--lc-*`. Iniciativa 5.7.
+6. **Papéis não autorizam áreas** — `client`/`photographer` continuam sendo dados de perfil; a autorização administrativa agora usa `is_admin` + `requireAdmin` (5.4.b/c).
+7. **Aliases visuais legados** — os aliases principais foram migrados para `--lc-*` na 5.7; aliases residuais permanecem documentados como dívida técnica.
 ---
 
 ## 14. Próximos passos imediatos
