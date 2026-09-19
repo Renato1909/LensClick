@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 19 de setembro de 2026, com a iniciativa 5.8 em desenvolvimento na branch `feat/5-8-product-presence`, baseada na `main` após a PR #118.
+> **Data de referência:** 19 de setembro de 2026, com a base `main` em `eea0009` (PR #119 mergeado e publicado).
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, as iniciativas 5.1, 5.2, 5.3, 5.4, 5.6 e 5.7 estão concluídas. A 5.5 está parcial: 5.5.a (exportação LGPD) concluída e 5.5.b (revisão legal formal) pendente por ser atividade externa. A iniciativa de código em andamento é a **5.8 — Produto e presença digital**; 5.8.a e 5.8.b estão implementadas nesta branch e 5.8.c depende de domínio/DNS.
+> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, as iniciativas 5.1, 5.2, 5.3, 5.4, 5.6 e 5.7 estão concluídas. A 5.5 está parcial: 5.5.a (exportação LGPD) concluída e 5.5.b (revisão legal formal) pendente por ser atividade externa. A **5.8 — Produto e presença digital** está parcial: 5.8.a e 5.8.b concluídas e publicadas; resta a 5.8.c, que depende de domínio próprio, DNS e remetente Brevo (atividade externa).
 
 ---
 
 ## 1. Situação atual da main
 
-- **Base da entrega:** `main` → commit `6ec4631` — "fix(e2e): prevent professional profile loading race" (#117).
+- **Base da entrega:** `main` → commit `eea0009` — "feat: advance roadmap 5.8 product and digital presence" (#119).
 - **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -249,6 +249,14 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #109 | `91bd1b6` | feat(auth): admin role with requireAdmin guard (5.4.b) |
 | #110 | `7aff8ed` | docs: record 5.4.a and 5.4.b production rollout in HANDOFF |
 | #111 | `33ad80f` | feat(admin): moderation panel for reviews and conversations (5.4.c) |
+| #112 | `4a93058` | docs: record 5.4.c production rollout and close Phase 5.4 in HANDOFF |
+| #113 | `162bf44` | feat(account): titular data export for LGPD portability (5.5.a) |
+| #114 | `5bb5249` | feat(ci): local preview with smoke and automated production deploy (5.6) |
+| #115 | `630be7b` | fix(ci): fail fast when token lacks Workers deploy access |
+| #116 | `2214e75` | feat(quality): single-source tokens, frontend lint and real-browser e2e (5.7) |
+| #117 | `6ec4631` | fix(e2e): prevent professional profile loading race |
+| #118 | `02dd814` | docs: sync roadmap and project documentation after PR 117 |
+| #119 | `eea0009` | feat: advance roadmap 5.8 product and digital presence |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -454,7 +462,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 | 21 | 5.5 Portabilidade de dados do titular (LGPD) | Baixa | **Parcial** |
 | 22 | 5.6 Automação da entrega | Média | **Concluída** |
 | 23 | 5.7 Qualidade e débitos técnicos | Média | **Concluída** |
-| 24 | 5.8 Produto e presença digital | Média | **Não iniciada** |
+| 24 | 5.8 Produto e presença digital | Média | **Parcial (5.8.a e 5.8.b concluídas)** |
 
 ---
 
@@ -530,4 +538,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 19 de setembro de 2026, com base `main` em `6ec4631` (PR #117); 5.6 e 5.7 concluídas, 5.5 parcial e 5.8 como próxima iniciativa de código.
+**Última atualização deste handoff:** 19 de setembro de 2026, com base `main` em `eea0009` (PR #119); 5.6 e 5.7 concluídas, 5.5 parcial e 5.8 parcial (5.8.a e 5.8.b concluídas).

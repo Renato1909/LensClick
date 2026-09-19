@@ -18,6 +18,15 @@ async function api(request, method, path, data) {
   return { status: response.status(), body: await response.json().catch(() => null) };
 }
 
+// Marca checkboxes clicando no rótulo, como um usuário real: alguns
+// invólucros cobrem o input e interceptam o clique direto (flake do CI).
+async function checkViaLabel(page, inputSelector) {
+  const input = page.locator(inputSelector);
+  if (await input.isChecked()) return;
+  await page.locator(`label:has(${inputSelector})`).first().click();
+  await expect(input).toBeChecked({ timeout: 5_000 });
+}
+
 test('cadastro cria a conta pelo navegador e entra no perfil', async ({ page }) => {
   const email = uniqueEmail('e2e-cadastro');
   await page.goto('/cadastro.html');
@@ -26,7 +35,7 @@ test('cadastro cria a conta pelo navegador e entra no perfil', async ({ page }) 
   await page.fill('#signupPhone', '(11) 99999-9999');
   await page.fill('#signupPassword', PASSWORD);
   await page.fill('#signupConfirmPassword', PASSWORD);
-  await page.check('#signupConsent');
+  await checkViaLabel(page, '#signupConsent');
   await page.click('#signupForm button[type="submit"]');
   await page.waitForURL('**/perfil*', { timeout: 15_000 });
 
@@ -67,16 +76,16 @@ test('publicacao do perfil profissional pelo navegador', async ({ page }) => {
     'Fotografo de casamentos e ensaios externos ha mais de dez anos, com olhar documental e entrega pontual.'
   );
   const weddingSpecialty = page.locator('input[name="specialties"][value="wedding"]');
-  if (!(await weddingSpecialty.isChecked())) await weddingSpecialty.check({ force: true });
+  if (!(await weddingSpecialty.isChecked())) await checkViaLabel(page, 'input[name="specialties"][value="wedding"]');
   await page.click('button[data-onboarding-step="2"]');
   await expect(page.locator('[data-onboarding-panel="2"]')).toBeVisible();
   await page.fill('#professionalCity', 'Sao Paulo');
   await page.fill('#professionalState', 'SP');
   await page.click('button[data-onboarding-step="3"]');
   await page.fill('#professionalEmail', email);
-  await page.check('#professionalShowEmail', { force: true });
+  await checkViaLabel(page, '#professionalShowEmail');
   await page.click('button[data-onboarding-step="4"]');
-  await page.check('#professionalPublished', { force: true });
+  await checkViaLabel(page, '#professionalPublished');
   await page.click('#saveProfessionalProfile');
   await expect(page.locator('#professionalMsg')).not.toBeHidden({ timeout: 15_000 });
 
@@ -115,7 +124,7 @@ test('cliente envia mensagem ao fotografo pelo navegador', async ({ page }) => {
   await page.fill('#signupPhone', '(11) 96666-6666');
   await page.fill('#signupPassword', PASSWORD);
   await page.fill('#signupConfirmPassword', PASSWORD);
-  await page.check('#signupConsent');
+  await checkViaLabel(page, '#signupConsent');
   await page.click('#signupForm button[type="submit"]');
   await page.waitForURL('**/perfil*', { timeout: 15_000 });
 
