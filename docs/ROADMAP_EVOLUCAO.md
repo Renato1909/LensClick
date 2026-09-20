@@ -2,7 +2,7 @@
 
 > **Premissa**: evoluir sem quebrar. Cada iniciativa e aditiva e reversivel. Nenhuma recomenda reescrita completa - o monolito atual e simples, testavel e adequado ao estadio do produto.
 >
-> **Arquitetura atual**: Worker unico Cloudflare (`src/worker.mjs` como ponto de composicao) com catalogo e despacho declarativos em `src/router.mjs` (37 rotas catalogadas) e handlers extraidos por dominio (`src/auth.mjs`, `src/photographers.mjs`, `src/account.mjs`, `src/account-security.mjs`, `src/portfolio.mjs`, `src/public-input.mjs`, `src/monitoring.mjs`, `src/admin.mjs`) - D1 `lensclick-db` (16 tabelas: `users`, `sessions`, `password_reset_tokens`, `email_verification_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`) - R2 `lensclick-profile-images` (bucket privado) - Frontend HTML/JS/CSS vanilla - suite automatizada de testes (`node --test`; executar `npm test` para consultar o total atual) - Rate limiting hibrido (escudo de rajada nativo na edge + politicas longas autoritativas no D1) - `GET /api/health` para Worker/D1 - Sessoes por cookie (PBKDF2-SHA256, 100k iteracoes, maximo de 5 ativas por usuario) - HSTS sem `preload` e CSP sem `'unsafe-inline'` em `script-src` - variantes de imagem on-demand via binding `IMAGES` (Decisao 15) - sitemap/robots dinamicos - cache de edge de 60 segundos para descoberta publica - alertas in-worker de disponibilidade, P95 e taxa de 5xx (cron a cada 5 min) - Open Graph e JSON-LD presentes apenas nos perfis SSR (demais paginas tratadas na 5.8).
+> **Arquitetura atual**: Worker unico Cloudflare (`src/worker.mjs` como ponto de composicao) com catalogo e despacho declarativos em `src/router.mjs` (40 rotas e 45 contratos HTTP catalogados) e handlers extraidos por dominio (`src/auth.mjs`, `src/photographers.mjs`, `src/account.mjs`, `src/account-security.mjs`, `src/portfolio.mjs`, `src/public-input.mjs`, `src/monitoring.mjs`, `src/admin.mjs`) - D1 `lensclick-db` (16 tabelas) - R2 `lensclick-profile-images` (bucket privado) - Frontend HTML/JS/CSS vanilla - suite automatizada de testes (`node --test`; executar `npm test` para consultar o total atual) - Rate limiting hibrido - `GET /api/health` para Worker/D1 - sessoes web por cookie, com maximo de 5 ativas - HSTS sem `preload` e CSP sem `'unsafe-inline'` em `script-src` - variantes de imagem on-demand via binding `IMAGES` - sitemap/robots dinamicos - cache de edge de 60 segundos - alertas in-worker - Open Graph e JSON-LD nos perfis SSR e paginas publicas estaticas. Existe também um aplicativo Android nativo em Kotlin, desenvolvido no Android Studio, ainda fora deste repositório e sem auditoria de paridade ou pipeline de publicação documentado.
 >
 > **Agentes disponiveis**: Arquiteto de Software, Engenheiro Frontend, Engenheiro Backend, Engenheiro de Banco de Dados, Engenheiro DevOps, Engenheiro de QA, Designer, Especialista em Seguranca, Especialista em SEO e Performance, Especialista em Marketing para Fotografia, Revisor de Codigo.
 
@@ -432,6 +432,68 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ---
 
+## Fase 6 - Convergencia web/Android e lancamento verificavel
+
+> O plano operacional detalhado, os gates e os criterios de aceite estão em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`. A fase começa pela incorporação do projeto Kotlin; o repositório atual não contém seu código e não permite afirmar paridade, arquitetura ou prontidão de publicação.
+
+### 6.1 Fonte de verdade e diagnóstico do aplicativo Android
+
+> **Estado:** não iniciada; bloqueada até o projeto Android Studio ser disponibilizado.
+
+1. Versionar o código Kotlin e tornar o build reproduzível.
+2. Registrar `applicationId`, SDKs, arquitetura, dependências, variantes, testes e processo de execução.
+3. Decidir formalmente monorepo (`android/`) ou repositório próprio.
+4. Produzir `docs/MATRIZ_PARIDADE_ANDROID.md` cruzando recursos, telas, contratos da API, testes e diferenças.
+
+### 6.2 Contrato móvel seguro e paridade funcional
+
+> **Estado:** não iniciada; depende de 6.1.
+
+1. Definir autenticação nativa revogável e armazenamento seguro; o cookie same-origin da web não deve ser transplantado sem decisão arquitetural.
+2. Implementar as diferenças classificadas como paridade obrigatória ou experiência Android equivalente.
+3. Preservar uma única fonte de regras no Worker/D1/R2 e compatibilidade com versões antigas durante atualizações.
+4. Cobrir PT-BR/EN-US, acessibilidade, rede lenta/offline, erros e ciclo de vida Android.
+
+### 6.3 Autenticação em duas etapas multicliente
+
+> **Estado:** planejada; nenhuma implementação iniciada.
+
+1. Elaborar threat model e ADR comparando TOTP, passkeys/WebAuthn e códigos por e-mail.
+2. Projetar ativação, desafio, códigos de recuperação, dispositivo confiável, desativação, recuperação, rate limiting, auditoria e revogação de sessões.
+3. Implementar o mesmo estado de conta e política no backend, com experiências próprias para web e Android.
+4. Validar migração de usuários existentes e impedir exposição de segredos em logs, exportações e suporte administrativo.
+
+### 6.4 Validação integral web, API e Android
+
+> **Estado:** planejada; depende das implementações de 6.2 e 6.3.
+
+1. Manter o gate web/API atual: testes, lint, build, preview, smoke e Playwright.
+2. Adicionar testes Kotlin locais, testes instrumentados e automação de fluxos críticos em emulador.
+3. Validar build de release em telefone e tablet, múltiplas versões Android, rotação, background, rede lenta e perda de conexão.
+4. Executar revisão de segurança, privacidade, acessibilidade, desempenho, crashes/ANRs e compatibilidade da API.
+5. Gerar relatório por gate; nenhum item crítico ou alto pode ficar aberto para lançamento.
+
+### 6.5 Publicação Android na Google Play
+
+> **Estado:** não iniciada; depende de 6.1–6.4, domínio e revisão jurídica.
+
+1. Confirmar conta Google Play, package name definitivo, identidade legal e requisitos de teste aplicáveis à conta.
+2. Proteger upload key, ativar Play App Signing e gerar Android App Bundle de release.
+3. Preparar ficha da loja, mídia, classificação, suporte, política de privacidade e Data safety coerente com a auditoria real.
+4. Publicar em faixa interna, avançar para teste fechado e usar lançamento gradual/gerenciado em produção.
+5. Monitorar pre-launch report, crashes, ANRs, autenticação, API e feedback; interromper rollout se um gate falhar.
+
+### 6.6 Domínio próprio, e-mail e revisão jurídica
+
+> **Estado:** pendente; consolida 5.5.b e 5.8.c como gates de lançamento, sem apagar seu histórico na Fase 5.
+
+1. Escolher/registrar domínio; configurar Custom Domain do Worker, redirecionamento canônico, certificado e URLs públicas.
+2. Autenticar o domínio no Brevo com os registros fornecidos, incluindo DKIM e DMARC; criar remetente institucional e testar entrega.
+3. Entregar ao jurídico mapa de dados, fornecedores, retenção, fluxos web/Android, 2FA, moderação, exportação/exclusão e respostas de Data safety.
+4. Versionar textos aprovados, data de vigência e evidência formal; atualizar web, Android e Play Console antes do lançamento comercial.
+
+---
+
 ## Recomendacoes arquiteturais transversais
 
 Estas recomendacoes nao sao iniciativas pontuais, mas praticas continuas que devem acompanhar todas as fases. Elas sao pre-requisitos de qualidade e seguranca para qualquer evolucao do sistema.
@@ -497,6 +559,12 @@ Estas recomendacoes nao sao iniciativas pontuais, mas praticas continuas que dev
 | 22 | Automacao da entrega | 5 | Media |
 | 23 | Qualidade e debitos tecnicos | 5 | Media |
 | 24 | Produto e presenca digital | 5 | Media |
+| 25 | Fonte de verdade e diagnostico Android | 6 | Media |
+| 26 | Contrato movel e paridade funcional | 6 | Alta |
+| 27 | Autenticacao em duas etapas multicliente | 6 | Alta |
+| 28 | Validacao integral web/API/Android | 6 | Alta |
+| 29 | Publicacao Android na Google Play | 6 | Media |
+| 30 | Dominio, e-mail e revisao juridica | 6 | Media |
 
 ---
 

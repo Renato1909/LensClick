@@ -44,11 +44,11 @@ A aplicacao utiliza uma arquitetura serverless na Cloudflare:
 
 ### 1.2 O que ainda nao existe
 
-- Painel administrativo.
-- Verificacao de e-mail.
 - Agendamentos, pagamentos ou galerias de entrega.
-- Aplicativo Android nativo.
+- Aplicativo Android incorporado à fonte de verdade: o app Kotlin existe fora desta árvore, mas paridade, autenticação móvel, testes e publicação ainda não foram auditados.
+- Autenticação em duas etapas para web e Android.
 - Dominio personalizado (configuracao da 5.8.c ainda pendente).
+- Revisão jurídica formal dos Termos e da Política antes da publicação comercial.
 
 ## 2. Explicacao do sistema em cinco minutos
 
@@ -758,10 +758,9 @@ A privacidade tem prioridade sobre uma URL publica simples. A foto privada passa
 ### Pendências atuais
 
 - 5.5.b: revisão legal formal dos Termos de Uso e da Política de Privacidade, externa ao código e condição para publicação comercial.
-- 5.8.a: capa destacada e categorias internas para o portfolio.
-- 5.8.b: Open Graph e JSON-LD nas páginas públicas que não são SSR.
 - 5.8.c: domínio próprio, DNS e remetente Brevo no domínio.
-- 2FA permanece fora do escopo atual.
+- Fase 6: incorporar o projeto Android Studio em Kotlin, auditar paridade, definir autenticação móvel, implementar 2FA, validar e publicar na Google Play.
+- Plano detalhado: `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`.
 
 ### Prioridade media
 
@@ -771,13 +770,12 @@ A privacidade tem prioridade sobre uma URL publica simples. A foto privada passa
 - Separacao progressiva dos scripts inline da pagina inicial.
 - Testes de interface em navegador e dispositivos reais.
 
-### Futuro
+### Futuro posterior à Fase 6
 
 - Agendamento e acompanhamento de orcamentos.
 - Galerias privadas.
 - Notificacoes.
-- Aplicativo Android nativo em Kotlin e Jetpack Compose.
-- API de autenticacao especifica para dispositivos moveis.
+- Evoluções Android posteriores ao primeiro lançamento devem ser priorizadas pela matriz de paridade, métricas e feedback da faixa de testes.
 
 ## 16. Perguntas provaveis em uma apresentacao
 

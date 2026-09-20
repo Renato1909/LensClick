@@ -255,13 +255,14 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 - Separação progressiva dos scripts inline da página inicial.
 - Testes de interface em navegador e dispositivos reais.
 
-### Futuro
+### Próximo ciclo — aplicativo Android
 
 - Agendamento e acompanhamento de orçamentos.
 - Galerias privadas.
 - Notificações.
-- Aplicativo Android nativo (Kotlin + Jetpack Compose).
-- API de autenticação específica para dispositivos móveis.
+- O aplicativo Android nativo em Kotlin já foi desenvolvido no Android Studio, mas seu código ainda está fora deste repositório e precisa ser disponibilizado, versionado e auditado.
+- A Fase 6 incorpora o projeto, cria a matriz de paridade web/API/Android, define autenticação móvel, implementa 2FA multicliente, valida o release e prepara a publicação Google Play.
+- O plano e os gates estão em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`.
 
 ---
 
@@ -270,13 +271,13 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 1. **D1 para dados + R2 para imagens** — imagens não são Base64 no banco; cada serviço cumpre sua finalidade.
 2. **Mesmo domínio para frontend e API** — simplifica cookies, origem e deploy; rotas relativas como `/api/auth/me`.
 3. **HTML/CSS/JS sem framework** — preserva a base original e reduz dependências; maior responsabilidade manual na organização.
-4. **Migrações versionadas** — `0001` a `0012`; mudanças futuras criam novos arquivos, nunca editam banco publicado.
+4. **Migrações versionadas** — `0001` a `0013`; mudanças futuras criam novos arquivos, nunca editam banco publicado.
 5. **R2 privado** — privacidade tem prioridade sobre URL pública; foto privada passa por autorização do Worker.
 6. **PBKDF2-SHA-256 com 100k iterações** — maior valor aceito pelo Web Crypto do Workers; 120k foi rejeitado em produção.
 7. **Cookie HttpOnly/Secure/SameSite=Lax** — JavaScript da página não lê o cookie de sessão; TTL de 7 dias e máximo de cinco sessões ativas por usuário.
 8. **i18n por chaves, preferência em localStorage** — PT é origem, EN por chaves; dados de conta nunca ficam em `localStorage`.
 9. **Rate limit simples no D1** — tabela `rate_limits` com bucket e expiração; suficiente para o volume atual.
-10. **Papéis `client`/`photographer` são dados de perfil** — ainda não autorizam áreas diferentes (limitação conhecida).
+10. **Papéis `client`/`photographer` são dados de perfil**; autorização administrativa usa `users.is_admin` e `requireAdmin`, sem endpoint público de promoção.
 
 ---
 
@@ -290,7 +291,7 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 | Cloudflare D1 | Banco de dados SQL |
 | Cloudflare R2 | Armazenamento de imagens |
 | Cloudflare Workers Assets | Servir `public/` |
-| Brevo | E-mail transacional (recuperação de senha) |
+| Brevo | E-mail transacional (recuperação, verificação e alertas) |
 | Web Crypto API | Hash de senha e tokens |
 
 ### Desenvolvimento (`package.json`)
@@ -380,8 +381,8 @@ O estado atual de branches, branches órfãs, PRs e pendências Git é mantido e
 ### Débitos técnicos conhecidos
 
 1. **Hotspots de conflito** — os catálogos em `public/locales/` concentram alterações frequentes. `src/worker.mjs` segue como ponto de composição, mas os handlers de domínio foram extraídos na Fase 4.2, reduzindo conflitos.
-2. **Sem 2FA** — apenas senha + sessão. Iniciativa 5.4.
-3. **Sem verificação de e-mail** — cadastro não confirma o e-mail. Iniciativa 5.4.
+2. **Sem 2FA** — a verificação de e-mail existe em modo de aviso, mas o segundo fator ainda não foi projetado; será tratado na Fase 6 para web e Android.
+3. **Android fora da fonte de verdade** — o projeto Kotlin existe, mas ainda precisa ser incorporado ao Git e auditado quanto a arquitetura, segurança, paridade e publicação.
 4. **Rate limit híbrido** — escudo de rajada nativo na edge (PR #30) combinado a políticas longas no D1; atende o volume atual.
 5. **Termos/política precisam de revisão jurídica** — divulgações LGPD de alta prioridade (PR #89), de média prioridade (PR #91) e cláusulas opcionais (PR #93) já publicadas; resta a revisão legal formal antes do uso comercial. Iniciativa 5.5.
 6. **Papéis não autorizam áreas** — `client`/`photographer` continuam sendo dados de perfil; a autorização administrativa agora usa `is_admin` + `requireAdmin` (5.4.b/c).
@@ -390,22 +391,24 @@ O estado atual de branches, branches órfãs, PRs e pendências Git é mantido e
 
 ## 14. Próximos passos imediatos
 
-### Fase 5 — plano corrente
+### Encerramento da Fase 5 e início da Fase 6
 
 O plano de limpeza e consolidação P0-P4 registrado em versões anteriores foi **integralmente concluído**: todas as branches citadas já estavam integradas e as duas últimas remotas pendentes foram removidas em 3 de setembro de 2026.
 
-O plano corrente é a **Fase 5**, registrada em `docs/ROADMAP_EVOLUCAO.md` e resumida na seção 7 de `docs/HANDOFF.md`:
+Na Fase 5, restam a revisão jurídica formal (5.5.b) e domínio/DNS/e-mail (5.8.c). Ambos passam a ser gates de lançamento da Fase 6, sem perder seu histórico:
 
 | Ordem | Iniciativa | Complexidade |
 |---:|---|:---:|
 | 17 | 5.1 Consolidação documental — concluída | Baixa |
 | 18 | 5.2 Backup e restauração do D1 — concluída | Média |
 | 19 | 5.3 Endurecimento transversal de segurança — concluída | Média |
-| 20 | 5.4 Verificação de e-mail e papéis de autorização | Alta |
-| 21 | 5.5 Portabilidade de dados do titular (LGPD) | Baixa |
-| 22 | 5.6 Automação da entrega | Média |
-| 23 | 5.7 Qualidade e débitos técnicos | Média |
-| 24 | 5.8 Produto e presença digital | Média |
+| 20 | 5.4 Verificação de e-mail e papéis de autorização — concluída | Alta |
+| 21 | 5.5 Portabilidade LGPD — parcial; revisão jurídica pendente | Baixa |
+| 22 | 5.6 Automação da entrega — concluída | Média |
+| 23 | 5.7 Qualidade e débitos técnicos — concluída | Média |
+| 24 | 5.8 Produto e presença — parcial; domínio/e-mail pendentes | Média |
+
+A sequência atual é a **Fase 6**, detalhada em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`: incorporar o projeto Kotlin; auditar paridade; definir contrato móvel; implementar diferenças; projetar 2FA; validar web/API/Android; concluir domínio e jurídico; publicar por faixas na Google Play.
 
 ### Estado de `db/schema.ts`
 

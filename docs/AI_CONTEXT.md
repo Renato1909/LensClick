@@ -25,6 +25,7 @@ Ele deve **envelhecer mais lentamente** que `docs/HANDOFF.md`: evita números mu
 - Ambiente oficial: `https://lensclick.renato-aparecido-business.workers.dev`.
 - Escopo atual: landing page, cadastro/login reais, recuperação de senha via Brevo, central autenticada de conta, perfil profissional com onboarding guiado, portfolio (até 12 imagens, com categoria e capa), página pública indexável do fotógrafo, busca com filtros e ordenação, avaliações verificadas, mensagens internas, sitemap e robots dinâmicos, observabilidade e alertas in-worker, painel administrativo com moderação de avaliações e conversas, e exportação de dados do titular (LGPD). **Não há** dashboard de agendamentos.
 - Termos de Uso e Política de Privacidade ainda requerem revisão institucional antes de publicação comercial.
+- Existe um aplicativo Android nativo em Kotlin, desenvolvido no Android Studio, ainda fora deste repositório. Não presuma sua arquitetura, paridade ou prontidão: primeiro obtenha e versione o projeto conforme `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`.
 
 Detalhes de visão e escopo: `docs/CONTEXTO_PROJETO.md`.
 
@@ -244,6 +245,9 @@ Pontos que exigem atenção especial ou estão em débito técnico conhecido:
 - **Helpers compartilhados permanecem em `src/worker.mjs`** — a iniciativa 4.2 extraiu todos os handlers de domínio (blocos legados removidos no PR #82); o worker mantém formatters, sessão, rate limiting, cache de edge e SSR como ponto de composição.
 - **Aliases visuais legados** (`--accent-2`, `--bg-*`, `--muted` etc.) — o lote principal (`--accent-1`, `--text`, `--radius`, `--shadow`) foi migrado para `--lc-*` na 5.7; o restante segue como débito documentado.
 - **Termos de Uso e Política de Privacidade** — pendentes de revisão institucional antes de publicação comercial.
+- **Aplicativo Android externo à árvore atual** — precisa ser incorporado ao Git, auditado contra a matriz web/API e validado antes da Google Play.
+- **Domínio próprio e e-mail institucional** — escolha/registro, Custom Domain Cloudflare e autenticação Brevo permanecem pendentes e são gates da Fase 6.
+- **2FA multicliente** — ainda não implementado; qualquer entrega deve compartilhar política e estado no backend para web e Android.
 - **Auth git remoto no ambiente Windows** — pode estar indisponível; comandos git sensíveis podem precisar do usuário.
 
 Lista completa de débitos: `docs/CONTEXTO_PROJETO.md` (seção de débitos) e `docs/HANDOFF.md` (riscos).
@@ -290,6 +294,7 @@ Lista completa de débitos: `docs/CONTEXTO_PROJETO.md` (seção de débitos) e `
 | Onboarding permanente | `docs/CONTEXTO_PROJETO.md` |
 | Decisões técnicas | `docs/DECISOES_TECNICAS.md` |
 | Roadmap (intenção futura) | `docs/ROADMAP_EVOLUCAO.md` |
+| Plano Android, validação e publicação | `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md` |
 | Manual técnico | `docs/DOCUMENTACAO_TECNICA.md` |
 | Estado operacional | `docs/HANDOFF.md` |
 | Design System | `DESIGN_SYSTEM.md` |
