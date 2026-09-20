@@ -524,6 +524,53 @@ async function createSession(userId, request, env) {
   return sessionCookie(token, request);
 }
 
+async function createMobileSession(userId, env) {
+  const token = randomToken();
+  const tokenHash = await sha256(token);
+  const now = Date.now();
+  const expiresAt = now + SESSION_TTL_MS;
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM sessions WHERE expires_at <= ?').bind(now),
+    env.DB.prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
+      .bind(tokenHash, userId, expiresAt),
+    env.DB.prepare(`
+      DELETE FROM sessions
+      WHERE user_id = ? AND token_hash <> ?
+        AND token_hash NOT IN (
+          SELECT token_hash FROM sessions
+          WHERE user_id = ? AND token_hash <> ?
+          ORDER BY expires_at DESC, created_at DESC, token_hash DESC
+          LIMIT ?
+        )
+    `).bind(userId, tokenHash, userId, tokenHash, MAX_ACTIVE_SESSIONS - 1)
+  ]);
+  return { token, expiresAt };
+}
+
+function bearerToken(request) {
+  const value = String(request.headers.get('Authorization') || '');
+  const match = /^Bearer\\s+([A-Za-z0-9_-]{40,200})$/.exec(value);
+  return match ? match[1] : '';
+}
+
+async function authenticatedMobileUser(request, env) {
+  const token = bearerToken(request);
+  if (!token) return null;
+  return env.DB.prepare(`
+    SELECT u.*, s.token_hash AS authenticated_session_hash
+    FROM sessions s
+    JOIN users u ON u.id = s.user_id
+    WHERE s.token_hash = ? AND s.expires_at > ?
+  `).bind(await sha256(token), Date.now()).first();
+}
+
+async function revokeMobileSession(request, env) {
+  const token = bearerToken(request);
+  if (!token) return false;
+  const result = await env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(await sha256(token)).run();
+  return Number(result?.meta?.changes || 0) > 0;
+}
+
 async function consumeRateLimit(env, key, limit, intervalMs) {
   const now = Date.now();
   const bucket = Math.floor(now / intervalMs);
@@ -655,9 +702,10 @@ function decodeProfilePicture(dataUrl) {
 
 const authHandlers = createAuthHandlers({
   json, cleanText, normalizeEmail, isValidEmail, isValidPassword,
-  isRateLimited, readJson, hashPassword, verifyPassword, createSession,
+  isRateLimited, readJson, hashPassword, verifyPassword, createSession, createMobileSession,
   publicUser, consumeRateLimit, randomToken, sha256, sendPasswordResetEmail,
-  sendVerificationEmail, authenticatedUser, parseCookies, sessionCookie, reportOperationalError,
+  sendVerificationEmail, authenticatedUser, authenticatedMobileUser, revokeMobileSession,
+  parseCookies, sessionCookie, reportOperationalError,
   sessionCookieName: SESSION_COOKIE, passwordResetTtlMs: PASSWORD_RESET_TTL_MS,
   emailVerificationTtlMs: EMAIL_VERIFICATION_TTL_MS
 });
@@ -695,6 +743,9 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
 
   if (routeId === 'auth.register') return authHandlers.register({ request, env, pathname });
   if (routeId === 'auth.login') return authHandlers.login({ request, env, pathname });
+  if (routeId === 'auth.mobile.login') return authHandlers.mobileLogin({ request, env, pathname });
+  if (routeId === 'auth.mobile.me') return authHandlers.mobileMe({ request, env });
+  if (routeId === 'auth.mobile.logout') return authHandlers.mobileLogout({ request, env });
   if (routeId === 'auth.password-reset.request') return authHandlers.passwordResetRequest({ request, env, pathname, context, requestContext });
   if (routeId === 'auth.password-reset.confirm') return authHandlers.passwordResetConfirm({ request, env, pathname });
   if (routeId === 'auth.email.verify') return authHandlers.emailVerify({ request, env, pathname });
