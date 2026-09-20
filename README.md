@@ -93,3 +93,5 @@ A funcionalidade usa a API transacional da Brevo. O ambiente oficial possui reme
 ## Documentacao tecnica
 
 O manual completo da Fase 9, com arquitetura, MER, DER, API, seguranca, testes, operacao e roteiro de apresentacao, esta em `docs/DOCUMENTACAO_TECNICA.md`.
+
+O próximo ciclo — incorporação do aplicativo Android em Kotlin, paridade web/API/Android, 2FA, validação integral, domínio, revisão jurídica e publicação Google Play — está detalhado em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md` e na Fase 6 de `docs/ROADMAP_EVOLUCAO.md`.

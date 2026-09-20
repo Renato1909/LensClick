@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 19 de setembro de 2026, com a base `main` em `eec5909` (PR #125 mergeado e publicado).
+> **Data de referência:** 19 de setembro de 2026, com a base `main` em `a261502` (PR #126 mergeado e publicado).
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, as iniciativas 5.1, 5.2, 5.3, 5.4, 5.6 e 5.7 estão concluídas. A 5.5 está parcial: 5.5.a (exportação LGPD) concluída e 5.5.b (revisão legal formal) pendente por ser atividade externa. A **5.8 — Produto e presença digital** está parcial: 5.8.a e 5.8.b concluídas e publicadas; resta a 5.8.c, que depende de domínio próprio, DNS e remetente Brevo (atividade externa).
+> **Estado do roadmap:** Fases 1 a 4 concluídas. Na Fase 5, restam a revisão jurídica formal (5.5.b) e domínio/DNS/remetente Brevo (5.8.c). A **Fase 6** foi planejada para incorporar o aplicativo Android nativo em Kotlin, auditar e implementar sua paridade com a web, projetar 2FA multicliente, validar web/API/Android e publicar com segurança na Google Play. Plano detalhado em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Base da entrega:** `main` → commit `eec5909` — "fix(e2e): explicit timeouts for panel visibility and checkbox state" (#125).
+- **Base da entrega:** `main` → commit `a261502` — "docs: atualiza handoff ao estado atual" (#126).
 - **Working tree após a integração:** arquivos rastreados limpos e sincronizados com `origin/main`; artefatos locais não rastreados e alheios ao projeto devem ser preservados.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -112,6 +112,8 @@ Não há funcionalidade em desenvolvimento numa branch pendente. As Fases 1 a 4 
 
 ### Não implementado / pendente
 
+- Fase 6: o aplicativo Android nativo em Kotlin existe fora desta árvore; seu projeto Android Studio ainda precisa ser disponibilizado, versionado e auditado antes de qualquer afirmação de paridade ou publicação.
+- Fase 6: contrato de autenticação móvel, paridade funcional, 2FA multicliente, matriz de testes e publicação Google Play ainda não foram executados.
 - 5.8.c: domínio próprio, DNS e remetente Brevo no domínio.
 - 5.5.b: revisão legal formal dos Termos de Uso e da Política de Privacidade.
 - 2FA continua fora do escopo atual.
@@ -442,7 +444,15 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Autorização por papel (roles) — resolvida operacionalmente: `is_admin` + `requireAdmin` (5.4.b) e painel de moderação (5.4.c) ativos.
 - Revisão legal formal de termos e política (divulgações LGPD de alta prioridade — PR #89 — e itens de média prioridade — PR #91 — já implementados).
 
-### Fase 5 — em execução (registrada em `docs/ROADMAP_EVOLUCAO.md`)
+### P6 — Aplicativo Android e lançamento multicliente
+- Incorporar e versionar o projeto Kotlin criado no Android Studio; decidir monorepo ou repositório próprio.
+- Criar a matriz web/API/Android e implementar somente diferenças classificadas e aprovadas.
+- Definir autenticação móvel segura e 2FA como política única de conta para web e Android.
+- Validar release em testes locais, instrumentados, emuladores, telefone e tablet.
+- Publicar por faixas na Google Play somente após domínio, revisão jurídica e gates técnicos.
+- Seguir `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md` como plano operacional.
+
+### Fases 5 e 6 — encerramento web e convergência Android
 
 Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a partir da leitura cruzada de HANDOFF, AI_CONTEXT, CONTEXTO_PROJETO e do código em `src/`, `migrations/`, `public/` e `wrangler.jsonc`.
 
@@ -456,15 +466,26 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 | 22 | 5.6 Automação da entrega | Média | Concluída |
 | 23 | 5.7 Qualidade e débitos técnicos | Média | Concluída |
 | 24 | 5.8 Produto e presença digital | Média | Parcial — domínio/DNS/e-mail pendentes |
+| 25 | 6.1 Fonte de verdade e diagnóstico Android | Média | Não iniciada — projeto Kotlin ainda externo |
+| 26 | 6.2 Contrato móvel e paridade funcional | Alta | Não iniciada |
+| 27 | 6.3 Autenticação em duas etapas multicliente | Alta | Planejada |
+| 28 | 6.4 Validação integral web/API/Android | Alta | Planejada |
+| 29 | 6.5 Publicação Android na Google Play | Média | Não iniciada |
+| 30 | 6.6 Domínio, e-mail e revisão jurídica | Média | Pendente — gate de lançamento |
 
 ---
 
 ## 8. Ordem recomendada de execução
 
 ```
-1. [5.5.b] Revisão legal formal — pendência externa e condição para publicação comercial.
-2. [5.8] Produto e presença digital — próxima iniciativa de código.
-3. Evoluções posteriores devem ser priorizadas conforme produto, segurança e métricas.
+1. [6.1] Disponibilizar, versionar e diagnosticar o projeto Android Studio em Kotlin.
+2. [6.1] Criar a matriz de paridade web/API/Android e aprovar o escopo do primeiro lançamento.
+3. [6.2] Definir o contrato móvel seguro e implementar paridade por fatias.
+4. [5.8.c/6.6] Escolher o domínio e configurar Cloudflare, DNS e remetente Brevo.
+5. [5.5.b/6.6] Conduzir a revisão jurídica formal em paralelo, concluindo-a antes do lançamento comercial.
+6. [6.3] Projetar e implementar 2FA para web e Android após threat model e decisão técnica.
+7. [6.4] Executar a validação integral e corrigir todos os achados críticos/altos.
+8. [6.5] Publicar na faixa interna, teste fechado e lançamento gradual da Google Play.
 ```
 
 **Justificativa da ordem:**
@@ -518,6 +539,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 - `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
 - `docs/BACKUP_D1.md` — backup diário do D1 no R2, procedimento de restauração e validação periódica (iniciativa 5.2).
+- `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md` — gates de incorporação, paridade, 2FA, validação, domínio, jurídico e Google Play (Fase 6).
 - `docs/DOCUMENTACAO_TECNICA.md` — documentação técnica detalhada.
 - `DESIGN_SYSTEM.md` — guia de design e tokens.
 - `CONTRIBUTING.md` — fluxo de contribuição.
@@ -531,4 +553,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 19 de setembro de 2026, com base `main` em `eec5909` (PR #125); Fase 5 atualizada, com 5.5 parcial por revisão legal externa e 5.8 parcial por domínio/DNS/e-mail pendentes.
+**Última atualização deste handoff:** 19 de setembro de 2026, com base `main` em `a261502` (PR #126); Fase 6 planejada para convergência web/Android, 2FA, validação integral e publicação Google Play, mantendo revisão legal e domínio como gates de lançamento.
