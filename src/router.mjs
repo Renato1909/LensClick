@@ -3,6 +3,9 @@ const API_ROUTES = Object.freeze([
   { id: 'health', method: 'GET', path: '/api/health' },
   { id: 'auth.register', method: 'POST', path: '/api/auth/register' },
   { id: 'auth.login', method: 'POST', path: '/api/auth/login' },
+  { id: 'auth.mobile.login', method: 'POST', path: '/api/mobile/auth/login' },
+  { id: 'auth.mobile.me', method: 'GET', path: '/api/mobile/auth/me' },
+  { id: 'auth.mobile.logout', method: 'POST', path: '/api/mobile/auth/logout' },
   { id: 'auth.password-reset.request', method: 'POST', path: '/api/auth/password-reset/request' },
   { id: 'auth.password-reset.confirm', method: 'POST', path: '/api/auth/password-reset/confirm' },
   { id: 'auth.email.verify', method: 'POST', path: '/api/auth/email/verify' },
@@ -67,7 +70,8 @@ export function createRequestRouter({
 }) {
   async function handleApi(request, env, url, context, requestContext) {
     const method = request.method.toUpperCase();
-    if (!['GET', 'HEAD'].includes(method) && !requestOriginIsAllowed(request)) {
+    const isMobileAuthRoute = url.pathname.startsWith('/api/mobile/auth/');
+    if (!['GET', 'HEAD'].includes(method) && !isMobileAuthRoute && !requestOriginIsAllowed(request)) {
       return forbiddenResponse();
     }
 
