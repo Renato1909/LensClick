@@ -2,7 +2,7 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 19 de setembro de 2026, com a base `main` em `eea0009` (PR #119 mergeado e publicado).
+> **Data de referência:** 19 de setembro de 2026, com a base `main` em `eec5909` (PR #125 mergeado e publicado).
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
 > **Estado do roadmap:** Fase 1, marco de transição, Fase 2, iniciativas 3.1–3.4 e Fases 4.1 a 4.4 concluídas. Na **Fase 5**, as iniciativas 5.1, 5.2, 5.3, 5.4, 5.6 e 5.7 estão concluídas. A 5.5 está parcial: 5.5.a (exportação LGPD) concluída e 5.5.b (revisão legal formal) pendente por ser atividade externa. A **5.8 — Produto e presença digital** está parcial: 5.8.a e 5.8.b concluídas e publicadas; resta a 5.8.c, que depende de domínio próprio, DNS e remetente Brevo (atividade externa).
 
@@ -10,8 +10,8 @@
 
 ## 1. Situação atual da main
 
-- **Base da entrega:** `main` → commit `8a3a66f` — "docs: sync HANDOFF to base 9252f9c with PRs 120-122" (#123).
-- **Working tree após a integração:** limpa e sincronizada com `origin/main`; branch da iniciativa removida local e remotamente.
+- **Base da entrega:** `main` → commit `eec5909` — "fix(e2e): explicit timeouts for panel visibility and checkbox state" (#125).
+- **Working tree após a integração:** arquivos rastreados limpos e sincronizados com `origin/main`; artefatos locais não rastreados e alheios ao projeto devem ser preservados.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
   - Status checks obrigatórios: "Testes e validação" (CI GitHub Actions "Qualidade").
@@ -29,7 +29,7 @@
 | Camada | Tecnologia |
 |---|---|
 | Runtime | Cloudflare Workers (serverless) |
-| Banco de dados | D1 `lensclick-db` (SQLite) — 15 tabelas |
+| Banco de dados | D1 `lensclick-db` (SQLite) — 16 tabelas |
 | Armazenamento de imagens | R2 `lensclick-profile-images` (bucket privado) |
 | Assets estáticos | Workers Assets (`public/`) |
 | E-mail transacional | Brevo |
@@ -40,18 +40,20 @@
 | Design tokens | `public/refinements.css` (prefixo `--lc-*`) |
 | Testes | Node.js test runner (`node --test`) — execute `npm test` para consultar o total atual |
 | Node | >=22.13.0 |
-| Wrangler | ^4.0.0 (única devDep) |
+| Dependências de desenvolvimento | Wrangler ^4.0.0 e Playwright ^1.63.0 |
 
 ### Scripts disponíveis (`package.json`)
 
 - `npm start` — sobe o Worker local (porta 4174; `prestart` roda `db:migrate:local`).
 - `npm run dev` — modo watch.
 - `npm run check` — `wrangler deploy --dry-run` (valida build sem publicar).
+- `npm run lint` — valida aliases visuais, scripts inline, uso de dados locais e sintaxe JavaScript.
 - `npm test` — `node --test`.
 - `npm run test:smoke` — smoke HTTP (`scripts/http-smoke.mjs`).
+- `npm run test:e2e` — executa os fluxos críticos em Chromium com Playwright.
 - `npm run db:migrate:local` / `db:migrate:remote` — aplica migrações D1.
 
-### Tabelas D1 (15)
+### Tabelas D1 (16)
 
 `users`, `sessions`, `password_reset_tokens`, `email_verification_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`.
 
@@ -65,7 +67,7 @@
 
 ## 2. Branches atuais
 
-- **Branches locais permanentes:** `main` e `codex/preserved-local-main-20260905` (histórico local preservado; não contém trabalho a integrar).
+- **Branches locais permanentes:** somente `main`.
 - **Branches remotas:** somente `origin/main` (além do ponteiro simbólico `origin/HEAD -> origin/main`).
 - **Branches sem upstream:** nenhuma.
 - **Trabalho pendente em branches:** nenhum.
@@ -76,13 +78,14 @@ A limpeza controlada foi concluída após comparar a árvore de cada branch obso
 
 ## 3. Funcionalidades em desenvolvimento
 
-A iniciativa 5.1 está em entrega documental; não há funcionalidade de produto em desenvolvimento. As quatro iniciativas da Fase 1, o marco de transição, a Fase 4.2, a Fase 4.3 e a Fase 4.4 estão integrados e publicados em produção. O catálogo e o despacho HTTP ficam em `src/router.mjs`; os handlers de domínio vivem em módulos próprios (`src/auth.mjs`, `photographers.mjs`, `account.mjs`, `account-security.mjs`, `portfolio.mjs`, `public-input.mjs`, `monitoring.mjs`) e a instrumentação compartilhada fica em `observability.mjs`; o `worker.mjs` permanece como ponto de composição. As funcionalidades de produto abaixo já estão em `main` e em produção:
+Não há funcionalidade em desenvolvimento numa branch pendente. As Fases 1 a 4 e as iniciativas 5.1, 5.2, 5.3, 5.4, 5.6 e 5.7 estão concluídas; 5.5 e 5.8 dependem apenas das atividades externas listadas abaixo. O catálogo e o despacho HTTP ficam em `src/router.mjs`; os handlers de domínio vivem em módulos próprios, incluindo `src/admin.mjs`, e o `worker.mjs` permanece como ponto de composição. As funcionalidades abaixo já estão em `main` e em produção:
 
 ### Funcionalidades entregues
 
 - **Landing page** (`public/index.html`) — redesign editorial premium, hero com CTA para busca.
 - **Cadastro e login** — autenticação com PBKDF2, sessões em D1.
 - **Recuperação de senha** — fluxo via Brevo com tokens de uso único (`password_reset_tokens`).
+- **Verificação de e-mail** — token de uso único e reenvio; login opera em modo de aviso para contas ainda não verificadas.
 - **Central da conta** (`public/perfil.html`) — edição de perfil, troca de senha, exclusão definitiva.
 - **Onboarding profissional guiado** (`public/perfil.html`) — fluxo em etapas, validação contextual e retomada do rascunho persistido no D1.
 - **Upload de foto de perfil** — armazenamento em R2 (bucket privado).
@@ -96,9 +99,13 @@ A iniciativa 5.1 está em entrega documental; não há funcionalidade de produto
 - **Busca avançada** — faixa de preço, raio de serviço e ordenação por recomendação, preço, raio, avaliação ou atualização (Fase 2.2).
 - **Avaliações e reputação** — solicitação de contato, confirmação pelo fotógrafo e nota verificada, com média pública e trilha de auditoria (Fase 3.1).
 - **Mensagens internas** — conversa persistente entre cliente e fotógrafo, com inbox, paginação e contador de não lidas (Fase 3.3).
+- **Administração e moderação** — papel administrativo protegido por `requireAdmin`, painel de avaliações e controle de encerramento/reabertura de conversas.
+- **Portabilidade LGPD** — exportação autenticada dos dados do titular em JSON, sem hashes de senha nem binários do R2.
 - **Perfis indexáveis** — rota `/fotografo/:slug` com SSR, canonical, Open Graph e JSON-LD (Fase 3.2).
 - **Sitemap e robots** — gerados dinamicamente a partir dos perfis publicados (Fase 3.4).
+- **Metadados sociais** — canonical, Open Graph e JSON-LD nas páginas públicas estáticas e nos perfis SSR.
 - **Observabilidade e alertas** — logs estruturados com `X-Request-ID`, SLOs definidos e sondas in-worker de disponibilidade, P95 e taxa de 5xx (Fases 1.1 e 4.4).
+- **Entrega automatizada** — CI com lint, testes, preview, smoke e E2E; deploy de produção automatizado após integração na `main`.
 - **Bilíngue PT-BR/EN-US** — catálogos JSON separados, fallback progressivo e runtime `public/lang.js` com `window.i18n`.
 - **Header redesign** — botão de busca responsivo.
 - **Redesign editorial** — textura de fundo premium.
@@ -219,23 +226,6 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #98 | `128c295` | fix: enviar backup do D1 ao R2 remoto |
 | #99 | `87f11db` | fix: tornar retencao do backup robusta |
 | #100 | `dcfb5fd` | docs: registra backup remoto validado |
-| #101 | — | docs: formaliza backup do D1 como Decisão 16 (5.2.c) |
-| #102 | `0c3253b` | docs: conclude phase 5.1 consolidation |
-| #103 | `e906b14` | docs: record isolated D1 restore validation |
-| #104 | `8305f38` | security: enforce HSTS and strict script CSP |
-| #105 | `546b132` | security: limit active account sessions |
-| #106 | `24ed0ad` | docs: conclude phase 5.3 security hardening |
-| #107 | `ae57a98` | docs: fix HANDOFF base to 62857da with PR 106 |
-| #108 | `3a1a3b5` | feat(auth): email verification with warn-only login (5.4.a) |
-| #109 | `bf430d5` | feat(auth): admin role with requireAdmin guard (5.4.b) |
-| #110 | `5ee3f1e` | docs: record 5.4.a and 5.4.b production rollout |
-| #111 | `1ed173d` | feat(admin): moderation panel for reviews and conversations (5.4.c) |
-| #112 | `192d4c3` | docs: record 5.4.c production rollout and close Phase 5.4 |
-| #113 | `b59a681` | feat(account): titular data export for LGPD portability (5.5.a) |
-| #114 | `8dd9e66` | feat(ci): local preview with smoke and automated production deploy (5.6) |
-| #115 | `6c02df8` | fix(ci): fail fast when token lacks Workers deploy access |
-| #116 | `7b0f228` | feat(quality): single-source tokens, frontend lint and real-browser e2e (5.7) |
-| #117 | `775eafa` | fix(e2e): prevent professional profile loading race |
 | #101 | `bbd4c34` | docs: formaliza backup do D1 como Decisão 16 (5.2.c) |
 | #102 | `7ee0870` | docs: conclude phase 5.1 consolidation |
 | #103 | `d1c984d` | docs: conclude isolated D1 restore validation |
@@ -259,6 +249,8 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #121 | `6fcbcfb` | fix(e2e): explicit waits for professional section and panels |
 | #122 | `9252f9c` | fix(e2e): assert personal save success and persisted role before publish |
 | #123 | `8a3a66f` | docs: sync HANDOFF to base 9252f9c with PRs 120-122 |
+| #124 | `f89b63e` | docs: consolidate permanent docs after 5.8 partial |
+| #125 | `eec5909` | fix(e2e): explicit timeouts for panel visibility and checkbox state |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -274,9 +266,9 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 - **Design System** formalizado em `DESIGN_SYSTEM.md` e tokens `--lc-*` em `public/refinements.css`.
 - **i18n por catálogos** em `public/locales/`, coordenado por `public/lang.js` — toda string de UI passa por `window.i18n` e mantém paridade PT-BR/EN-US.
 - **R2 privado** — imagens de perfil e portfólio não são públicas; servidas via Worker.
-- **Brevo** como provedor de e-mail transacional (recuperação de senha).
+- **Brevo** como provedor de e-mail transacional (recuperação de senha, verificação de e-mail e alertas operacionais).
 - **Migrações imutáveis** — regra estabelecida: nunca editar migração publicada.
-- **Contratos por rota** — a iniciativa 1.2 consolidou infraestrutura compartilhada de testes e cobriu os 21 padrões de rota e 24 contratos HTTP catalogados, sem alterar código de produção.
+- **Contratos por rota** — a infraestrutura compartilhada cobre atualmente 40 padrões de rota e 45 contratos HTTP catalogados.
 - **Rate limiting híbrido** — a iniciativa 1.3 adicionou quatro bindings nativos de 60 segundos como escudo de rajada e preservou as políticas longas no D1 como camada autoritativa e fallback.
 - **Health check mínimo e seguro** — `GET /api/health` executa `SELECT 1` no D1, retorna somente estado genérico e não consulta o R2 para evitar operações artificiais.
 - **Índices orientados pelas consultas reais** — a migration `0005` adicionou índices para listagem, estado e disponibilidade; o índice explícito redundante de `slug` foi removido, preservando o autoíndice da restrição `UNIQUE`.
@@ -288,21 +280,20 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 
 ### Críticos
 
-1. **Sem 2FA / verificação de e-mail** — contas podem ser criadas com e-mail não verificado; risco de abuso e account takeover.
+1. **Sem 2FA e verificação de e-mail não bloqueante** — a verificação existe, mas a Decisão 18 mantém o login em modo de aviso; contas não verificadas ainda podem entrar. O 2FA permanece não implementado.
 2. **Políticas longas ainda usam D1** — o escudo nativo protege rajadas, mas as janelas de 15 minutos e 1 hora continuam em `rate_limits`. A arquitetura é intencional e segura, porém ainda consome D1 nas rotas protegidas.
-3. **Roles não autorizam áreas** — não há autorização por papel; qualquer usuário autenticado acessa as mesmas rotas.
 
 ### Técnicos
 
-4. **Hotspots de conflito** — `src/worker.mjs` e os catálogos em `public/locales/` são tocados por muitas features. Alto risco de conflito de merge.
-5. **Sem alertas e SLOs** — os logs estruturados existem, mas a detecção proativa pertence à Fase 4.
-6. **Health check não cobre R2** — decisão deliberada para não gerar operações artificiais; indisponibilidade do bucket é detectada pelos eventos das rotas reais de imagem.
-7. **SEO incompleto** — sitemap e robots já estão disponíveis; ainda faltam Open Graph e JSON-LD adicionais em páginas que não são perfis SSR. Impacta indexação e compartilhamento social.
-8. **Cache de descoberta com TTL curto** — buscas e perfis públicos usam `caches.default` por 60 segundos; alterações podem permanecer stale por esse intervalo.
+3. **Hotspots de conflito** — `src/worker.mjs` e os catálogos em `public/locales/` são tocados por muitas features. Alto risco de conflito de merge.
+4. **Health check não cobre R2** — decisão deliberada para não gerar operações artificiais; indisponibilidade do bucket é detectada pelos eventos das rotas reais de imagem.
+5. **Cache de descoberta com TTL curto** — buscas e perfis públicos usam `caches.default` por 60 segundos; alterações podem permanecer stale por esse intervalo.
+6. **Cobertura E2E seletiva** — somente três fluxos críticos rodam em navegador real contra o preview local; integrações ponta a ponta com serviços externos continuam fora do escopo.
+7. **CSP de estilos ainda permissiva** — `script-src` já não usa `'unsafe-inline'`, mas `style-src` o preserva temporariamente; sua remoção exige uma entrega visual separada.
 
 ### Legais / Processo
 
-9. **Termos e política em adequação progressiva** — as divulgações LGPD de alta prioridade da política de privacidade foram implementadas pelo PR #89 (base legal por tratamento — art. 7º; encarregado/DPO — art. 41; transferência internacional — art. 33; direito de reclamação à ANPD) e os itens de média prioridade pelo PR #91 (versão/data nos documentos, idade mínima e dados de menores — art. 14, conta e encerramento nos termos, foro e lei aplicável, prazos de retenção por categoria), ambos em produção. Restam: melhorias opcionais e a revisão legal formal antes da publicação comercial.
+8. **Revisão jurídica externa pendente** — as adequações LGPD de alta e média prioridade já estão em produção, mas Termos de Uso e Política de Privacidade ainda exigem revisão legal formal antes da publicação comercial.
 
 ---
 
@@ -441,13 +432,13 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Versão `63108ee4-f69a-4933-aa2a-19772010e9d7` publicada em 18 de setembro de 2026 com 203/203 testes e smoke de produção aprovado. Nenhuma migration ou dado do D1 foi alterado.
 
 ### P4 — SEO e presença (médio prazo, baixo risco)
-- Open Graph e JSON-LD nas páginas que não são SSR — nos perfis públicos já existem desde a Fase 3.2.
-- Cache via `caches.default` para assets e respostas imutáveis.
-- Domínio próprio e remetente Brevo no domínio.
+- Open Graph e JSON-LD nas páginas públicas estáticas — concluídos em 5.8.b; perfis SSR mantêm metadados específicos desde a Fase 3.2.
+- Cache via `caches.default` para buscas e perfis públicos — concluído na Fase 4.1.
+- Domínio próprio, DNS e remetente Brevo no domínio — pendente (5.8.c).
 
 ### P5 — Segurança (médio/longo prazo, alto risco)
-- Verificação de e-mail no cadastro.
-- 2FA opcional.
+- Verificação de e-mail no cadastro — concluída em 5.4.a, atualmente em modo de aviso.
+- 2FA opcional — pendente e próximo tema de avaliação, sem implementação iniciada.
 - Autorização por papel (roles) — resolvida operacionalmente: `is_admin` + `requireAdmin` (5.4.b) e painel de moderação (5.4.c) ativos.
 - Revisão legal formal de termos e política (divulgações LGPD de alta prioridade — PR #89 — e itens de média prioridade — PR #91 — já implementados).
 
@@ -455,16 +446,16 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 
 Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a partir da leitura cruzada de HANDOFF, AI_CONTEXT, CONTEXTO_PROJETO e do código em `src/`, `migrations/`, `public/` e `wrangler.jsonc`.
 
-| Ordem | Iniciativa | Complexidade |
-|---:|---|:---:|
-| 17 | 5.1 Consolidação documental — concluída | Baixa |
-| 18 | 5.2 Backup e restauração do D1 — concluída | Média |
-| 19 | 5.3 Endurecimento transversal de segurança — concluída | Média |
-| 20 | 5.4 Verificação de e-mail e papéis de autorização — concluída | Alta |
-| 21 | 5.5 Portabilidade de dados do titular (LGPD) | Baixa | **Parcial** |
-| 22 | 5.6 Automação da entrega | Média | **Concluída** |
-| 23 | 5.7 Qualidade e débitos técnicos | Média | **Concluída** |
-| 24 | 5.8 Produto e presença digital | Média | **Parcial (5.8.a e 5.8.b concluídas)** |
+| Ordem | Iniciativa | Complexidade | Estado |
+|---:|---|:---:|---|
+| 17 | 5.1 Consolidação documental | Baixa | Concluída |
+| 18 | 5.2 Backup e restauração do D1 | Média | Concluída |
+| 19 | 5.3 Endurecimento transversal de segurança | Média | Concluída |
+| 20 | 5.4 Verificação de e-mail e papéis de autorização | Alta | Concluída |
+| 21 | 5.5 Portabilidade de dados do titular (LGPD) | Baixa | Parcial — revisão legal pendente |
+| 22 | 5.6 Automação da entrega | Média | Concluída |
+| 23 | 5.7 Qualidade e débitos técnicos | Média | Concluída |
+| 24 | 5.8 Produto e presença digital | Média | Parcial — domínio/DNS/e-mail pendentes |
 
 ---
 
@@ -540,4 +531,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 19 de setembro de 2026, com base `main` em `8a3a66f` (PR #123); 5.6 e 5.7 concluídas, 5.5 parcial e 5.8 parcial (5.8.a e 5.8.b concluídas).
+**Última atualização deste handoff:** 19 de setembro de 2026, com base `main` em `eec5909` (PR #125); Fase 5 atualizada, com 5.5 parcial por revisão legal externa e 5.8 parcial por domínio/DNS/e-mail pendentes.
