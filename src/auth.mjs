@@ -52,9 +52,8 @@ export function createAuthHandlers(deps) {
     },
 
     async mobileLogout({ request, env }) {
-      const token = String(request.headers.get('Authorization') || '');
       const revoked = await revokeMobileSession(request, env);
-      return json(200, { ok: true, revoked: Boolean(revoked) }, token ? {} : {});
+      return json(200, { ok: true, revoked: Boolean(revoked) });
     },
 
     async register({ request, env, pathname }) {

@@ -549,7 +549,7 @@ async function createMobileSession(userId, env) {
 
 function bearerToken(request) {
   const value = String(request.headers.get('Authorization') || '');
-  const match = /^Bearer\\s+([A-Za-z0-9_-]{40,200})$/.exec(value);
+  const match = /^Bearer\s+([A-Za-z0-9_-]{40,200})$/.exec(value);
   return match ? match[1] : '';
 }
 

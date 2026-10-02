@@ -13,6 +13,8 @@ function assertJsonContract(result, status) {
   assert.equal(result.response.status, status);
   assert.match(result.response.headers.get('content-type') || '', /^application\/json/i);
   assert.equal(result.response.headers.get('cache-control'), 'no-store');
+  assert.equal(result.response.headers.get('x-content-type-options'), 'nosniff');
+  assert.match(result.response.headers.get('x-request-id') || '', /^[0-9a-f-]{36}$/i);
   assert.ok(result.json && typeof result.json === 'object');
 }
 
