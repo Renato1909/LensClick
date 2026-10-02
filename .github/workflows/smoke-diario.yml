@@ -1,0 +1,45 @@
+name: Smoke diário
+
+# Roda a suíte de qualidade todo dia às 04:00 (horário de Brasília = 07:00 UTC)
+# na branch main, mesmo com a máquina de desenvolvimento desligada.
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Smoke diário (main)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Preparar o Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependências de forma reproduzível
+        run: npm ci
+
+      - name: Executar testes automatizados
+        run: npm test
+
+      - name: Executar o lint do frontend
+        run: npm run lint
+
+      - name: Validar a configuração do Worker
+        run: npm run check
+
+      - name: Publicar resumo
+        if: always()
+        run: |
+          echo "## Smoke diário — $(date -u +'%d/%m/%Y %H:%M UTC')" >> "$GITHUB_STEP_SUMMARY"
+          echo "Resultado do job: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
