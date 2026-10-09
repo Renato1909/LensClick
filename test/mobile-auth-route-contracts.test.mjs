@@ -125,21 +125,21 @@ test('POST /api/mobile/auth/logout revoga somente a sessao Bearer apresentada', 
   assert.equal(fixture.DB.prepare('SELECT COUNT(*) AS total FROM sessions').first('total'), 1);
 });
 
-test('sessao móvel respeita o limite existente de cinco sessões ativas por usuário', async (t) => {
+test('sessao móvel respeita o limite de três sessões móveis ativas por usuário', async (t) => {
   const fixture = createWorkerFixture();
   t.after(() => fixture.close());
 
   await register(fixture);
   const tokens = [];
-  for (let index = 0; index < 6; index += 1) {
+  for (let index = 0; index < 4; index += 1) {
     const login = await mobileLogin(fixture, { deviceName: `Android Test ${index}` });
     assertJsonContract(login, 200);
     tokens.push(login.json.session.accessToken);
   }
 
   assert.equal(
-    fixture.DB.prepare('SELECT COUNT(*) AS total FROM sessions WHERE user_id = (SELECT id FROM users WHERE email = ?)').bind(REGISTRATION.email).first('total'),
-    5
+    fixture.DB.prepare("SELECT COUNT(*) AS total FROM sessions WHERE user_id = (SELECT id FROM users WHERE email = ?) AND kind = 'mobile'").bind(REGISTRATION.email).first('total'),
+    3
   );
 
   let active = 0;
@@ -150,5 +150,39 @@ test('sessao móvel respeita o limite existente de cinco sessões ativas por usu
     });
     if (result.response.status === 200) active += 1;
   }
-  assert.equal(active, 5);
+  assert.equal(active, 3);
+});
+
+test('sessões web e móveis têm caps independentes (5 web + 3 móveis)', async (t) => {
+  const fixture = createWorkerFixture();
+  t.after(() => fixture.close());
+
+  await register(fixture);
+
+  // 6 logins web — cap de 5 web
+  for (let index = 0; index < 6; index += 1) {
+    const login = await fixture.request('/api/auth/login', {
+      method: 'POST',
+      json: { email: REGISTRATION.email, password: REGISTRATION.password },
+      useCookie: false
+    });
+    assertJsonContract(login, 200);
+  }
+
+  // 4 logins móveis — cap de 3 mobile, não devem derrubar as web
+  const mobileTokens = [];
+  for (let index = 0; index < 4; index += 1) {
+    const login = await mobileLogin(fixture, { deviceName: `Android ${index}` });
+    assertJsonContract(login, 200);
+    mobileTokens.push(login.json.session.accessToken);
+  }
+
+  const userSessions = fixture.DB.prepare("SELECT kind, COUNT(*) AS total FROM sessions WHERE user_id = (SELECT id FROM users WHERE email = ?) GROUP BY kind").bind(REGISTRATION.email).all();
+  const totals = Object.fromEntries(userSessions.results.map((row) => [row.kind, row.total]));
+  assert.equal(totals.web, 5);
+  assert.equal(totals.mobile, 3);
+
+  // Todas as 5 sessões web seguem válidas (últimos 5 logins web)
+  const webRowCount = fixture.DB.prepare("SELECT COUNT(*) AS total FROM sessions WHERE kind = 'web'").first('total');
+  assert.equal(webRowCount, 5);
 });

@@ -246,7 +246,8 @@ O Worker possui duas responsabilidades: atender `/api/*` e entregar os arquivos 
 |---|---:|---|
 | `SESSION_COOKIE` | `lensclick_session` | Nome do cookie |
 | `SESSION_TTL_MS` | 7 dias | Duracao da sessao |
-| `MAX_ACTIVE_SESSIONS` | 5 | Maximo de sessoes ativas por usuario |
+| `MAX_ACTIVE_WEB_SESSIONS` | 5 | Maximo de sessoes web ativas por usuario |
+| `MAX_ACTIVE_MOBILE_SESSIONS` | 3 | Maximo de sessoes moveis ativas por usuario |
 | `MAX_BODY_BYTES` | 700.000 bytes | Limite do JSON recebido |
 | `MAX_PROFILE_PICTURE_BYTES` | 450.000 bytes | Limite da foto |
 | `PBKDF2_ITERATIONS` | 100.000 | Custo do hash compativel com Workers |
