@@ -61,6 +61,14 @@ export function matchApiRoute(pathname, method) {
   return null;
 }
 
+// Rotas com bypass de Origin/cookie (Bearer puro exige isso).
+// Lista explícita: novas rotas móveis NÃO herdam bypass por acidente.
+const MOBILE_AUTH_ROUTES = new Set([
+  'POST /api/mobile/auth/login',
+  'GET /api/mobile/auth/me',
+  'POST /api/mobile/auth/logout'
+]);
+
 export function createRequestRouter({
   dispatchApiRoute,
   handleAssetRequest,
@@ -70,7 +78,7 @@ export function createRequestRouter({
 }) {
   async function handleApi(request, env, url, context, requestContext) {
     const method = request.method.toUpperCase();
-    const isMobileAuthRoute = url.pathname.startsWith('/api/mobile/auth/');
+    const isMobileAuthRoute = MOBILE_AUTH_ROUTES.has(`${method} ${url.pathname}`);
     if (!['GET', 'HEAD'].includes(method) && !isMobileAuthRoute && !requestOriginIsAllowed(request)) {
       return forbiddenResponse();
     }

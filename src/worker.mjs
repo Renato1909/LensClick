@@ -19,7 +19,8 @@ import { createMonitoringHandlers, recordRequestSample } from './monitoring.mjs'
 
 const SESSION_COOKIE = 'lensclick_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const MAX_ACTIVE_SESSIONS = 5;
+const MAX_ACTIVE_WEB_SESSIONS = 5;
+const MAX_ACTIVE_MOBILE_SESSIONS = 3;
 const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_BODY_BYTES = 700_000;
@@ -503,47 +504,34 @@ async function authenticatedUser(request, env) {
 }
 
 async function createSession(userId, request, env) {
-  const token = randomToken();
-  const tokenHash = await sha256(token);
-  const now = Date.now();
-  await env.DB.batch([
-    env.DB.prepare('DELETE FROM sessions WHERE expires_at <= ?').bind(now),
-    env.DB.prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
-      .bind(tokenHash, userId, now + SESSION_TTL_MS),
-    env.DB.prepare(`
-      DELETE FROM sessions
-      WHERE user_id = ? AND token_hash <> ?
-        AND token_hash NOT IN (
-          SELECT token_hash FROM sessions
-          WHERE user_id = ? AND token_hash <> ?
-          ORDER BY expires_at DESC, created_at DESC, token_hash DESC
-          LIMIT ?
-        )
-    `).bind(userId, tokenHash, userId, tokenHash, MAX_ACTIVE_SESSIONS - 1)
-  ]);
-  return sessionCookie(token, request);
+  return createSessionWithKind(userId, 'web', MAX_ACTIVE_WEB_SESSIONS, env, (token) => sessionCookie(token, request));
 }
 
 async function createMobileSession(userId, env) {
+  return createSessionWithKind(userId, 'mobile', MAX_ACTIVE_MOBILE_SESSIONS, env, null);
+}
+
+async function createSessionWithKind(userId, kind, maxActive, env, wrapSession) {
   const token = randomToken();
   const tokenHash = await sha256(token);
   const now = Date.now();
   const expiresAt = now + SESSION_TTL_MS;
   await env.DB.batch([
     env.DB.prepare('DELETE FROM sessions WHERE expires_at <= ?').bind(now),
-    env.DB.prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
-      .bind(tokenHash, userId, expiresAt),
+    env.DB.prepare('INSERT INTO sessions (token_hash, user_id, expires_at, kind) VALUES (?, ?, ?, ?)')
+      .bind(tokenHash, userId, expiresAt, kind),
     env.DB.prepare(`
       DELETE FROM sessions
-      WHERE user_id = ? AND token_hash <> ?
+      WHERE user_id = ? AND kind = ? AND token_hash <> ?
         AND token_hash NOT IN (
           SELECT token_hash FROM sessions
-          WHERE user_id = ? AND token_hash <> ?
+          WHERE user_id = ? AND kind = ? AND token_hash <> ?
           ORDER BY expires_at DESC, created_at DESC, token_hash DESC
           LIMIT ?
         )
-    `).bind(userId, tokenHash, userId, tokenHash, MAX_ACTIVE_SESSIONS - 1)
+    `).bind(userId, kind, tokenHash, userId, kind, tokenHash, maxActive - 1)
   ]);
+  if (wrapSession) return wrapSession(token);
   return { token, expiresAt };
 }
 

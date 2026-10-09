@@ -24,9 +24,9 @@ O LensClick precisava de autenticação para o app Android (LensClickApp) sem co
 
 Decisões pendentes levantadas na revisão arquitetural do PR 128:
 
-1. **🔴 Bypass de Origin por prefixo** — qualquer rota futura sob `/api/mobile/auth/*` herda a isenção silenciosamente. **Ação:** migrar para allowlist explícita de rotas no router.
-2. **🔴 Cap de sessões compartilhado web/mobile** — 5 sessões via `user_id` misturam web e app; login no celular pode derrubar sessão do desktop. **Ação:** caps por família (ex.: 5 web + 3 mobile) ou coluna `kind` na tabela.
-3. **🔴 Revogação em massa** — reset de senha / exclusão de conta devem revogar **todas** as sessões do usuário (mesma tabela hoje, mas confirmar cobertura em testes E2E).
+1. **🔴 Bypass de Origin por prefixo** — qualquer rota futura sob `/api/mobile/auth/*` herda a isenção silenciosamente. **Ação:** migrar para allowlist explícita de rotas no router. **→ Resolvido** em `feat/session-critical-fixes` (lista explícita `MOBILE_AUTH_ROUTES`).
+2. **🔴 Cap de sessões compartilhado web/mobile** — 5 sessões via `user_id` misturam web e app; login no celular pode derrubar sessão do desktop. **Ação:** caps por família (ex.: 5 web + 3 mobile) ou coluna `kind` na tabela. **→ Resolvido** em `feat/session-critical-fixes` (coluna `kind` + migração 0014 + caps 5 web / 3 mobile).
+3. **🔴 Revogação em massa** — reset de senha / exclusão de conta devem revogar **todas** as sessões do usuário (mesma tabela hoje, mas confirmar cobertura em testes E2E). **→ Resolvido** em `feat/session-critical-fixes` (teste E2E `password-reset-session-revocation.test.mjs` confirmou a revogação de ambas as famílias; nenhum código novo foi necessário).
 4. **🟡 Refresh token com rotação + replay detection** — hoje o token tem vida fixa; expirar força novo login. Próximo slice Android precisa de refresh rotacionado, com revogação da cadeia em caso de reuso, e janela de tolerância para requests paralelos.
 5. **🟡 Persistir `deviceName`/`appVersion`** — hoje são aceitos, ecoados e **descartados**. Ou persistir (listar/revogar por dispositivo) ou remover do contrato.
 6. **🟡 Rate-limit por conta** — hoje é por rota+IP; força bruta distribuída contra uma conta segue viável. Considerar bloqueio por usuário após N falhas.
