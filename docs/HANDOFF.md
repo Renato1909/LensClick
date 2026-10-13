@@ -10,7 +10,7 @@
 
 ## 1. Situação atual da main
 
-- **Base da entrega:** `main` → commit `a261502` — "docs: atualiza handoff ao estado atual" (#126).
+- **Base da entrega:** `main` → commit `522543d` — "feat: fecha os 3 criticos do ADR 001 de autenticacao movel" (#132).
 - **Working tree após a integração:** arquivos rastreados limpos e sincronizados com `origin/main`; artefatos locais não rastreados e alheios ao projeto devem ser preservados.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -57,11 +57,11 @@
 
 `users`, `sessions`, `password_reset_tokens`, `email_verification_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`.
 
-### Migrações publicadas (13)
+### Migrações publicadas (14)
 
-`0001_initial.sql` … `0010_monitor_minute_buckets.sql`, `0011_email_verification.sql`, `0012_admin_role.sql`, `0013_portfolio_cover_category.sql`.
+`0001_initial.sql` … `0010_monitor_minute_buckets.sql`, `0011_email_verification.sql`, `0012_admin_role.sql`, `0013_portfolio_cover_category.sql`, `0014_sessions_kind.sql`.
 
-> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0014_*.sql` para qualquer alteração de schema.
+> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0015_*.sql` para qualquer alteração de schema.
 
 ---
 
@@ -118,7 +118,7 @@ Não há funcionalidade em desenvolvimento numa branch pendente. As Fases 1 a 4 
 - 5.5.b: revisão legal formal dos Termos de Uso e da Política de Privacidade.
 - 2FA continua fora do escopo atual.
 - O rate limiting permanece deliberadamente híbrido: escudo de rajada nativo na edge e políticas longas autoritativas no D1.
-- A suíte de contratos cobre as 40 rotas e os 45 contratos HTTP catalogados; apenas os 3 fluxos críticos têm cobertura em navegador real, e testes ponta a ponta com serviços reais permanecem fora do escopo atual.
+- A suíte de contratos cobre as 43 rotas e os 48 contratos HTTP catalogados (incluindo autenticação móvel revogável); apenas os 3 fluxos críticos têm cobertura em navegador real, e testes ponta a ponta com serviços reais permanecem fora do escopo atual.
 - O endpoint `GET /api/health` verifica Worker e D1; o R2 é monitorado pelas rotas reais de imagem para evitar operações artificiais de armazenamento.
 
 ---
@@ -253,6 +253,13 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #123 | `8a3a66f` | docs: sync HANDOFF to base 9252f9c with PRs 120-122 |
 | #124 | `f89b63e` | docs: consolidate permanent docs after 5.8 partial |
 | #125 | `eec5909` | fix(e2e): explicit timeouts for panel visibility and checkbox state |
+| #126 | `a261502` | docs: atualiza handoff ao estado atual |
+| #127 | `c3358c2` | docs: planeja convergencia e publicacao Android |
+| #128 | — | feat: adicionar autenticacao movel revogavel (squash sem numero de merge no log) |
+| #129 | `d8b3cd9` | docs: align handoff with phase 5 completion |
+| #130 | `6f0f2af` | docs: ADR 001 da autenticacao movel com decisoes e riscos pos-merge |
+| #131 | `b755a63` | ci: smoke diario agendado as 04h (BRT) via GitHub Actions |
+| #132 | `522543d` | feat: fecha os 3 criticos do ADR 001 de autenticacao movel (0014_sessions_kind.sql) |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -270,7 +277,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 - **R2 privado** — imagens de perfil e portfólio não são públicas; servidas via Worker.
 - **Brevo** como provedor de e-mail transacional (recuperação de senha, verificação de e-mail e alertas operacionais).
 - **Migrações imutáveis** — regra estabelecida: nunca editar migração publicada.
-- **Contratos por rota** — a infraestrutura compartilhada cobre atualmente 40 padrões de rota e 45 contratos HTTP catalogados.
+- **Contratos por rota** — a infraestrutura compartilhada cobre atualmente 43 padrões de rota e 48 contratos HTTP catalogados.
 - **Rate limiting híbrido** — a iniciativa 1.3 adicionou quatro bindings nativos de 60 segundos como escudo de rajada e preservou as políticas longas no D1 como camada autoritativa e fallback.
 - **Health check mínimo e seguro** — `GET /api/health` executa `SELECT 1` no D1, retorna somente estado genérico e não consulta o R2 para evitar operações artificiais.
 - **Índices orientados pelas consultas reais** — a migration `0005` adicionou índices para listagem, estado e disponibilidade; o índice explícito redundante de `slug` foi removido, preservando o autoíndice da restrição `UNIQUE`.
@@ -519,7 +526,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 
 ### Convenções do projeto
 
-- **Migrações imutáveis** — nunca editar `0001`–`0013`. Nova alteração de schema = novo arquivo `0014_*.sql`.
+- **Migrações imutáveis** — nunca editar `0001`–`0014`. Nova alteração de schema = novo arquivo `0015_*.sql`.
 - **Fast-forward only** — `main` não aceita merge commits. Todo PR é squash-mergeado.
 - **Status check obrigatório** — o CI "Qualidade" precisa passar antes do merge. Rodar `npm test` e `npm run check` localmente antes de abrir PR.
 - **i18n** — toda string visível ao usuário deve passar por `window.i18n`; cada chave precisa existir em `public/locales/pt-BR.json` e `public/locales/en-US.json`. Não hardcoded em PT ou EN.
@@ -553,4 +560,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 19 de setembro de 2026, com base `main` em `a261502` (PR #126); Fase 6 planejada para convergência web/Android, 2FA, validação integral e publicação Google Play, mantendo revisão legal e domínio como gates de lançamento.
+**Última atualização deste handoff:** 19 de setembro de 2026, com base `main` em `522543d` (PR #132); Fase 5 encerrada com os gates externos (revisão legal formal e domínio próprio) pendentes; Fase 6 planejada para convergência web/Android, 2FA, validação integral e publicação Google Play.
