@@ -68,15 +68,9 @@
   --lc-duration-slow: 520ms;
   --lc-ease-standard: cubic-bezier(0.2, 0.75, 0.25, 1);
 
-  /* Compatibilidade com os estilos originais */
-  --accent-2: var(--lc-color-brand-secondary);
-  --bg-1: #161311;
-  --bg-2: #24201d;
-  --bg-3: #3b352f;
-  --bg-4: #d8cec2;
+  /* Compatibilidade com os estilos originais (aliases legados restantes) */
   --surface: var(--lc-color-bg);
   --card: var(--lc-color-bg-elevated);
-  --muted: var(--lc-color-text-muted);
   --maxw: var(--lc-content-max);
   --transition: all 0.3s ease;
   --lc-line: var(--lc-color-line);
@@ -97,11 +91,6 @@ body {
     linear-gradient(180deg, #15120f 0%, #110f0d 48%, #0d0c0a 100%);
   background-attachment: fixed;
   color: var(--lc-color-text);
-}
-
-.profile-page {
-  --bg-1: var(--lc-color-bg-elevated);
-  --muted: #a79c90;
 }
 
 button,
