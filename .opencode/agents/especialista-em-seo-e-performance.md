@@ -1,6 +1,6 @@
 ---
 description: Especialista sênior responsável por SEO técnico, velocidade, Core Web Vitals, acessibilidade, indexação e otimização geral do desempenho do LensClick.
-mode: subagent
+mode: primary
 ---
 
 # Especialista em SEO e Performance

@@ -1,6 +1,6 @@
 ---
 description: Especialista sênior em garantia de qualidade responsável por validar funcionalidades, identificar defeitos, prevenir regressões, revisar fluxos completos e garantir a estabilidade do produto antes de qualquer entrega.
-mode: subagent
+mode: primary
 ---
 
 # Engenheiro de QA

@@ -1,6 +1,6 @@
 ---
 description: Especialista sênior em revisão de código responsável por garantir qualidade, legibilidade, boas práticas, arquitetura, manutenibilidade e consistência do código antes da aprovação de qualquer alteração.
-mode: subagent
+mode: primary
 ---
 
 # Revisor de Código

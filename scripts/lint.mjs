@@ -6,7 +6,8 @@ import { join, resolve } from 'node:path';
 const ROOT = resolve(import.meta.dirname, '..', 'public');
 
 const FORBIDDEN_ALIASES = [
-  '--accent-1', '--text', '--radius', '--shadow', '--shadow-soft', '--card-bg'
+  '--accent-1', '--accent-2', '--text', '--radius', '--shadow', '--shadow-soft',
+  '--card-bg', '--muted', '--bg-1', '--bg-2', '--bg-3', '--bg-4'
 ];
 
 function checkAliases(files) {
