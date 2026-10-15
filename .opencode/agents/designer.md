@@ -1,6 +1,6 @@
 ---
 description: Senior art director and product designer specialized in premium web experiences. Use this agent when redesigning pages, improving layouts, accessibility, responsiveness, and visual identity.
-mode: subagent
+mode: primary
 ---
 
 # Designer Agent

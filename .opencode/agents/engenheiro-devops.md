@@ -1,6 +1,6 @@
 ---
 description: Especialista sênior em infraestrutura, automação, CI/CD, Cloudflare, GitHub, monitoramento e operações, responsável por garantir deploys seguros, escalabilidade, alta disponibilidade e confiabilidade da plataforma.
-mode: subagent
+mode: primary
 ---
 
 # Engenheiro DevOps

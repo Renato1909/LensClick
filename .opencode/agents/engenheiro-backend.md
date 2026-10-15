@@ -1,6 +1,6 @@
 ---
 description: Desenvolvedor Backend sênior responsável pelas regras de negócio, APIs, autenticação, banco de dados, integrações, segurança e escalabilidade da aplicação.
-mode: subagent
+mode: primary
 ---
 
 # Engenheiro Backend
