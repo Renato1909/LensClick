@@ -392,10 +392,13 @@
     });
   }
 
-  async function loadPortfolio() {
-    const { data } = await UX.apiFetch('/api/account/portfolio', { headers: { Accept: 'application/json' } }, portfolioLabel('profile.portfolio.loadError'));
-    portfolioItems = data.portfolio || [];
-    renderPortfolio();
+  function startPortfolioFetch() {
+    // O portfólio não depende da resposta do perfil: dispara em paralelo para reduzir a cadeia sequencial.
+    return UX.apiFetch(
+      '/api/account/portfolio',
+      { headers: { Accept: 'application/json' } },
+      portfolioLabel('profile.portfolio.loadError')
+    ).catch((error) => ({ error }));
   }
 
   async function removePortfolioItem(item, button) {
@@ -419,6 +422,7 @@
     professionalForm.setAttribute('aria-busy', 'true');
     professionalForm.setAttribute('inert', '');
     saveProfessionalProfile.disabled = true;
+    const portfolioFetch = startPortfolioFetch();
     try {
       const { data } = await UX.apiFetch(
         '/api/account/professional-profile',
@@ -426,7 +430,10 @@
         UX.t('profile.pro.loadError')
       );
       populateProfessional(data.profile);
-      await loadPortfolio();
+      const portfolioResult = await portfolioFetch;
+      if (portfolioResult.error) throw portfolioResult.error;
+      portfolioItems = portfolioResult.data.portfolio || [];
+      renderPortfolio();
       let rememberedStep = 1;
       try { rememberedStep = Number(window.sessionStorage.getItem(ONBOARDING_STEP_KEY)) || 1; } catch { /* Start at the first step. */ }
       showOnboardingStep(rememberedStep);
