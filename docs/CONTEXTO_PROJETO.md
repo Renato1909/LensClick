@@ -490,6 +490,9 @@ npm run db:migrate:remote # Aplicar migrações no D1 remoto
 npx wrangler deploy      # Publicar na Cloudflare
 ```
 
+> **Ambiente local no disco D:** o toolchain do projeto (Node portable, cache do npm, Playwright, temporários, logs do wrangler e dados do OpenCode) é mantido no HDD, sem escrita no SSD. A configuração é idempotente e versionada em `scripts/env-local.ps1`; os detalhes e a ordem de migração estão em `docs/HANDOFF.md`, seção "Ambiente (Windows)". No PowerShell, use `npm.cmd` — o `npm.ps1` é bloqueado pela ExecutionPolicy.
+
+
 ### Regras de ouro
 
 1. **Nunca altere código sem entender a consequência.**
