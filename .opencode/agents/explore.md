@@ -1,6 +1,6 @@
 ---
 description: Agente rápido para explorar a codebase — encontrar arquivos por padrão, buscar keywords e responder perguntas sobre como o código funciona.
-mode: primary
+mode: all
 permission:
   edit: deny
 ---

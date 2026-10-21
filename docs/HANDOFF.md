@@ -269,6 +269,8 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #136 | `72f182e` | feat: torna os 12 agentes selecionaveis no chat (mode: primary) — squash vazio: o `mode: primary` já havia entrado em `main` pelo PR #135 |
 | #137 | `f5c8f04` | perf: alinha preload do hero, remove CSS morto e paraleliza carga da conta (iniciativa A2) |
 | #138 | `d22b1e0` | docs: ADR 002 da autenticacao em duas etapas (2FA) — status Proposto |
+| #139 | `28ad193` | docs: sync HANDOFF to base d22b1e0 with PRs 133-138, ADR 002 and OpenCode agents |
+| #140 | — | fix(opencode): agentes do projeto com `mode: all` e `default_agent` para o cliente desktop |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -284,6 +286,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 - **Design System** formalizado em `DESIGN_SYSTEM.md` e tokens `--lc-*` em `public/refinements.css`.
 - **i18n por catálogos** em `public/locales/`, coordenado por `public/lang.js` — toda string de UI passa por `window.i18n` e mantém paridade PT-BR/EN-US.
 - **R2 privado** — imagens de perfil e portfólio não são públicas; servidas via Worker.
+- **Agentes do projeto no OpenCode** — `.opencode/agents/*.md` com `mode: all` (funcionam como agente principal e como subagente) e `.opencode/opencode.json` com `default_agent: "arquiteto-de-software"`. No TUI, `Ctrl+X` e depois `A` lista os agentes e `Shift+Tab` alterna entre eles; no CLI, `opencode run --agent <id>`. O cliente desktop v2.1.1 não tem seletor de agentes e por isso depende do `default_agent`.
 - **Brevo** como provedor de e-mail transacional (recuperação de senha, verificação de e-mail e alertas operacionais).
 - **Migrações imutáveis** — regra estabelecida: nunca editar migração publicada.
 - **Contratos por rota** — a infraestrutura compartilhada cobre atualmente 43 padrões de rota e 48 contratos HTTP catalogados.
@@ -292,7 +295,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 - **Índices orientados pelas consultas reais** — a migration `0005` adicionou índices para listagem, estado e disponibilidade; o índice explícito redundante de `slug` foi removido, preservando o autoíndice da restrição `UNIQUE`.
 - **Roteador declarativo extraído** — o PR #34 criou `src/router.mjs` com as 25 combinações HTTP catalogadas, preservando origem, parâmetros dinâmicos, respostas e entrega de assets.
 - **2FA projetado no ADR 002** — o PR #138 registrou a decisão de autenticação em duas etapas: TOTP (RFC 6238) + 10 códigos de recuperação de uso único, opt-in na fase 1 com obrigação para `is_admin` após janela de migração, desafio com TTL de 5 min, dispositivo confiável de 90 dias revogável e desativação que revoga todas as sessões web e móveis. Passkeys/WebAuthn ficaram como evolução futura (o schema já foi projetado para receber `method`); código por e-mail e push approval foram rejeitados como fator primário. Status **Proposto**: o Gate E exige aprovação antes de qualquer implementação.
-- **Agentes portados para o OpenCode** — os PRs #134 a #136 trouxeram os 11 agentes do Copilot para `.opencode/agents/` com `mode: primary` (selecionáveis no chat), mais o agente `explore`, totalizando 12. O PR #136 foi mergeado como squash vazio, porque o `mode: primary` já havia entrado em `main` pelo PR #135.
+- **Agentes portados para o OpenCode** — os PRs #134 a #136 trouxeram os 11 agentes do Copilot para `.opencode/agents/` com `mode: primary` (selecionáveis no chat), mais o agente `explore`, totalizando 12. O PR #136 foi mergeado como squash vazio, porque o `mode: primary` já havia entrado em `main` pelo PR #135. O PR #140 elevou os 12 para `mode: all`, habilitando também a delegação por subagente, e fixou `default_agent: "arquiteto-de-software"` em `.opencode/opencode.json` — o cliente desktop (v2.1.1) não expõe seletor de agentes, então o default é o que faz o projeto usar seus agentes ali.
 - **Iniciativa A2 de performance** — o PR #137 alinhou o preload do hero à URL real do elemento LCP (`w=1600`), removeu ~2,4 KB de CSS morto, trocou `background-attachment: fixed` por `scroll` em telas ≤880px, normalizou `lang="pt-BR"` e paralelizou as chamadas `/api/account/professional-profile` e `/api/account/portfolio` na central da conta.
 
 ---
