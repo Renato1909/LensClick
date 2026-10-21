@@ -271,7 +271,8 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #138 | `d22b1e0` | docs: ADR 002 da autenticacao em duas etapas (2FA) — status Proposto |
 | #139 | `28ad193` | docs: sync HANDOFF to base d22b1e0 with PRs 133-138, ADR 002 and OpenCode agents |
 | #140 | `9a2210d` | fix(opencode): agentes do projeto com `mode: all` e `default_agent` para o cliente desktop |
-| #141 | — | chore(deps): atualiza o toolchain de desenvolvimento e zera o `npm audit` |
+| #141 | `a61d5f9` | chore(deps): atualiza o toolchain de desenvolvimento e zera o `npm audit` |
+| #142 | — | chore(ambiente): mantém o toolchain do projeto no disco D: (sem escrita no C:) |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -291,6 +292,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 - **Brevo** como provedor de e-mail transacional (recuperação de senha, verificação de e-mail e alertas operacionais).
 - **Migrações imutáveis** — regra estabelecida: nunca editar migração publicada.
 - **Toolchain auditado** — o PR #141 atualizou o lockfile para `wrangler` 4.151.3 (de 4.118.0), levando o `npm audit` a **0 vulnerabilidades**, e realinhou o `allowScripts` do `package.json`. O bundle publicado permaneceu **byte-idêntico** (SHA-256 `FAF38EFE…`), provando risco zero no artefato. O gate `npm audit --audit-level=high` é informativo no CI de PR e bloqueante no job diário. Detalhes em `docs/DEPENDENCIAS_E_SEGURANCA.md`.
+- **Toolchain no disco D:** — decisão de infraestrutura: o projeto, o clone, as dependências e todo o ferramental (Node, npm, Playwright, wrangler e o OpenCode) ficam no HDD, e o SSD não recebe escrita do fluxo de trabalho. Implementado por variáveis de ambiente de usuário aplicadas por `scripts/env-local.ps1`, com a ordem de migração dos dados do OpenCode documentada na seção "Ambiente (Windows)".
 - **Contratos por rota** — a infraestrutura compartilhada cobre atualmente 43 padrões de rota e 48 contratos HTTP catalogados.
 - **Rate limiting híbrido** — a iniciativa 1.3 adicionou quatro bindings nativos de 60 segundos como escudo de rajada e preservou as políticas longas no D1 como camada autoritativa e fallback.
 - **Health check mínimo e seguro** — `GET /api/health` executa `SELECT 1` no D1, retorna somente estado genérico e não consulta o R2 para evitar operações artificiais.
@@ -544,6 +546,30 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 - **Node.js no D:** o runtime é a distribuição portable oficial em `D:\nodejs` (v24.22.0, LTS "Krypton"), já incluída no PATH do usuário. O cache e o prefixo globais do npm apontam para `D:\npm-cache` e `D:\nodejs`, de modo que o toolchain não grava nada no `C:`. No PowerShell use `npm.cmd` — o `npm.ps1` é bloqueado pela ExecutionPolicy do Windows.
 - **PowerShell, não bash:** este ambiente usa PowerShell 5.1. Sintaxe bash (loops `for`, `&&`) não funciona. Usar `foreach`, `;` para encadear, e `Select-Object`/`Where-Object` em vez de pipes unix.
 - **Auth do git remoto:** o `gh` está autenticado via keyring nesta máquina e push/pull/PR via HTTPS funcionam (validado em 01/09/2026 no fluxo do PR #82).
+
+### Disco do toolchain: tudo no D:, nada no C:
+
+O projeto, o clone Git, as dependências e o toolchain vivem no **disco D: (HDD)**. O **C: (SSD) não recebe escrita do fluxo de trabalho do projeto**. Isso é garantido por variáveis de ambiente de usuário, aplicadas por `scripts/env-local.ps1` (idempotente, reexecutável):
+
+| Variável | Valor | O que evita no C: |
+|---|---|---|
+| `NPM_CONFIG_CACHE` | `D:\npm-cache` | Cache de download do npm (já eram ~197 MB) |
+| `NPM_CONFIG_PREFIX` | `D:\nodejs` | Instalação global de pacotes |
+| `TEMP` / `TMP` | `D:\temp` | Temporários de node, esbuild, wrangler e Playwright |
+| `PLAYWRIGHT_BROWSERS_PATH` | `D:\playwright-browsers` | Chromium e ffmpeg do Playwright (~600 MB se instalados) |
+| `XDG_DATA_HOME` | `D:\opencode\data` | Sessões, banco e logs do OpenCode |
+| `XDG_CONFIG_HOME` | `D:\opencode\config` | Config do OpenCode **e os logs do wrangler** (grava em `%APPDATA%\xdg.config\.wrangler\logs`) |
+| `XDG_STATE_HOME` | `D:\opencode\state` | Registro do serviço em background |
+| `XDG_CACHE_HOME` | `D:\opencode\cache` | Cache do OpenCode |
+| `GIT_CONFIG_GLOBAL` | `D:\gitconf\config` | `.gitconfig` global (com `user.name`, `user.email` e `safe.directory`) |
+
+Regras práticas:
+
+- **Node.js é a distribuição portable** em `D:\nodejs` (v24.22.0), no PATH do usuário. Não há instalação do Node no C:.
+- **No PowerShell, use `npm.cmd`** — o `npm.ps1` é bloqueado pela ExecutionPolicy do Windows.
+- **Os `XDG_*` só podem ser apontados para o D: depois que os dados tiverem sido migrados.** Apontá-los antes faria o OpenCode iniciar com um banco vazio e perder as sessões. O `scripts/env-local.ps1` detecta isso e se recusa a alterá-los enquanto a migração não tiver acontecido.
+- A migração dos dados do OpenCode é feita por `D:\opencode\opencode-migrate.ps1`, que exige o app fechado: ele move as pastas, define as variáveis na ordem correta, verifica com `opencode debug paths` e só então reloca o `userData` do app desktop.
+- O binário do Node no Windows tem limite de stack pequeno e o `workerd` **não roda localmente** (access violation `0xc0000005` no startup), então o preview local e os E2E dependem do CI (ubuntu-latest) ou de WSL/Docker. Ver `docs/DEPENDENCIAS_E_SEGURANCA.md`, risco residual R2.
 
 ### Convenções do projeto
 
