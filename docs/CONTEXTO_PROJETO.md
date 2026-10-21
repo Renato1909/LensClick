@@ -321,6 +321,8 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 
 > Única `devDependency`. Não há dependências de runtime no `package.json` — tudo roda na Cloudflare.
 
+A cadeia transitiva do `wrangler` (`miniflare` → `undici` + `sharp` + `workerd`) é **toolchain de desenvolvimento**: não entra no bundle publicado, e o bundle gerado pela versão 4.118.0 e pela 4.151.3 é byte-idêntico (SHA-256 `FAF38EFE2E887E206FD62F3E0430C757786B3387555E62F8FE325C49DB538575`). A política de atualização, a avaliação de risco e o gate `npm audit` no CI estão em `docs/DEPENDENCIAS_E_SEGURANCA.md`.
+
 ### Variáveis de ambiente (segredos)
 
 | Variável | Onde definir | Obrigatória |

@@ -38,6 +38,11 @@ jobs:
       - name: Validar a configuração do Worker
         run: npm run check
 
+      # Gate bloqueante: sinaliza que o lockfile derivou desde a última
+      # atualização. Correção em docs/DEPENDENCIAS_E_SEGURANCA.md.
+      - name: Auditar dependências de desenvolvimento
+        run: npm audit --audit-level=high
+
       - name: Publicar resumo
         if: always()
         run: |

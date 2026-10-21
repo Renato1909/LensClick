@@ -44,6 +44,15 @@ jobs:
       - name: Validar a configuração do Worker
         run: npm run check
 
+      # O LensClick não tem dependências de runtime, então o audit relevante é o
+      # dev-inclusive (é onde moram undici/sharp/miniflare, via wrangler).
+      # Informativo de propósito: o npm audit consulta um serviço externo e não
+      # deve bloquear um PR por indisponibilidade do registry. O gate que
+      # bloqueia é o do job diário (smoke-diario.yml).
+      - name: Auditar dependências de desenvolvimento (informativo)
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
   # Iniciativa 5.6.a do roadmap: preview local com smoke ponta a ponta.
   # Sobe o Worker com D1 local migrado e executa o smoke HTTP contra ele,
   # para que PRs sejam validados em ambiente real antes do merge.

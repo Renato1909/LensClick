@@ -270,7 +270,8 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #137 | `f5c8f04` | perf: alinha preload do hero, remove CSS morto e paraleliza carga da conta (iniciativa A2) |
 | #138 | `d22b1e0` | docs: ADR 002 da autenticacao em duas etapas (2FA) — status Proposto |
 | #139 | `28ad193` | docs: sync HANDOFF to base d22b1e0 with PRs 133-138, ADR 002 and OpenCode agents |
-| #140 | — | fix(opencode): agentes do projeto com `mode: all` e `default_agent` para o cliente desktop |
+| #140 | `9a2210d` | fix(opencode): agentes do projeto com `mode: all` e `default_agent` para o cliente desktop |
+| #141 | — | chore(deps): atualiza o toolchain de desenvolvimento e zera o `npm audit` |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -289,6 +290,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 - **Agentes do projeto no OpenCode** — `.opencode/agents/*.md` com `mode: all` (funcionam como agente principal e como subagente) e `.opencode/opencode.json` com `default_agent: "arquiteto-de-software"`. No TUI, `Ctrl+X` e depois `A` lista os agentes e `Shift+Tab` alterna entre eles; no CLI, `opencode run --agent <id>`. O cliente desktop v2.1.1 não tem seletor de agentes e por isso depende do `default_agent`.
 - **Brevo** como provedor de e-mail transacional (recuperação de senha, verificação de e-mail e alertas operacionais).
 - **Migrações imutáveis** — regra estabelecida: nunca editar migração publicada.
+- **Toolchain auditado** — o PR #141 atualizou o lockfile para `wrangler` 4.151.3 (de 4.118.0), levando o `npm audit` a **0 vulnerabilidades**, e realinhou o `allowScripts` do `package.json`. O bundle publicado permaneceu **byte-idêntico** (SHA-256 `FAF38EFE…`), provando risco zero no artefato. O gate `npm audit --audit-level=high` é informativo no CI de PR e bloqueante no job diário. Detalhes em `docs/DEPENDENCIAS_E_SEGURANCA.md`.
 - **Contratos por rota** — a infraestrutura compartilhada cobre atualmente 43 padrões de rota e 48 contratos HTTP catalogados.
 - **Rate limiting híbrido** — a iniciativa 1.3 adicionou quatro bindings nativos de 60 segundos como escudo de rajada e preservou as políticas longas no D1 como camada autoritativa e fallback.
 - **Health check mínimo e seguro** — `GET /api/health` executa `SELECT 1` no D1, retorna somente estado genérico e não consulta o R2 para evitar operações artificiais.
@@ -314,6 +316,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 5. **Cache de descoberta com TTL curto** — buscas e perfis públicos usam `caches.default` por 60 segundos; alterações podem permanecer stale por esse intervalo.
 6. **Cobertura E2E seletiva** — somente três fluxos críticos rodam em navegador real contra o preview local; integrações ponta a ponta com serviços externos continuam fora do escopo.
 7. **CSP de estilos ainda permissiva** — `script-src` já não usa `'unsafe-inline'`, mas `style-src` o preserva temporariamente; sua remoção exige uma entrega visual separada.
+8. **Toolchain de desenvolvimento pode derivar** — o projeto não tem dependências de runtime, mas `wrangler` → `miniflare` → `undici` + `sharp` carregam advisories em versões antigas; o lockfile ficou 3 meses sem atualização. O gate `npm audit --audit-level=high` no job diário sinaliza a deriva, e a política está em `docs/DEPENDENCIAS_E_SEGURANCA.md`. Impacto restrito a DoS local em dev/CI.
 
 ### Legais / Processo
 
@@ -547,6 +550,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 - **Migrações imutáveis** — nunca editar `0001`–`0014`. Nova alteração de schema = novo arquivo `0015_*.sql`.
 - **Fast-forward only** — `main` não aceita merge commits. Todo PR é squash-mergeado.
 - **Status check obrigatório** — o CI "Qualidade" precisa passar antes do merge. Rodar `npm test` e `npm run check` localmente antes de abrir PR.
+- **Auditoria de dependências** — rodar `npm audit` antes de abrir PR que toque `package.json` ou `package-lock.json`, e nunca editar o lockfile à mão. O gate do job diário é bloqueante; o do CI de PR é informativo. Política em `docs/DEPENDENCIAS_E_SEGURANCA.md`.
 - **i18n** — toda string visível ao usuário deve passar por `window.i18n`; cada chave precisa existir em `public/locales/pt-BR.json` e `public/locales/en-US.json`. Não hardcoded em PT ou EN.
 - **Design tokens** — usar variáveis `--lc-*` de `public/refinements.css`. Não introduzir cores/espaçamentos hardcoded.
 - **R2 privado** — imagens nunca são públicas; sempre servidas via Worker com validação de sessão quando aplicável.
@@ -561,7 +565,8 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 - `docs/CONTEXTO_PROJETO.md` — onboarding permanente (fonte primária deste handoff).
 - `docs/ROADMAP_EVOLUCAO.md` — plano de evolução técnica (Fases 1 a 4 concluídas; Fase 5 em execução, com 5.1, 5.2, 5.3 e 5.4 concluídas).
 - `docs/OBSERVABILIDADE.md` — contrato dos eventos, privacidade, consultas, evidências e rollback da iniciativa 1.1.
-- `docs/RATE_LIMITING.md` — arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
+- `docs/RATE_LIMITING.md` - arquitetura híbrida, políticas, evidências de produção e rollback da iniciativa 1.3.
+- `docs/DEPENDENCIAS_E_SEGURANCA.md` - superfície de dependências, avaliação de risco do toolchain, gate `npm audit` no CI, evidências e rollback.
 - `docs/D1_HEALTH.md` — contrato do health check, índices, operação, evidências e rollback da iniciativa 1.4.
 - `docs/BACKUP_D1.md` — backup diário do D1 no R2, procedimento de restauração e validação periódica (iniciativa 5.2).
 - `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md` — gates de incorporação, paridade, 2FA, validação, domínio, jurídico e Google Play (Fase 6).
