@@ -106,7 +106,7 @@ Não há funcionalidade em desenvolvimento numa branch pendente. As Fases 1 a 4 
 - **Portabilidade LGPD** — exportação autenticada dos dados do titular em JSON, sem hashes de senha nem binários do R2.
 - **Perfis indexáveis** — rota `/fotografo/:slug` com SSR, canonical, Open Graph e JSON-LD (Fase 3.2).
 - **Sitemap e robots** — gerados dinamicamente a partir dos perfis publicados (Fase 3.4).
-- **Metadados sociais** — canonical, Open Graph e JSON-LD nas páginas públicas estáticas e nos perfis SSR.
+- **Metadados sociais** — canonical, Open Graph, Twitter Cards e JSON-LD nas páginas públicas estáticas e nos perfis SSR. O **Worker é a fonte única de verdade**: `src/worker.mjs` emite os metadados do que é servido, a partir de uma política por caminho; os arquivos HTML carregam apenas a `meta description` (texto-fonte em PT-BR), que é lida e propagada para `og:description` e JSON-LD. Duplicar canonical ou `og:*` nos arquivos seria danoso (o Google ignora dois `rel="canonical"` conflitantes e cada rede social lê a primeira ou a última ocorrência de `og:image`). Matriz de indexabilidade: indexáveis `/`, `/busca.html`, `/termos.html`, `/privacidade.html`; `noindex, follow` nas cinco páginas de autenticação; `noindex, nofollow` em `/perfil.html` e `/admin.html` (também por header `X-Robots-Tag`). O canonical é derivado do host a partir de um **path**, sem query string — assim o domínio próprio (5.8.c) entra sem alteração de código.
 - **Observabilidade e alertas** — logs estruturados com `X-Request-ID`, SLOs definidos e sondas in-worker de disponibilidade, P95 e taxa de 5xx (Fases 1.1 e 4.4).
 - **Entrega automatizada** — CI com lint, testes, preview, smoke e E2E; deploy de produção automatizado após integração na `main`.
 - **Bilíngue PT-BR/EN-US** — catálogos JSON separados, fallback progressivo e runtime `public/lang.js` com `window.i18n`.
@@ -272,7 +272,10 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #139 | `28ad193` | docs: sync HANDOFF to base d22b1e0 with PRs 133-138, ADR 002 and OpenCode agents |
 | #140 | `9a2210d` | fix(opencode): agentes do projeto com `mode: all` e `default_agent` para o cliente desktop |
 | #141 | `a61d5f9` | chore(deps): atualiza o toolchain de desenvolvimento e zera o `npm audit` |
-| #142 | — | chore(ambiente): mantém o toolchain do projeto no disco D: (sem escrita no C:) |
+| #142 | `712cd77` | chore(ambiente): mantém o toolchain do projeto no disco D: (sem escrita no C:) |
+| #143 | `0489ab8` | fix(db): sincroniza o catalogo `db/schema.ts` com a migration 0014 e adiciona guarda de consistencia |
+| #144 | `d915f56` | chore(ci): atualiza `actions/checkout` e `actions/setup-node` para v7 |
+| #145 | — | fix(seo): corrige canonical, indexabilidade, `og:image` e JSON-LD das páginas públicas |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -461,7 +464,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 - Versão `63108ee4-f69a-4933-aa2a-19772010e9d7` publicada em 18 de setembro de 2026 com 203/203 testes e smoke de produção aprovado. Nenhuma migration ou dado do D1 foi alterado.
 
 ### P4 — SEO e presença (médio prazo, baixo risco)
-- Open Graph e JSON-LD nas páginas públicas estáticas — concluídos em 5.8.b; perfis SSR mantêm metadados específicos desde a Fase 3.2.
+- Open Graph, Twitter Cards e JSON-LD nas páginas públicas estáticas — evoluídos no PR #145 a partir do que a 5.8.b entregou: `og:image` em todas as páginas, JSON-LD por tipo (`WebSite` + `Organization` + `WebPage` na home, `CollectionPage` na busca, `WebPage` nas legais), `noindex` nas páginas de autenticação e canonical derivado do host sem query string; perfis SSR mantêm metadados específicos desde a Fase 3.2.
 - Cache via `caches.default` para buscas e perfis públicos — concluído na Fase 4.1.
 - Domínio próprio, DNS e remetente Brevo no domínio — pendente (5.8.c).
 
