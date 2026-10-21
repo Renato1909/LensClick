@@ -100,7 +100,7 @@ LensClick/
 ├── .opencode/
 │   └── agents/              # 12 agentes OpenCode (.md, mode: primary)
 ├── data/                    # D1 local (NÃO commitar)
-├── db/schema.ts             # Catálogo TypeScript do schema (versão 13)
+├── db/schema.ts             # Catálogo TypeScript do schema (versão 14)
 ├── docs/
 │   ├── DOCUMENTACAO_TECNICA.md   # Documentação técnica completa
 │   └── CONTEXTO_PROJETO.md       # Este documento
@@ -108,7 +108,8 @@ LensClick/
 │   ├── 0001_initial.sql ... 0010_monitor_minute_buckets.sql
 │   ├── 0011_email_verification.sql
 │   ├── 0012_admin_role.sql
-│   └── 0013_portfolio_cover_category.sql
+│   ├── 0013_portfolio_cover_category.sql
+│   └── 0014_sessions_kind.sql
 ├── public/                 # Frontend (assets estáticos)
 │   ├── index.html          # Landing
 │   ├── cadastro.html       # Cadastro
@@ -433,8 +434,8 @@ A sequência atual é a **Fase 6**, detalhada em `docs/PLANO_ANDROID_VALIDACAO_P
 
 ### Estado de `db/schema.ts`
 
-- `schemaVersion=13`, com as 16 tabelas das migrações `0001`–`0013`.
-- As migrações permanecem como fonte executável; o catálogo TypeScript deve acompanhar novas migrações no mesmo PR.
+- `schemaVersion=14`, com as 16 tabelas das migrações `0001`-`0014`.
+- As migrações permanecem como fonte executável; o catálogo TypeScript deve acompanhar novas migrações no mesmo PR. A invariante é verificada automaticamente: o teste `o catalogo db/schema.ts esta em sintonia com as migrations publicadas` falha se `schemaVersion` divergir da quantidade de arquivos em `migrations/` ou se a última migration não tiver o prefixo correspondente.
 
 ### Antes de qualquer alteração
 
