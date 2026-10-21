@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { createWorkerFixture } from '../test-support/worker-fixture.mjs';
@@ -27,9 +27,27 @@ function queryPlan(database, sql, values) {
   return database.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...values).map(({ detail }) => detail).join('\n');
 }
 
+test('o catalogo db/schema.ts esta em sintonia com as migrations publicadas', () => {
+  const migrations = readdirSync(resolve('migrations'))
+    .filter((file) => file.endsWith('.sql'))
+    .sort();
+  const version = Number(/schemaVersion = (\d+)/.exec(read('db/schema.ts'))[1]);
+
+  assert.equal(
+    version,
+    migrations.length,
+    `schemaVersion (${version}) difere da quantidade de migrations (${migrations.length})`
+  );
+  assert.match(
+    migrations.at(-1),
+    new RegExp(`^${String(version).padStart(4, '0')}_`),
+    `a ultima migration (${migrations.at(-1)}) nao corresponde a versao ${version}`
+  );
+});
+
 test('migrations de busca alinham os indices aos filtros e a ordenacao', () => {
   const database = migratedDatabase();
-  assert.match(read('db/schema.ts'), /schemaVersion = 13/);
+  assert.match(read('db/schema.ts'), /schemaVersion = 14/);
   const base = `
     SELECT p.user_id
     FROM professional_profiles p

@@ -1,6 +1,13 @@
 // Referencia do esquema D1. A migracao executavel correspondente fica em
 // migrations/; alteracoes futuras devem atualizar ambos.
-export const schemaVersion = 13;
+//
+// Escopo: este catalogo lista as TABELAS e a versao do schema. Colunas,
+// indices e CHECKs sao definidos exclusivamente pelas migrations, que sao a
+// fonte executavel. `schemaVersion` deve ser igual a quantidade de arquivos
+// em migrations/ e a ultima migration deve ter esse mesmo prefixo — o teste
+// `o catalogo db/schema.ts esta em sintonia com as migrations publicadas`
+// verifica essa invariante.
+export const schemaVersion = 14;
 
 export const tables = {
   users: "users",
