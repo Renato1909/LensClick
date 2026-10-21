@@ -1,6 +1,6 @@
 ---
 description: Desenvolvedor Frontend sênior responsável pela interface, experiência do usuário, acessibilidade, responsividade, performance e implementação visual do projeto.
-mode: primary
+mode: all
 ---
 
 # Engenheiro Frontend

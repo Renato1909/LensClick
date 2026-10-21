@@ -220,7 +220,22 @@ Workflow "Qualidade" dispara em `pull_request` e `push` para `main`:
 
 O projeto possui **11 agentes Copilot** em `.github/agents/*.agent.md`. Cada um tem frontmatter (`name`, `description`, `argumentHint`) e processo obrigatório em fases (Análise → Planejamento → Implementação → Revisão → Validação).
 
-A partir do PR #134, os mesmos agentes foram portados para o OpenCode em `.opencode/agents/*.md` (12 arquivos, com `mode: primary`, selecionáveis no seletor de agentes do chat: os 11 portados + o `explore`). O conteúdo dos prompts foi preservado integralmente entre as duas plataformas.
+A partir do PR #134, os mesmos agentes foram portados para o OpenCode em `.opencode/agents/*.md` (12 arquivos: os 11 portados + o `explore`). O conteúdo dos prompts foi preservado integralmente entre as duas plataformas.
+
+Todos os 12 agentes OpenCode usam `mode: all`, o que os torna **selecionáveis como agente principal** no seletor do chat **e** disponíveis para **delegação via subagente** — exigência das seções "Integração com outros agentes" de cada prompt. O `explore` do projeto substitui o `explore` nativo do OpenCode com um prompt mais rico, preservando o papel de subagente de busca e leitura.
+
+O arquivo `.opencode/opencode.json` define `default_agent: "arquiteto-de-software"`: novas sessões do projeto já abrem com o coordenador técnico, porque o cliente desktop não expõe seletor de agentes.
+
+### Como selecionar um agente
+
+| Interface | Comando | Observação |
+|---|---|---|
+| TUI (terminal) | `Ctrl+X` e depois `A` | Abre a lista de agentes; `Shift+Tab` alterna entre eles |
+| TUI (terminal) | `Ctrl+X` e depois `M` | Lista de modelos; `Ctrl+T` alterna variantes |
+| CLI (`opencode run`) | `--agent <id>` | Ex.: `opencode run --agent especialista-em-seguranca "audite as rotas de admin"` |
+| App desktop / cliente web | — | Não há seletor de agentes no composer (v2.1.1); usa o `default_agent` do projeto |
+
+O `id` de cada agente é o nome do arquivo em `.opencode/agents/`, em kebab-case (`arquiteto-de-software`, `especialista-em-seguranca`, `revisor-de-codigo`, `explore`, e assim por diante).
 
 | Agente | Responsabilidade |
 |---|---|

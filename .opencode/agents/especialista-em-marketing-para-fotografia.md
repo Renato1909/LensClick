@@ -1,6 +1,6 @@
 ---
 description: Especialista sênior responsável por posicionamento, comunicação, experiência comercial, proposta de valor e conversão do LensClick para fotógrafos e clientes.
-mode: primary
+mode: all
 ---
 
 # Especialista em Marketing para Fotografia
