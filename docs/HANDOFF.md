@@ -2,15 +2,15 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 19 de setembro de 2026, com a base `main` em `a261502` (PR #126 mergeado e publicado).
+> **Data de referência:** 21 de outubro de 2026, com a base `main` em `d22b1e0` (PR #138 mergeado e publicado).
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fases 1 a 4 concluídas. Na Fase 5, restam a revisão jurídica formal (5.5.b) e domínio/DNS/remetente Brevo (5.8.c). A **Fase 6** foi planejada para incorporar o aplicativo Android nativo em Kotlin, auditar e implementar sua paridade com a web, projetar 2FA multicliente, validar web/API/Android e publicar com segurança na Google Play. Plano detalhado em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`.
+> **Estado do roadmap:** Fases 1 a 4 concluídas. Na Fase 5, restam a revisão jurídica formal (5.5.b) e domínio/DNS/remetente Brevo (5.8.c). A **Fase 6** foi planejada para incorporar o aplicativo Android nativo em Kotlin, auditar e implementar sua paridade com a web, implementar o 2FA multicliente, validar web/API/Android e publicar com segurança na Google Play. O planejamento da 2FA já avançou: o **ADR 002** (`docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`) está **Proposto** — threat model, comparação de opções e contratos de rotas definidos, sem implementação iniciada (Gate E). Plano detalhado em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`.
 
 ---
 
 ## 1. Situação atual da main
 
-- **Base da entrega:** `main` → commit `522543d` — "feat: fecha os 3 criticos do ADR 001 de autenticacao movel" (#132).
+- **Base da entrega:** `main` → commit `d22b1e0` — "docs: ADR 002 da autenticacao em duas etapas (2FA)" (#138).
 - **Working tree após a integração:** arquivos rastreados limpos e sincronizados com `origin/main`; artefatos locais não rastreados e alheios ao projeto devem ser preservados.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -39,7 +39,7 @@
 | UX | `public/ux.js` (`window.LensClickUX`) |
 | Design tokens | `public/refinements.css` (prefixo `--lc-*`) |
 | Testes | Node.js test runner (`node --test`) — execute `npm test` para consultar o total atual |
-| Node | >=22.13.0 |
+| Node | >=22.13.0 (local: v24.22.0 portable em `D:\nodejs`) |
 | Dependências de desenvolvimento | Wrangler ^4.0.0 e Playwright ^1.63.0 |
 
 ### Scripts disponíveis (`package.json`)
@@ -63,11 +63,14 @@
 
 > ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0015_*.sql` para qualquer alteração de schema.
 
+> O ADR 002 prevê a migration `0015_two_factor.sql` (colunas em `users` + 3 tabelas novas), mas ela **não existe**: até a aprovação da decisão, nenhum schema foi alterado. O total de migrações publicadas permanece 14.
+
 ---
 
 ## 2. Branches atuais
 
 - **Branches locais permanentes:** somente `main`.
+- **Clone local único:** `D:/LensClick - Recomeço` é o working tree canônico do projeto. Os clones anteriores (`D:/LensClick` e `D:/LensClick - Atualizado`) estão obsoletos e devem ser descartados.
 - **Branches remotas:** somente `origin/main` (além do ponteiro simbólico `origin/HEAD -> origin/main`).
 - **Branches sem upstream:** nenhuma.
 - **Trabalho pendente em branches:** nenhum.
@@ -113,10 +116,10 @@ Não há funcionalidade em desenvolvimento numa branch pendente. As Fases 1 a 4 
 ### Não implementado / pendente
 
 - Fase 6: o aplicativo Android nativo em Kotlin existe fora desta árvore; seu projeto Android Studio ainda precisa ser disponibilizado, versionado e auditado antes de qualquer afirmação de paridade ou publicação.
-- Fase 6: contrato de autenticação móvel, paridade funcional, 2FA multicliente, matriz de testes e publicação Google Play ainda não foram executados.
+- Fase 6: paridade funcional, matriz de testes e publicação Google Play ainda não foram executados. O contrato de autenticação móvel está publicado no ADR 001 e o 2FA está projetado no ADR 002 (Proposto, sem implementação).
 - 5.8.c: domínio próprio, DNS e remetente Brevo no domínio.
 - 5.5.b: revisão legal formal dos Termos de Uso e da Política de Privacidade.
-- 2FA continua fora do escopo atual.
+- 2FA continua fora do escopo atual: o ADR 002 está **Proposto** (TOTP + 10 códigos de recuperação de uso único, opt-in na fase 1), mas nenhuma rota, migration ou binding foi criado — a implementação depende da aprovação do mantenedor.
 - O rate limiting permanece deliberadamente híbrido: escudo de rajada nativo na edge e políticas longas autoritativas no D1.
 - A suíte de contratos cobre as 43 rotas e os 48 contratos HTTP catalogados (incluindo autenticação móvel revogável); apenas os 3 fluxos críticos têm cobertura em navegador real, e testes ponta a ponta com serviços reais permanecem fora do escopo atual.
 - O endpoint `GET /api/health` verifica Worker e D1; o R2 é monitorado pelas rotas reais de imagem para evitar operações artificiais de armazenamento.
@@ -260,6 +263,12 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #130 | `6f0f2af` | docs: ADR 001 da autenticacao movel com decisoes e riscos pos-merge |
 | #131 | `b755a63` | ci: smoke diario agendado as 04h (BRT) via GitHub Actions |
 | #132 | `522543d` | feat: fecha os 3 criticos do ADR 001 de autenticacao movel (0014_sessions_kind.sql) |
+| #133 | `6acc6c2` | docs: sync HANDOFF to base 522543d with PRs 126-132 and migration 0014 |
+| #134 | `35e285b` | feat: importa os 11 agentes do Copilot para o OpenCode |
+| #135 | `05bcb2c` | refactor: migra aliases visuais legados para tokens --lc-* |
+| #136 | `72f182e` | feat: torna os 12 agentes selecionaveis no chat (mode: primary) — squash vazio: o `mode: primary` já havia entrado em `main` pelo PR #135 |
+| #137 | `f5c8f04` | perf: alinha preload do hero, remove CSS morto e paraleliza carga da conta (iniciativa A2) |
+| #138 | `d22b1e0` | docs: ADR 002 da autenticacao em duas etapas (2FA) — status Proposto |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -282,6 +291,9 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 - **Health check mínimo e seguro** — `GET /api/health` executa `SELECT 1` no D1, retorna somente estado genérico e não consulta o R2 para evitar operações artificiais.
 - **Índices orientados pelas consultas reais** — a migration `0005` adicionou índices para listagem, estado e disponibilidade; o índice explícito redundante de `slug` foi removido, preservando o autoíndice da restrição `UNIQUE`.
 - **Roteador declarativo extraído** — o PR #34 criou `src/router.mjs` com as 25 combinações HTTP catalogadas, preservando origem, parâmetros dinâmicos, respostas e entrega de assets.
+- **2FA projetado no ADR 002** — o PR #138 registrou a decisão de autenticação em duas etapas: TOTP (RFC 6238) + 10 códigos de recuperação de uso único, opt-in na fase 1 com obrigação para `is_admin` após janela de migração, desafio com TTL de 5 min, dispositivo confiável de 90 dias revogável e desativação que revoga todas as sessões web e móveis. Passkeys/WebAuthn ficaram como evolução futura (o schema já foi projetado para receber `method`); código por e-mail e push approval foram rejeitados como fator primário. Status **Proposto**: o Gate E exige aprovação antes de qualquer implementação.
+- **Agentes portados para o OpenCode** — os PRs #134 a #136 trouxeram os 11 agentes do Copilot para `.opencode/agents/` com `mode: primary` (selecionáveis no chat), mais o agente `explore`, totalizando 12. O PR #136 foi mergeado como squash vazio, porque o `mode: primary` já havia entrado em `main` pelo PR #135.
+- **Iniciativa A2 de performance** — o PR #137 alinhou o preload do hero à URL real do elemento LCP (`w=1600`), removeu ~2,4 KB de CSS morto, trocou `background-attachment: fixed` por `scroll` em telas ≤880px, normalizou `lang="pt-BR"` e paralelizou as chamadas `/api/account/professional-profile` e `/api/account/portfolio` na central da conta.
 
 ---
 
@@ -289,7 +301,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 
 ### Críticos
 
-1. **Sem 2FA e verificação de e-mail não bloqueante** — a verificação existe, mas a Decisão 18 mantém o login em modo de aviso; contas não verificadas ainda podem entrar. O 2FA permanece não implementado.
+1. **Sem 2FA e verificação de e-mail não bloqueante** — a verificação existe, mas a Decisão 18 mantém o login em modo de aviso; contas não verificadas ainda podem entrar. O 2FA permanece não implementado: o ADR 002 está Proposto e não inicia implementação. Riscos já assumidos no ADR: segredo TOTP em claro no D1 (runbook de rotação pendente), phishing residual de TOTP e derivas de relógio.
 2. **Políticas longas ainda usam D1** — o escudo nativo protege rajadas, mas as janelas de 15 minutos e 1 hora continuam em `rate_limits`. A arquitetura é intencional e segura, porém ainda consome D1 nas rotas protegidas.
 
 ### Técnicos
@@ -490,7 +502,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 3. [6.2] Definir o contrato móvel seguro e implementar paridade por fatias.
 4. [5.8.c/6.6] Escolher o domínio e configurar Cloudflare, DNS e remetente Brevo.
 5. [5.5.b/6.6] Conduzir a revisão jurídica formal em paralelo, concluindo-a antes do lançamento comercial.
-6. [6.3] Projetar e implementar 2FA para web e Android após threat model e decisão técnica.
+6. [6.3] Implementar o 2FA para web e Android conforme o ADR 002 (Proposto): o threat model e a decisão técnica já estão prontos; falta a aprovação do mantenedor, a migration `0015_two_factor.sql` e o slice de implementação.
 7. [6.4] Executar a validação integral e corrigir todos os achados críticos/altos.
 8. [6.5] Publicar na faixa interna, teste fechado e lançamento gradual da Google Play.
 ```
@@ -517,10 +529,13 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 
 ### Ambiente (Windows)
 
+- **Caminho canônico:** `D:/LensClick - Recomeço` — clone Git completo e único working tree do projeto.
 - **`safe.directory` ao mover a pasta:** se o git reportar `fatal: detected dubious ownership` (típico após mover/copiar o repositório), registrar o caminho atual:
   ```
-  git config --global --add safe.directory 'C:/Users/renat/Desktop/LensClick - Hoje'
+  git config --global --add safe.directory 'D:/LensClick - Recomeço'
   ```
+  > `safe.directory` só é lido da configuração **global** (um repositório não pode se autoautorizar). Alternativa sem gravar nada no `C:`: definir, apenas na sessão do PowerShell, `GIT_CONFIG_COUNT=1`, `GIT_CONFIG_KEY_0=safe.directory` e `GIT_CONFIG_VALUE_0=D:/LensClick - Recomeço`.
+- **Node.js no D:** o runtime é a distribuição portable oficial em `D:\nodejs` (v24.22.0, LTS "Krypton"), já incluída no PATH do usuário. O cache e o prefixo globais do npm apontam para `D:\npm-cache` e `D:\nodejs`, de modo que o toolchain não grava nada no `C:`. No PowerShell use `npm.cmd` — o `npm.ps1` é bloqueado pela ExecutionPolicy do Windows.
 - **PowerShell, não bash:** este ambiente usa PowerShell 5.1. Sintaxe bash (loops `for`, `&&`) não funciona. Usar `foreach`, `;` para encadear, e `Select-Object`/`Where-Object` em vez de pipes unix.
 - **Auth do git remoto:** o `gh` está autenticado via keyring nesta máquina e push/pull/PR via HTTPS funcionam (validado em 01/09/2026 no fluxo do PR #82).
 
@@ -560,4 +575,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 19 de setembro de 2026, com base `main` em `522543d` (PR #132); Fase 5 encerrada com os gates externos (revisão legal formal e domínio próprio) pendentes; Fase 6 planejada para convergência web/Android, 2FA, validação integral e publicação Google Play.
+**Última atualização deste handoff:** 21 de outubro de 2026, com base `main` em `d22b1e0` (PR #138); Fase 5 encerrada com os gates externos (revisão legal formal e domínio próprio) pendentes; Fase 6 em planejamento — contrato de autenticação móvel publicado no ADR 001, 2FA projetado no ADR 002 (Proposto, sem implementação), agentes portados para o OpenCode (#134 a #136) e iniciativa A2 de performance concluída (#137); convergência web/Android, validação integral e publicação Google Play continuam pendentes.

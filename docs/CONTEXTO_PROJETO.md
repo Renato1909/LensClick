@@ -97,6 +97,8 @@ LensClick/
 │   ├── workflows/quality.yml
 │   ├── workflows/deploy.yml
 │   └── pull_request_template.md
+├── .opencode/
+│   └── agents/              # 12 agentes OpenCode (.md, mode: primary)
 ├── data/                    # D1 local (NÃO commitar)
 ├── db/schema.ts             # Catálogo TypeScript do schema (versão 13)
 ├── docs/
@@ -218,6 +220,8 @@ Workflow "Qualidade" dispara em `pull_request` e `push` para `main`:
 
 O projeto possui **11 agentes Copilot** em `.github/agents/*.agent.md`. Cada um tem frontmatter (`name`, `description`, `argumentHint`) e processo obrigatório em fases (Análise → Planejamento → Implementação → Revisão → Validação).
 
+A partir do PR #134, os mesmos agentes foram portados para o OpenCode em `.opencode/agents/*.md` (12 arquivos, com `mode: primary`, selecionáveis no seletor de agentes do chat: os 11 portados + o `explore`). O conteúdo dos prompts foi preservado integralmente entre as duas plataformas.
+
 | Agente | Responsabilidade |
 |---|---|
 | **Arquiteto de Software** | Decisões técnicas, arquitetura, escalabilidade, segurança, qualidade de longo prazo |
@@ -261,7 +265,7 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 - Galerias privadas.
 - Notificações.
 - O aplicativo Android nativo em Kotlin já foi desenvolvido no Android Studio, mas seu código ainda está fora deste repositório e precisa ser disponibilizado, versionado e auditado.
-- A Fase 6 incorpora o projeto, cria a matriz de paridade web/API/Android, define autenticação móvel, implementa 2FA multicliente, valida o release e prepara a publicação Google Play.
+- A Fase 6 incorpora o projeto, cria a matriz de paridade web/API/Android, define autenticação móvel, implementa o 2FA multicliente projetado no ADR 002, valida o release e prepara a publicação Google Play.
 - O plano e os gates estão em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`.
 
 ---
@@ -381,7 +385,7 @@ O estado atual de branches, branches órfãs, PRs e pendências Git é mantido e
 ### Débitos técnicos conhecidos
 
 1. **Hotspots de conflito** — os catálogos em `public/locales/` concentram alterações frequentes. `src/worker.mjs` segue como ponto de composição, mas os handlers de domínio foram extraídos na Fase 4.2, reduzindo conflitos.
-2. **Sem 2FA** — a verificação de e-mail existe em modo de aviso, mas o segundo fator ainda não foi projetado; será tratado na Fase 6 para web e Android.
+2. **Sem 2FA** — a verificação de e-mail existe em modo de aviso, mas o segundo fator ainda não foi implementado; foi **projetado** no ADR 002 (`docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`, status Proposto: TOTP + códigos de recuperação), e a implementação está prevista para a Fase 6, web e Android.
 3. **Android fora da fonte de verdade** — o projeto Kotlin existe, mas ainda precisa ser incorporado ao Git e auditado quanto a arquitetura, segurança, paridade e publicação.
 4. **Rate limit híbrido** — escudo de rajada nativo na edge (PR #30) combinado a políticas longas no D1; atende o volume atual.
 5. **Termos/política precisam de revisão jurídica** — divulgações LGPD de alta prioridade (PR #89), de média prioridade (PR #91) e cláusulas opcionais (PR #93) já publicadas; resta a revisão legal formal antes do uso comercial. Iniciativa 5.5.
@@ -408,7 +412,7 @@ Na Fase 5, restam a revisão jurídica formal (5.5.b) e domínio/DNS/e-mail (5.8
 | 23 | 5.7 Qualidade e débitos técnicos — concluída | Média |
 | 24 | 5.8 Produto e presença — parcial; domínio/e-mail pendentes | Média |
 
-A sequência atual é a **Fase 6**, detalhada em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`: incorporar o projeto Kotlin; auditar paridade; definir contrato móvel; implementar diferenças; projetar 2FA; validar web/API/Android; concluir domínio e jurídico; publicar por faixas na Google Play.
+A sequência atual é a **Fase 6**, detalhada em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`: incorporar o projeto Kotlin; auditar paridade; definir contrato móvel; implementar diferenças; implementar o 2FA projetado no ADR 002 (Proposto); validar web/API/Android; concluir domínio e jurídico; publicar por faixas na Google Play.
 
 ### Estado de `db/schema.ts`
 
@@ -442,6 +446,8 @@ A sequência atual é a **Fase 6**, detalhada em `docs/PLANO_ANDROID_VALIDACAO_P
 11. **`wrangler.jsonc`** — bindings (D1 `DB`, R2 `PROFILE_IMAGES`, Assets `ASSETS`), configuração do Worker.
 12. **`package.json`** — scripts (`start`, `dev`, `test`, `check`, `test:smoke`, `db:migrate:*`), engines.
 13. **`.github/agents/`** — 11 agentes Copilot e suas responsabilidades.
+14. **`.opencode/agents/`** — os mesmos 11 agentes portados para o OpenCode, mais o `explore` (12 no total), com `mode: primary`.
+15. **`docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`** — decisão de 2FA (status Proposto): threat model, comparação de opções e contratos previstos, sem implementação iniciada.
 
 ### Leitura contextual (conforme a tarefa)
 

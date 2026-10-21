@@ -456,7 +456,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 6.3 Autenticação em duas etapas multicliente
 
-> **Estado:** planejada; nenhuma implementação iniciada.
+> **Estado:** planejada e **documentada** — o ADR 002 (`docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`, PR #138) cobre os itens 1 e 2: threat model, comparação de TOTP/passkeys/código por e-mail e desenho de ativação, desafio, códigos de recuperação, dispositivo confiável, desativação, rate limiting, auditoria e revogação de sessões. Os itens 3 e 4 (implementação e validação) permanecem **não iniciados**, aguardando aprovação do mantenedor (Gate E).
 
 1. Elaborar threat model e ADR comparando TOTP, passkeys/WebAuthn e códigos por e-mail.
 2. Projetar ativação, desafio, códigos de recuperação, dispositivo confiável, desativação, recuperação, rate limiting, auditoria e revogação de sessões.
