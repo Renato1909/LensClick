@@ -198,36 +198,160 @@ export function renderMissingProfilePage(template) {
     .replace('<section class="profile-error" id="profileError" hidden', '<section class="profile-error" id="profileError"');
 }
 
-const STATIC_METADATA_PATHS = new Set([
-  '/', '/index.html', '/busca.html', '/cadastro.html', '/login.html',
-  '/recuperar-senha.html', '/redefinir-senha.html', '/verificar-email.html',
-  '/privacidade.html', '/termos.html'
+const SITE_NAME = 'LensClick';
+const SITE_LOCALE = 'pt_BR';
+// Imagem social padrao. A marca definitiva (1200x630 propria) e o item de
+// design pendente; ate la, reaproveita a foto do hero, que ja e a imagem de
+// maior destaque da home e esta permitida pela CSP.
+const OG_IMAGE_PATH = null;
+const OG_IMAGE_FALLBACK = 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?q=80&w=1200&h=630&fit=crop&auto=format';
+const OG_IMAGE_WIDTH = '1200';
+const OG_IMAGE_HEIGHT = '630';
+const OG_IMAGE_ALT = 'LensClick - encontre fotografos profissionais perto de voce';
+
+// Politica de metadados por caminho.
+//
+// O Worker e a fonte unica de verdade do que e servido: canonical, robots,
+// Open Graph, Twitter Cards e JSON-LD sao emitidos aqui. Os arquivos HTML
+// carregam apenas a `meta description` (texto-fonte, em PT-BR), que e lida e
+// propagada para og:description e JSON-LD.
+//
+// Duplicar canonical ou og:* nos arquivos seria danoso: o Google ignora dois
+// `rel="canonical"` conflitantes, e cada rede social le a primeira ou a
+// ultima ocorrencia de og:image, o que produziria previews divergentes.
+//
+// `canonical` e sempre um PATH (nunca a URL da requisicao): assim o host
+// canonico acompanha o dominio proprio (5.8.c) sem nenhuma alteracao de codigo
+// e a query string nunca vira canonical.
+const STATIC_PAGE_POLICIES = new Map([
+  ['/', { canonical: '/', ogType: 'website', schema: 'website' }],
+  ['/index.html', { canonical: '/', ogType: 'website', schema: 'website' }],
+  ['/busca.html', { canonical: '/busca.html', ogType: 'website', schema: 'collection' }],
+  ['/termos.html', { canonical: '/termos.html', ogType: 'article', schema: 'webpage' }],
+  ['/privacidade.html', { canonical: '/privacidade.html', ogType: 'article', schema: 'webpage' }],
+  ['/cadastro.html', { indexable: false }],
+  ['/login.html', { indexable: false }],
+  ['/recuperar-senha.html', { indexable: false }],
+  ['/redefinir-senha.html', { indexable: false }],
+  ['/verificar-email.html', { indexable: false }]
 ]);
+
+// Paginas privadas: nunca indexaveis nem rastreaveis. Recebem noindex por
+// header (X-Robots-Tag) porque crawlers que ignoram robots.txt ainda assim
+// nao devem indexar a area de administracao.
+const PRIVATE_PATHS = new Set(['/admin.html', '/perfil.html', '/perfil_temp.html', '/fotografo.html']);
+
+function readHeadField(html, pattern, fallback) {
+  const match = html.match(pattern);
+  return match ? String(match[1]).replace(/<[^>]+>/g, '').trim() : fallback;
+}
+
+function buildStructuredData(policy, { title, description, canonicalUrl, siteUrl }) {
+  const organizationId = `${siteUrl}#organization`;
+  const websiteId = `${siteUrl}#website`;
+  const organization = {
+    '@type': 'Organization',
+    '@id': organizationId,
+    name: SITE_NAME,
+    url: siteUrl,
+    description
+  };
+  if (policy.schema === 'website') {
+    return {
+      '@context': 'https://schema.org',
+      '@graph': [
+        organization,
+        {
+          '@type': 'WebSite',
+          '@id': websiteId,
+          name: SITE_NAME,
+          url: siteUrl,
+          inLanguage: 'pt-BR',
+          description,
+          publisher: { '@id': organizationId }
+        },
+        {
+          '@type': 'WebPage',
+          '@id': `${siteUrl}#webpage`,
+          url: canonicalUrl,
+          name: title,
+          description,
+          inLanguage: 'pt-BR',
+          isPartOf: { '@id': websiteId },
+          about: { '@id': organizationId }
+        }
+      ]
+    };
+  }
+  if (policy.schema === 'collection') {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: title,
+      description,
+      url: canonicalUrl,
+      inLanguage: 'pt-BR',
+      isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: siteUrl },
+      publisher: { '@type': 'Organization', name: SITE_NAME, url: siteUrl }
+    };
+  }
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: title,
+    description,
+    url: canonicalUrl,
+    inLanguage: 'pt-BR',
+    isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: siteUrl },
+    publisher: { '@type': 'Organization', name: SITE_NAME, url: siteUrl }
+  };
+}
 
 function renderStaticPageMetadata(html, requestUrl) {
   const url = new URL(requestUrl);
-  const canonicalUrl = url.toString();
-  const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  const descriptionMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i);
-  const title = String(titleMatch?.[1] || 'LensClick').replace(/<[^>]+>/g, '').trim();
-  const description = String(descriptionMatch?.[1] || 'Encontre fotógrafos profissionais e apresente seu trabalho na LensClick.').trim();
-  const structuredData = {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: 'LensClick',
-    url: new URL('/', requestUrl).toString(),
-    description,
-    publisher: { '@type': 'Organization', name: 'LensClick', url: new URL('/', requestUrl).toString() }
-  };
-  const head = [
-    `<link rel="canonical" href="${escapeHtml(canonicalUrl)}">`,
-    `<meta property="og:type" content="website">`,
+  const policy = STATIC_PAGE_POLICIES.get(url.pathname);
+  if (!policy) return html;
+
+  const siteUrl = new URL('/', requestUrl).toString();
+  const title = readHeadField(html, /<title[^>]*>([\s\S]*?)<\/title>/i, SITE_NAME);
+  const description = readHeadField(
+    html,
+    /<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i,
+    'Encontre fotografos profissionais e apresente seu trabalho na LensClick.'
+  );
+  const canonicalUrl = new URL(policy.canonical || '/', requestUrl).toString();
+  const ogImage = OG_IMAGE_PATH ? new URL(OG_IMAGE_PATH, requestUrl).toString() : OG_IMAGE_FALLBACK;
+
+  const head = [];
+  if (policy.indexable === false) {
+    // Paginas de autenticacao: nao competem em busca e nao devem ser
+    // indexadas. `follow` preserva o sinal dos links do rodape.
+    head.push('<meta name="robots" content="noindex, follow">');
+  } else {
+    head.push(`<link rel="canonical" href="${escapeHtml(canonicalUrl)}">`);
+  }
+  head.push(
+    `<meta property="og:type" content="${policy.ogType || 'website'}">`,
+    `<meta property="og:site_name" content="${SITE_NAME}">`,
+    `<meta property="og:locale" content="${SITE_LOCALE}">`,
     `<meta property="og:title" content="${escapeHtml(title)}">`,
     `<meta property="og:description" content="${escapeHtml(description)}">`,
     `<meta property="og:url" content="${escapeHtml(canonicalUrl)}">`,
-    `<script type="application/ld+json">${escapeJsonForHtml(structuredData)}</script>`
-  ].join('\n  ');
-  return html.replace('</head>', `  ${head}\n</head>`);
+    `<meta property="og:image" content="${escapeHtml(ogImage)}">`,
+    `<meta property="og:image:width" content="${OG_IMAGE_WIDTH}">`,
+    `<meta property="og:image:height" content="${OG_IMAGE_HEIGHT}">`,
+    `<meta property="og:image:alt" content="${escapeHtml(OG_IMAGE_ALT)}">`,
+    '<meta name="twitter:card" content="summary_large_image">',
+    `<meta name="twitter:title" content="${escapeHtml(title)}">`,
+    `<meta name="twitter:description" content="${escapeHtml(description)}">`,
+    `<meta name="twitter:image" content="${escapeHtml(ogImage)}">`,
+    `<meta name="twitter:image:alt" content="${escapeHtml(OG_IMAGE_ALT)}">`
+  );
+  if (policy.indexable !== false) {
+    const structuredData = buildStructuredData(policy, { title, description, canonicalUrl, siteUrl });
+    head.push(`<script type="application/ld+json">${escapeJsonForHtml(structuredData)}</script>`);
+  }
+  return html.replace('</head>', `  ${head.join('\n  ')}\n</head>`);
 }
 
 function bytesToBase64Url(bytes) {
@@ -788,16 +912,18 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
 async function handleAssetRequest(request, env) {
   const url = new URL(request.url);
   if (['GET', 'HEAD'].includes(request.method) && url.pathname === '/robots.txt') {
+    // As paginas de autenticacao NAO sao bloqueadas aqui: com `Disallow`, o
+    // bot nao consegue baixar a pagina e portanto nao ve o `noindex`, o que
+    // deixa a URL residindo no indice como "bloqueada por robots.txt". Com o
+    // `noindex` no HTML, o bot le a diretiva e remove a URL. As areas privadas
+    // seguem bloqueadas: nao queremos revelar a existencia do painel admin.
     const body = [
       'User-agent: *',
       'Allow: /',
       'Disallow: /api/',
-      'Disallow: /perfil',
+      'Allow: /api/photographers/*/photo',
+      'Disallow: /admin.html',
       'Disallow: /perfil.html',
-      'Disallow: /login.html',
-      'Disallow: /cadastro.html',
-      'Disallow: /recuperar-senha.html',
-      'Disallow: /redefinir-senha.html',
       `Sitemap: ${new URL('/sitemap.xml', url).toString()}`,
       ''
     ].join('\n');
@@ -815,6 +941,8 @@ async function handleAssetRequest(request, env) {
     const urls = [
       { loc: new URL('/', url).toString() },
       { loc: new URL('/busca.html', url).toString() },
+      { loc: new URL('/termos.html', url).toString() },
+      { loc: new URL('/privacidade.html', url).toString() },
       ...(profiles.results || []).map((profile) => ({
         loc: new URL(`/fotografo/${encodeURIComponent(profile.slug)}`, url).toString(),
         lastmod: profile.updated_at
@@ -824,6 +952,16 @@ async function handleAssetRequest(request, env) {
     return new Response(request.method === 'HEAD' ? null : body, {
       headers: new Headers({ ...responseHeaders({ 'Cache-Control': 'public, max-age=3600' }), 'Content-Type': 'application/xml; charset=UTF-8' })
     });
+  }
+  // `/index.html` e `/` sao a mesma pagina. Sem o 301, as duas seriam
+  // indexaveis com canonical proprio (duplicacao de conteudo) e o sinal de
+  // canonizacao se dividiria entre elas.
+  if (['GET', 'HEAD'].includes(request.method) && url.pathname === '/index.html') {
+    return Response.redirect(new URL('/', url), 301);
+  }
+  // `/perfil_temp.html` e um template de redirecionamento obsoleto.
+  if (['GET', 'HEAD'].includes(request.method) && url.pathname === '/perfil_temp.html') {
+    return Response.redirect(new URL('/perfil.html', url), 301);
   }
   const legacySlug = url.pathname === '/fotografo.html' ? url.searchParams.get('perfil') : '';
   if (['GET', 'HEAD'].includes(request.method) && /^[a-z0-9-]{3,80}$/.test(legacySlug || '')) {
@@ -860,7 +998,8 @@ async function handleAssetRequest(request, env) {
   const headers = new Headers(assetResponse.headers);
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
   if (headers.get('Content-Type')?.startsWith('text/html')) headers.set('Cache-Control', 'no-cache');
-  if (assetResponse.ok && headers.get('Content-Type')?.startsWith('text/html') && STATIC_METADATA_PATHS.has(url.pathname)) {
+  if (PRIVATE_PATHS.has(url.pathname)) headers.set('X-Robots-Tag', 'noindex, nofollow');
+  if (assetResponse.ok && headers.get('Content-Type')?.startsWith('text/html') && STATIC_PAGE_POLICIES.has(url.pathname)) {
     const html = await assetResponse.text();
     const body = renderStaticPageMetadata(html, url);
     return new Response(request.method === 'HEAD' ? null : body, { status: assetResponse.status, statusText: assetResponse.statusText, headers });

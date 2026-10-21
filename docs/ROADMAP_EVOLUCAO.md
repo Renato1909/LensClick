@@ -421,14 +421,22 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 3. **Problema resolvido**: `portfolio_items` nao tem capa destacada nem categoria; Open Graph e JSON-LD existem apenas nos perfis SSR gerados em `src/worker.mjs`; e o site e servido em `*.workers.dev`, sem `routes` ou `custom_domain` em `wrangler.jsonc`.
 4. **Impacto esperado**: melhor apresentacao do portfolio; indexacao e compartilhamento mais ricos; endereco proprio e remetente de e-mail no dominio.
 5. **Complexidade**: Media.
-6. **Riscos**: metadados inconsistentes com o conteudo real prejudicam indexacao. Mitigacao: como o conteudo dessas paginas e estatico, as tags podem ser fixas no HTML, sem SSR; validacao com o Especialista em SEO.
+6. **Riscos**: metadados inconsistentes com o conteudo real prejudicam indexacao. Mitigacao: o Worker (`src/worker.mjs`) e a fonte unica de verdade do que e servido, com uma politica por caminho; os arquivos HTML carregam apenas a `meta description`, lida e propagada para `og:description` e JSON-LD. Duplicar canonical ou `og:*` nos arquivos seria danoso (o Google ignora dois `rel="canonical"` conflitantes) e um bloco JSON-LD estatico violaria a regra de CSP do lint. Validacao com o Especialista em SEO.
 7. **Dependencias**: 5.3 para o dominio proprio, que habilita HSTS com `preload` no futuro.
 8. **Agentes envolvidos**: Especialista em SEO e Performance (Responsavel), Engenheiro Front-end, Engenheiro Backend, Engenheiro DevOps (dominio e DNS), Designer (capa e categorias), Especialista em Marketing para Fotografia (copy dos metadados).
 9. **Ordem recomendada**: **24a** - pode ser antecipada conforme a prioridade de produto.
 10. **Subtarefas**:
     - 5.8.a (concluída): migration `0013_portfolio_cover_category.sql` adiciona `is_cover` e `category`, com índice único parcial para garantir no máximo uma capa por fotógrafo; a conta permite selecionar categoria e capa e a API persiste ambos.
-    - 5.8.b (concluída): páginas públicas estáticas recebem canonical, Open Graph e JSON-LD com `WebSite` e `Organization`; perfis SSR continuam usando seu metadado específico.
+    - 5.8.b (concluída): páginas públicas estáticas recebem canonical, Open Graph e JSON-LD com `WebSite` e `Organization`; perfis SSR continuam usando seu metadado específico. Evoluída no PR #145: `og:image` e Twitter Cards em todas as páginas, JSON-LD por tipo de página, `noindex` nas páginas de autenticação, canonical derivado do host (sem query string) e 301 de `/index.html` para `/`.
     - 5.8.c: domínio próprio em `wrangler.jsonc`, com SPF, DKIM e DMARC, e remetente Brevo no domínio. Requer domínio escolhido/registrado e configuração DNS; não foi inventado nenhum domínio ou registro de DNS.
+
+  **Pendências de SEO registradas no PR #145** (fora do escopo daquela PR, por exigirem arte, produto ou decisão de marca):
+
+  - **Imagem social da marca** — o `og:image` usa hoje a foto do hero do Unsplash. Falta um asset próprio de 1200x630 (JPEG, <=150 KB) na identidade visual. Depende do Designer.
+  - **Busca hidratável pela URL** — `public/search.js` monta a consulta a partir dos inputs e não lê query params no carregamento. Sem isso não há URL de busca compartilhável, nem indexação de long-tail, nem `SearchAction` honesto (apontar para um destino que não funciona penaliza o rich result). **É o item de maior ROI de SEO do projeto.**
+  - **URLs por idioma (`hreflang`)** — o i18n é por cookie; `hreflang` exige URLs distintas, o que exige `?lang=` ou prefixo de rota servido no Worker.
+  - **Grafia da marca** — "LensClick" e "Lens Click" convivem nos catálogos (18 e 19 ocorrências, respectivamente). A inconsistência direta entre o mesmo par de locales (`search.title`) foi corrigida; a unificação da prosa é decisão de marca.
+  - **Dados estruturados de negócio local** — os perfis `/fotografo/:slug` já emitem `Person` e `PostalAddress`; evoluir para `ProfessionalService`/`LocalBusiness` por cidade é o structured data de maior valor de rich result para um diretório de profissionais.
 
 ---
 
