@@ -276,7 +276,8 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #143 | `0489ab8` | fix(db): sincroniza o catalogo `db/schema.ts` com a migration 0014 e adiciona guarda de consistencia |
 | #144 | `d915f56` | chore(ci): atualiza `actions/checkout` e `actions/setup-node` para v7 |
 | #145 | `7615730` | fix(seo): corrige canonical, indexabilidade, `og:image` e JSON-LD das páginas públicas |
-| #146 | — | fix(seo): canonical e metadados passam a ser emitidos na URL limpa que o Assets serve |
+| #146 | `5d9dec4` | fix(seo): canonical e metadados passam a ser emitidos na URL limpa que o Assets serve |
+| #147 | — | feat(marca): identidade oficial do LensClickApp no site (monograma, favicon, imagem social) e grafia unificada |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -296,6 +297,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 - **Brevo** como provedor de e-mail transacional (recuperação de senha, verificação de e-mail e alertas operacionais).
 - **Migrações imutáveis** — regra estabelecida: nunca editar migração publicada.
 - **Toolchain auditado** — o PR #141 atualizou o lockfile para `wrangler` 4.151.3 (de 4.118.0), levando o `npm audit` a **0 vulnerabilidades**, e realinhou o `allowScripts` do `package.json`. O bundle publicado permaneceu **byte-idêntico** (SHA-256 `FAF38EFE…`), provando risco zero no artefato. O gate `npm audit --audit-level=high` é informativo no CI de PR e bloqueante no job diário. Detalhes em `docs/DEPENDENCIAS_E_SEGURANCA.md`.
+- **Identidade oficial vindo do aplicativo** — a marca do LensClick passa a ser a do aplicativo Android nativo (repositorio `LensClickApp`, 100% Kotlin): monograma "LC" com abertura de camera, papel `#F6F3EB` e wordmark em Playfair Display. O logo anterior (quadrado gradiente com icone generico) foi removido, o site ganhou favicon e a imagem social oficial (1200x630) substituiu a foto do hero. A grafia passa a ser **LensClick** em uma unica forma. Detalhes em `DESIGN_SYSTEM.md`.
 - **Toolchain no disco D:** — decisão de infraestrutura: o projeto, o clone, as dependências e todo o ferramental (Node, npm, Playwright, wrangler e o OpenCode) ficam no HDD, e o SSD não recebe escrita do fluxo de trabalho. Implementado por variáveis de ambiente de usuário aplicadas por `scripts/env-local.ps1`, com a ordem de migração dos dados do OpenCode documentada na seção "Ambiente (Windows)".
 - **Contratos por rota** — a infraestrutura compartilhada cobre atualmente 43 padrões de rota e 48 contratos HTTP catalogados.
 - **Rate limiting híbrido** — a iniciativa 1.3 adicionou quatro bindings nativos de 60 segundos como escudo de rajada e preservou as políticas longas no D1 como camada autoritativa e fallback.

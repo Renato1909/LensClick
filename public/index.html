@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="favicon-32.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <title>LensClick | Capturando Momentos</title>
   <meta name="description" content="Encontre fotógrafos profissionais em todo o Brasil por cidade, especialidade e preço. Compare portfólios e solicite seu orçamento na LensClick.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -148,16 +150,9 @@
     }
     .nav{display:flex; align-items:center; justify-content:space-between; gap:16px; height:66px}
     .brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.5px}
-    .brand .logo{width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg, var(--lc-color-brand-primary), var(--lc-color-brand-secondary)); box-shadow:0 10px 24px rgba(0,0,0,.18); display: flex; align-items: center; justify-content: center;}
-    .brand .logo i {font-size: 18px;}
-    .brand span{font-size:1.15rem}
-    .brand .lens{color:#fff}
-    .brand .click{
-      background:linear-gradient(90deg, var(--lc-color-brand-primary), var(--lc-color-brand-secondary));
-      -webkit-background-clip:text;
-      background-clip:text;
-      color:transparent;
-    }
+  
+  
+  
     /* header user name truncation styling */
     .user-name{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle}
     nav ul{display:flex; gap:22px; list-style:none; padding:0; margin:0; align-items:center}
@@ -994,8 +989,8 @@
   <header id="mainHeader">
     <div class="container nav">
       <div class="brand">
-        <div class="logo" aria-hidden="true"><i class="fas fa-camera"></i></div>
-        <span><span class="lens">LENS</span><span class="click">CLICK</span></span>
+        <img class="brand-mark" src="brand/lensclick-mark-light.png" alt="" width="30" height="30" decoding="async">
+        <span class="brand-word">LensClick</span>
       </div>
       <nav aria-label="Navegação principal" data-a11y-pt="Navegação principal" data-a11y-en="Main navigation">
         <button class="menu-btn" id="menuBtn" aria-label="Abrir menu" aria-expanded="false" aria-controls="menuList"><i class="fas fa-bars"></i></button>
@@ -1106,7 +1101,7 @@
       <div class="about-grid">
         <div data-reveal>
           <h3 class="title-md" data-i18n-html="true" data-i18n="about.historyTitle">Nossa <em class="gradient-text" style="font-style:italic">história</em></h3>
-          <p data-i18n="about.p1">A Lens Click nasceu em 2025, criada por estudantes que perceberam como era difícil encontrar e escolher o fotógrafo certo. A plataforma surgiu para tornar essa decisão mais simples e transparente.</p>
+          <p data-i18n="about.p1">A LensClick nasceu em 2025, criada por estudantes que perceberam como era difícil encontrar e escolher o fotógrafo certo. A plataforma surgiu para tornar essa decisão mais simples e transparente.</p>
           <p data-i18n="about.p2">Conectamos clientes a fotógrafos profissionais verificados, com portfólios, avaliações reais e especialidades claras — para que você encontre o profissional ideal para o seu momento.</p>
           <div class="stats">
             <div class="stat"><div class="num" data-counter="23">0</div><div class="label" data-i18n="stats.projects">Fotógrafos cadastrados</div></div>
@@ -1244,7 +1239,7 @@
           <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600&auto=format&fit=crop" alt="Produto" loading="lazy" decoding="async"/>
         </div>
       </div>
-  <p style="margin-top:18px" data-reveal data-i18n-html="true" data-i18n="portfolio.lead">Veja uma seleção de <b><span class="gradient-text">retratos, casamentos e eventos</span></b>, além de trabalhos <b><span class="gradient-text">comerciais</span></b> da Lens Click.</p>
+  <p style="margin-top:18px" data-reveal data-i18n-html="true" data-i18n="portfolio.lead">Veja uma seleção de <b><span class="gradient-text">retratos, casamentos e eventos</span></b>, além de trabalhos <b><span class="gradient-text">comerciais</span></b> da LensClick.</p>
     </div>
   </section>
 
@@ -1331,8 +1326,8 @@
       <div class="tab-content" id="newsletter-tab" role="tabpanel" aria-labelledby="contact-tab-newsletter" tabindex="0" hidden>
         <div class="contact-grid">
           <div data-reveal>
-            <h3 class="title-md" data-i18n-html="true" data-i18n="newsletter.title">NOVIDADES DA <span class="gradient-text">LENS CLICK</span></h2>
-            <p data-i18n="newsletter.lead">Bastidores, dicas e novidades da Lens Click, direto no seu e-mail.</p>
+            <h3 class="title-md" data-i18n-html="true" data-i18n="newsletter.title">NOVIDADES DA <span class="gradient-text">LENSCLICK</span></h2>
+            <p data-i18n="newsletter.lead">Bastidores, dicas e novidades da LensClick, direto no seu e-mail.</p>
             <p data-i18n="newsletter.specials">De vez em quando, enviamos também ofertas para inscritos.</p>
             
             <div class="info-card"><div class="icon"><i class="fas fa-gift"></i></div><div><strong data-i18n="newsletter.tipTitle">Vantagens para inscritos</strong><br><span data-i18n="newsletter.tipLead">Ofertas e condições especiais</span></div></div>
@@ -1342,7 +1337,7 @@
           
           <div data-reveal>
             <div class="newsletter-card">
-              <h3 class="title-md">NEWSLETTER <span class="gradient-text">LENS CLICK</span></h3>
+              <h3 class="title-md">NEWSLETTER <span class="gradient-text">LENSCLICK</span></h3>
               <p data-i18n="newsletter.cta">Cadastre seu e-mail e receba gratuitamente o guia “10 dicas práticas para fotos melhores”.</p>
               
               <form id="newsletterForm" class="newsletter-form">
@@ -1376,7 +1371,7 @@
         <article class="card review">
           <div class="stars">★★★★★</div>
           <h3 data-i18n="review.r1.name">Maurício e Maria <span style="opacity:.7; font-weight:500">— Casamento</span></h3>
-          <p data-i18n="review.r1.text">"A Lens Click capturou perfeitamente a magia do nosso casamento. Cada foto conta uma história e nos emociona até hoje. Profissionalismo e talento excepcionais!"</p>
+          <p data-i18n="review.r1.text">"A LensClick capturou perfeitamente a magia do nosso casamento. Cada foto conta uma história e nos emociona até hoje. Profissionalismo e talento excepcionais!"</p>
           <div class="quote-mark">"</div>
         </article>
         <article class="card review">
@@ -1447,8 +1442,8 @@
   <!-- Footer -->
   <footer>
     <div class="container foot">
-      <div class="brand"><div class="logo" aria-hidden="true"><i class="fas fa-camera"></i></div><span><span class="lens">LENS</span><span class="click">CLICK</span></span></div>
-  <div class="foot-links" style="opacity:.85" data-i18n-html="true" data-i18n="privacy.footer">© 2025–2026 Lens Click. Todos os direitos reservados | <a href="privacidade.html">Política de Privacidade</a> | <a href="termos.html">Termos de Uso</a></div>
+      <div class="brand"><img class="brand-mark" src="brand/lensclick-mark-light.png" alt="" width="30" height="30" decoding="async"><span class="brand-word">LensClick</span></div>
+  <div class="foot-links" style="opacity:.85" data-i18n-html="true" data-i18n="privacy.footer">© 2025–2026 LensClick. Todos os direitos reservados | <a href="privacidade.html">Política de Privacidade</a> | <a href="termos.html">Termos de Uso</a></div>
       <div class="social">
         <a href="https://www.instagram.com/lensclick_fotografias/?utm_source=qr#" aria-label="Instagram" target="_blank" rel="noopener"><i class="fab fa-instagram" aria-hidden="true"></i></a>
         <a href="https://x.com/LensLick" aria-label="X" target="_blank" rel="noopener"><i class="fab fa-twitter" aria-hidden="true"></i></a>

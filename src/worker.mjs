@@ -200,10 +200,10 @@ export function renderMissingProfilePage(template) {
 
 const SITE_NAME = 'LensClick';
 const SITE_LOCALE = 'pt_BR';
-// Imagem social padrao. A marca definitiva (1200x630 propria) e o item de
-// design pendente; ate la, reaproveita a foto do hero, que ja e a imagem de
-// maior destaque da home e esta permitida pela CSP.
-const OG_IMAGE_PATH = null;
+// Imagem social oficial: o banner do aplicativo Android (repositorio
+// LensClickApp), com o monograma "LC" e a abertura de camera. Gerada em
+// public/og/lensclick-cover.jpg a partir de assets/brand_lockup.
+const OG_IMAGE_PATH = '/og/lensclick-cover.jpg';
 const OG_IMAGE_FALLBACK = 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?q=80&w=1200&h=630&fit=crop&auto=format';
 const OG_IMAGE_WIDTH = '1200';
 const OG_IMAGE_HEIGHT = '630';
