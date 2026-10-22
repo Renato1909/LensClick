@@ -14,7 +14,24 @@
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/", "/*.html", "/fotografo/*"]
+    "run_worker_first": [
+      "/api/*",
+      "/",
+      "/*.html",
+      "/fotografo/*",
+      "/busca",
+      "/termos",
+      "/privacidade",
+      "/cadastro",
+      "/login",
+      "/recuperar-senha",
+      "/redefinir-senha",
+      "/verificar-email",
+      "/admin",
+      "/perfil",
+      "/perfil_temp",
+      "/fotografo"
+    ]
   },
   "triggers": {
     "crons": ["*/5 * * * *"]

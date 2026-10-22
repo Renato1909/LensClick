@@ -427,7 +427,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 9. **Ordem recomendada**: **24a** - pode ser antecipada conforme a prioridade de produto.
 10. **Subtarefas**:
     - 5.8.a (concluída): migration `0013_portfolio_cover_category.sql` adiciona `is_cover` e `category`, com índice único parcial para garantir no máximo uma capa por fotógrafo; a conta permite selecionar categoria e capa e a API persiste ambos.
-    - 5.8.b (concluída): páginas públicas estáticas recebem canonical, Open Graph e JSON-LD com `WebSite` e `Organization`; perfis SSR continuam usando seu metadado específico. Evoluída no PR #145: `og:image` e Twitter Cards em todas as páginas, JSON-LD por tipo de página, `noindex` nas páginas de autenticação, canonical derivado do host (sem query string) e 301 de `/index.html` para `/`.
+    - 5.8.b (concluída): páginas públicas estáticas recebem canonical, Open Graph e JSON-LD com `WebSite` e `Organization`; perfis SSR continuam usando seu metadado específico. Evoluída no PR #145: `og:image` e Twitter Cards em todas as páginas, JSON-LD por tipo de página, `noindex` nas páginas de autenticação, canonical derivado do host (sem query string) e 301 de `/index.html` para `/`. Ajustada no PR #146: a URL canônica passou a ser a **limpa** (`/busca`), que é a que o Cloudflare Assets serve — as variantes `.html` respondem 301 — e `run_worker_first` passou a listar as URLs limpas para que o Worker as atenda.
     - 5.8.c: domínio próprio em `wrangler.jsonc`, com SPF, DKIM e DMARC, e remetente Brevo no domínio. Requer domínio escolhido/registrado e configuração DNS; não foi inventado nenhum domínio ou registro de DNS.
 
   **Pendências de SEO registradas no PR #145** (fora do escopo daquela PR, por exigirem arte, produto ou decisão de marca):
@@ -437,6 +437,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
   - **URLs por idioma (`hreflang`)** — o i18n é por cookie; `hreflang` exige URLs distintas, o que exige `?lang=` ou prefixo de rota servido no Worker.
   - **Grafia da marca** — "LensClick" e "Lens Click" convivem nos catálogos (18 e 19 ocorrências, respectivamente). A inconsistência direta entre o mesmo par de locales (`search.title`) foi corrigida; a unificação da prosa é decisão de marca.
   - **Dados estruturados de negócio local** — os perfis `/fotografo/:slug` já emitem `Person` e `PostalAddress`; evoluir para `ProfessionalService`/`LocalBusiness` por cidade é o structured data de maior valor de rich result para um diretório de profissionais.
+  - **Links internos em URLs limpas** — o HTML e o JS do app linkam para `busca.html`, `cadastro.html`, `login.html` e afins, enquanto o Assets serve a forma limpa. Cada navegação interna custa hoje um redirecionamento. Trocar os links internos pela forma limpa elimina o salto; é uma entrega de frontend, não de SEO.
 
 ---
 
