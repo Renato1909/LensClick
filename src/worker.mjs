@@ -267,6 +267,16 @@ function readHeadField(html, pattern, fallback) {
   return match ? String(match[1]).replace(/<[^>]+>/g, '').trim() : fallback;
 }
 
+// Constroi o destino de um redirect preservando a query string da requisicao.
+// Sem isso, `/perfil.html?conversa=123` viraria `/perfil` e o parametro
+// seria perdido no caminho.
+function withQuery(path, requestUrl) {
+  const source = new URL(requestUrl);
+  const target = new URL(path, source);
+  target.search = source.search;
+  return target;
+}
+
 function buildStructuredData(policy, { title, description, canonicalUrl, siteUrl }) {
   const organizationId = `${siteUrl}#organization`;
   const websiteId = `${siteUrl}#website`;
@@ -988,14 +998,16 @@ async function handleAssetRequest(request, env) {
   }
   // A URL limpa e a canonica: as variantes `.html` sao movidas de forma
   // permanente para a forma limpa, que e a que o Assets serve de fato.
+  // A query string e preservada: o destino pode depender dela (ex.:
+  // `/perfil.html?conversa=123` -> `/perfil?conversa=123`).
   const cleanAlias = STATIC_PAGE_ALIASES.get(url.pathname);
   if (['GET', 'HEAD'].includes(request.method) && cleanAlias) {
-    return Response.redirect(new URL(cleanAlias, url), 301);
+    return Response.redirect(withQuery(cleanAlias, url), 301);
   }
   // Paginas que existem apenas para redirecionar (ex.: `/perfil_temp`).
   const pageRedirect = STATIC_PAGES.get(url.pathname)?.redirectTo;
   if (['GET', 'HEAD'].includes(request.method) && pageRedirect) {
-    return Response.redirect(new URL(pageRedirect, url), 301);
+    return Response.redirect(withQuery(pageRedirect, url), 301);
   }
 
   const profileRoute = url.pathname.match(/^\/fotografo\/([a-z0-9-]{3,80})\/?$/);

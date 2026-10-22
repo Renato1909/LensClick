@@ -115,6 +115,17 @@ test('/perfil_temp redireciona permanentemente para /perfil', async () => {
   assert.equal(response.headers.get('location'), `${ORIGIN}/perfil`);
 });
 
+test('o redirect da variante .html preserva a query string', async () => {
+  // Sem preservar a query, `/perfil.html?conversa=123` viraria `/perfil` e o
+  // parametro seria perdido no caminho — foi o que o E2E de mensagens pegou.
+  const response = await worker.fetch(
+    new Request(`${ORIGIN}/perfil.html?conversa=abc123`),
+    environment(read('perfil.html'))
+  );
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get('location'), `${ORIGIN}/perfil?conversa=abc123`);
+});
+
 test('paginas privadas recebem X-Robots-Tag e nao sao indexaveis', async () => {
   for (const [path, file] of [['/admin', 'admin.html'], ['/perfil', 'perfil.html']]) {
     const { headers, body } = await serve(path, file);
