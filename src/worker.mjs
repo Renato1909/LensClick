@@ -209,12 +209,19 @@ const OG_IMAGE_WIDTH = '1200';
 const OG_IMAGE_HEIGHT = '630';
 const OG_IMAGE_ALT = 'LensClick - encontre fotografos profissionais perto de voce';
 
-// Politica de metadados por caminho.
+// Paginas estaticas do site.
 //
-// O Worker e a fonte unica de verdade do que e servido: canonical, robots,
-// Open Graph, Twitter Cards e JSON-LD sao emitidos aqui. Os arquivos HTML
-// carregam apenas a `meta description` (texto-fonte, em PT-BR), que e lida e
-// propagada para og:description e JSON-LD.
+// A CHAVE e a URL limpa, que e a que o Cloudflare Assets serve de fato: o
+// pedido de `/busca.html` responde 307 para `/busca`. Como `run_worker_first`
+// (ver `wrangler.jsonc`) e o que decide quais requisicoes chegam ao Worker,
+// a URL limpa e a unica que carrega os metadados: indexar a variante `.html`
+// indexaria uma URL que redireciona.
+//
+// `file` e o asset em `public/` que o Assets entrega para a URL limpa.
+//
+// Politica de metadados: o Worker e a fonte unica de verdade do que e
+// servido. Os arquivos HTML carregam apenas a `meta description` (texto-fonte,
+// em PT-BR), que e lida e propagada para og:description e JSON-LD.
 //
 // Duplicar canonical ou og:* nos arquivos seria danoso: o Google ignora dois
 // `rel="canonical"` conflitantes, e cada rede social le a primeira ou a
@@ -223,27 +230,51 @@ const OG_IMAGE_ALT = 'LensClick - encontre fotografos profissionais perto de voc
 // `canonical` e sempre um PATH (nunca a URL da requisicao): assim o host
 // canonico acompanha o dominio proprio (5.8.c) sem nenhuma alteracao de codigo
 // e a query string nunca vira canonical.
-const STATIC_PAGE_POLICIES = new Map([
-  ['/', { canonical: '/', ogType: 'website', schema: 'website' }],
-  ['/index.html', { canonical: '/', ogType: 'website', schema: 'website' }],
-  ['/busca.html', { canonical: '/busca.html', ogType: 'website', schema: 'collection' }],
-  ['/termos.html', { canonical: '/termos.html', ogType: 'article', schema: 'webpage' }],
-  ['/privacidade.html', { canonical: '/privacidade.html', ogType: 'article', schema: 'webpage' }],
-  ['/cadastro.html', { indexable: false }],
-  ['/login.html', { indexable: false }],
-  ['/recuperar-senha.html', { indexable: false }],
-  ['/redefinir-senha.html', { indexable: false }],
-  ['/verificar-email.html', { indexable: false }]
+export const STATIC_PAGES = new Map([
+  ['/', { file: 'index.html', canonical: '/', ogType: 'website', schema: 'website' }],
+  ['/busca', { file: 'busca.html', canonical: '/busca', ogType: 'website', schema: 'collection' }],
+  ['/termos', { file: 'termos.html', canonical: '/termos', ogType: 'article', schema: 'webpage' }],
+  ['/privacidade', { file: 'privacidade.html', canonical: '/privacidade', ogType: 'article', schema: 'webpage' }],
+  ['/cadastro', { file: 'cadastro.html', indexable: false }],
+  ['/login', { file: 'login.html', indexable: false }],
+  ['/recuperar-senha', { file: 'recuperar-senha.html', indexable: false }],
+  ['/redefinir-senha', { file: 'redefinir-senha.html', indexable: false }],
+  ['/verificar-email', { file: 'verificar-email.html', indexable: false }],
+  ['/admin', { file: 'admin.html', private: true }],
+  ['/perfil', { file: 'perfil.html', private: true }],
+  ['/perfil_temp', { file: 'perfil_temp.html', private: true, redirectTo: '/perfil' }],
+  ['/fotografo', { file: 'fotografo.html', private: true }]
 ]);
 
-// Paginas privadas: nunca indexaveis nem rastreaveis. Recebem noindex por
+// Variante `.html` de cada pagina -> URL limpa (ou destino final, quando a
+// pagina e um redirect). O Assets responde 307 para a forma limpa; o Worker
+// responde 301, que e o status correto para um movimento permanente.
+const STATIC_PAGE_ALIASES = new Map(
+  [...STATIC_PAGES.entries()]
+    .filter(([path]) => path !== '/')
+    .map(([path, page]) => [`/${page.file}`, page.redirectTo || path])
+);
+
+// Páginas privadas: nunca indexaveis nem rastreaveis. Recebem noindex por
 // header (X-Robots-Tag) porque crawlers que ignoram robots.txt ainda assim
 // nao devem indexar a area de administracao.
-const PRIVATE_PATHS = new Set(['/admin.html', '/perfil.html', '/perfil_temp.html', '/fotografo.html']);
+function isPrivatePage(pathname) {
+  return STATIC_PAGES.get(pathname)?.private === true;
+}
 
 function readHeadField(html, pattern, fallback) {
   const match = html.match(pattern);
   return match ? String(match[1]).replace(/<[^>]+>/g, '').trim() : fallback;
+}
+
+// Constroi o destino de um redirect preservando a query string da requisicao.
+// Sem isso, `/perfil.html?conversa=123` viraria `/perfil` e o parametro
+// seria perdido no caminho.
+function withQuery(path, requestUrl) {
+  const source = new URL(requestUrl);
+  const target = new URL(path, source);
+  target.search = source.search;
+  return target;
 }
 
 function buildStructuredData(policy, { title, description, canonicalUrl, siteUrl }) {
@@ -309,8 +340,8 @@ function buildStructuredData(policy, { title, description, canonicalUrl, siteUrl
 
 function renderStaticPageMetadata(html, requestUrl) {
   const url = new URL(requestUrl);
-  const policy = STATIC_PAGE_POLICIES.get(url.pathname);
-  if (!policy) return html;
+  const policy = STATIC_PAGES.get(url.pathname);
+  if (!policy || policy.private) return html;
 
   const siteUrl = new URL('/', requestUrl).toString();
   const title = readHeadField(html, /<title[^>]*>([\s\S]*?)<\/title>/i, SITE_NAME);
@@ -922,8 +953,8 @@ async function handleAssetRequest(request, env) {
       'Allow: /',
       'Disallow: /api/',
       'Allow: /api/photographers/*/photo',
-      'Disallow: /admin.html',
-      'Disallow: /perfil.html',
+      'Disallow: /admin',
+      'Disallow: /perfil',
       `Sitemap: ${new URL('/sitemap.xml', url).toString()}`,
       ''
     ].join('\n');
@@ -940,9 +971,9 @@ async function handleAssetRequest(request, env) {
     `).all();
     const urls = [
       { loc: new URL('/', url).toString() },
-      { loc: new URL('/busca.html', url).toString() },
-      { loc: new URL('/termos.html', url).toString() },
-      { loc: new URL('/privacidade.html', url).toString() },
+      { loc: new URL('/busca', url).toString() },
+      { loc: new URL('/termos', url).toString() },
+      { loc: new URL('/privacidade', url).toString() },
       ...(profiles.results || []).map((profile) => ({
         loc: new URL(`/fotografo/${encodeURIComponent(profile.slug)}`, url).toString(),
         lastmod: profile.updated_at
@@ -959,13 +990,24 @@ async function handleAssetRequest(request, env) {
   if (['GET', 'HEAD'].includes(request.method) && url.pathname === '/index.html') {
     return Response.redirect(new URL('/', url), 301);
   }
-  // `/perfil_temp.html` e um template de redirecionamento obsoleto.
-  if (['GET', 'HEAD'].includes(request.method) && url.pathname === '/perfil_temp.html') {
-    return Response.redirect(new URL('/perfil.html', url), 301);
-  }
+  // A URL legada com slug e resolvida antes das variantes `.html`, para que
+  // `/fotografo.html?perfil=ana-luz` chegue a rota canonica do perfil.
   const legacySlug = url.pathname === '/fotografo.html' ? url.searchParams.get('perfil') : '';
   if (['GET', 'HEAD'].includes(request.method) && /^[a-z0-9-]{3,80}$/.test(legacySlug || '')) {
     return Response.redirect(new URL(`/fotografo/${encodeURIComponent(legacySlug)}`, url), 301);
+  }
+  // A URL limpa e a canonica: as variantes `.html` sao movidas de forma
+  // permanente para a forma limpa, que e a que o Assets serve de fato.
+  // A query string e preservada: o destino pode depender dela (ex.:
+  // `/perfil.html?conversa=123` -> `/perfil?conversa=123`).
+  const cleanAlias = STATIC_PAGE_ALIASES.get(url.pathname);
+  if (['GET', 'HEAD'].includes(request.method) && cleanAlias) {
+    return Response.redirect(withQuery(cleanAlias, url), 301);
+  }
+  // Paginas que existem apenas para redirecionar (ex.: `/perfil_temp`).
+  const pageRedirect = STATIC_PAGES.get(url.pathname)?.redirectTo;
+  if (['GET', 'HEAD'].includes(request.method) && pageRedirect) {
+    return Response.redirect(withQuery(pageRedirect, url), 301);
   }
 
   const profileRoute = url.pathname.match(/^\/fotografo\/([a-z0-9-]{3,80})\/?$/);
@@ -998,8 +1040,8 @@ async function handleAssetRequest(request, env) {
   const headers = new Headers(assetResponse.headers);
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
   if (headers.get('Content-Type')?.startsWith('text/html')) headers.set('Cache-Control', 'no-cache');
-  if (PRIVATE_PATHS.has(url.pathname)) headers.set('X-Robots-Tag', 'noindex, nofollow');
-  if (assetResponse.ok && headers.get('Content-Type')?.startsWith('text/html') && STATIC_PAGE_POLICIES.has(url.pathname)) {
+  if (isPrivatePage(url.pathname)) headers.set('X-Robots-Tag', 'noindex, nofollow');
+  if (assetResponse.ok && headers.get('Content-Type')?.startsWith('text/html') && STATIC_PAGES.has(url.pathname)) {
     const html = await assetResponse.text();
     const body = renderStaticPageMetadata(html, url);
     return new Response(request.method === 'HEAD' ? null : body, { status: assetResponse.status, statusText: assetResponse.statusText, headers });

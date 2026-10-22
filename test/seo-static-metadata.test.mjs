@@ -18,24 +18,27 @@ async function serve(path, file) {
   return { status: response.status, headers: response.headers, body: await response.text() };
 }
 
+// O Cloudflare Assets serve a URL limpa (`/busca`) a partir de `busca.html`.
+// A URL limpa e a canonica: e a que o crawler indexa e a que o Worker precisa
+// atender para emitir os metadados.
 const INDEXABLE = [
   ['/', 'index.html'],
-  ['/busca.html', 'busca.html'],
-  ['/termos.html', 'termos.html'],
-  ['/privacidade.html', 'privacidade.html']
+  ['/busca', 'busca.html'],
+  ['/termos', 'termos.html'],
+  ['/privacidade', 'privacidade.html']
 ];
 
 const NOT_INDEXABLE = [
-  ['/cadastro.html', 'cadastro.html'],
-  ['/login.html', 'login.html'],
-  ['/recuperar-senha.html', 'recuperar-senha.html'],
-  ['/redefinir-senha.html', 'redefinir-senha.html'],
-  ['/verificar-email.html', 'verificar-email.html']
+  ['/cadastro', 'cadastro.html'],
+  ['/login', 'login.html'],
+  ['/recuperar-senha', 'recuperar-senha.html'],
+  ['/redefinir-senha', 'redefinir-senha.html'],
+  ['/verificar-email', 'verificar-email.html']
 ];
 
 test('paginas publicas estaticas recebem metadados sociais e JSON-LD', async () => {
   const html = '<!doctype html><html><head><title>Busca de fotógrafos | LensClick</title><meta name="description" content="Encontre fotógrafos."></head><body></body></html>';
-  const response = await worker.fetch(new Request(`${ORIGIN}/busca.html`), environment(html));
+  const response = await worker.fetch(new Request(`${ORIGIN}/busca`), environment(html));
   assert.equal(response.status, 200);
   const body = await response.text();
   assert.match(body, /rel="canonical"/);
@@ -73,10 +76,10 @@ test('cada pagina indexavel tem exatamente um canonical e nenhum robots', async 
   }
 });
 
-test('o canonical ignora a query string e os parametros de rastreamento', async () => {
-  const { body } = await serve('/busca.html?city=Sao-Paulo&utm_source=whatsapp', 'busca.html');
+test('o canonical aponta para a URL limpa e ignora a query string', async () => {
+  const { body } = await serve('/busca?city=Sao-Paulo&utm_source=whatsapp', 'busca.html');
 
-  assert.match(body, /<link rel="canonical" href="https:\/\/lensclick\.test\/busca\.html">/);
+  assert.match(body, /<link rel="canonical" href="https:\/\/lensclick\.test\/busca">/);
   assert.doesNotMatch(body, /rel="canonical" href="[^"]*\?/);
   assert.doesNotMatch(body, /rel="canonical" href="[^"]*utm_/);
 });
@@ -90,20 +93,41 @@ test('paginas de autenticacao sao noindex, sem canonical e sem JSON-LD', async (
   }
 });
 
-test('/index.html redireciona permanentemente para a raiz', async () => {
-  const response = await worker.fetch(new Request(`${ORIGIN}/index.html`), environment(read('index.html')));
-  assert.equal(response.status, 301);
-  assert.equal(response.headers.get('location'), `${ORIGIN}/`);
+test('as variantes .html sao movidas permanentemente para a URL limpa', async () => {
+  const cases = [
+    ['/index.html', '/'],
+    ['/busca.html', '/busca'],
+    ['/termos.html', '/termos'],
+    ['/privacidade.html', '/privacidade'],
+    ['/login.html', '/login'],
+    ['/cadastro.html', '/cadastro']
+  ];
+  for (const [from, to] of cases) {
+    const response = await worker.fetch(new Request(`${ORIGIN}${from}`), environment(read('index.html')));
+    assert.equal(response.status, 301, from);
+    assert.equal(response.headers.get('location'), `${ORIGIN}${to}`, from);
+  }
 });
 
-test('/perfil_temp.html redireciona permanentemente para /perfil.html', async () => {
-  const response = await worker.fetch(new Request(`${ORIGIN}/perfil_temp.html`), environment(read('perfil_temp.html')));
+test('/perfil_temp redireciona permanentemente para /perfil', async () => {
+  const response = await worker.fetch(new Request(`${ORIGIN}/perfil_temp`), environment(read('perfil_temp.html')));
   assert.equal(response.status, 301);
-  assert.equal(response.headers.get('location'), `${ORIGIN}/perfil.html`);
+  assert.equal(response.headers.get('location'), `${ORIGIN}/perfil`);
+});
+
+test('o redirect da variante .html preserva a query string', async () => {
+  // Sem preservar a query, `/perfil.html?conversa=123` viraria `/perfil` e o
+  // parametro seria perdido no caminho — foi o que o E2E de mensagens pegou.
+  const response = await worker.fetch(
+    new Request(`${ORIGIN}/perfil.html?conversa=abc123`),
+    environment(read('perfil.html'))
+  );
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get('location'), `${ORIGIN}/perfil?conversa=abc123`);
 });
 
 test('paginas privadas recebem X-Robots-Tag e nao sao indexaveis', async () => {
-  for (const [path, file] of [['/admin.html', 'admin.html'], ['/perfil.html', 'perfil.html']]) {
+  for (const [path, file] of [['/admin', 'admin.html'], ['/perfil', 'perfil.html']]) {
     const { headers, body } = await serve(path, file);
     assert.equal(headers.get('x-robots-tag'), 'noindex, nofollow', path);
     assert.doesNotMatch(body, /rel="canonical"/, path);
