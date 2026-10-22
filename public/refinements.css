@@ -857,3 +857,31 @@ form label:focus-within .eyebrow {
     transition-timing-function: ease !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Marca LensClick
+   O monograma "LC" com a abertura de camera vem do aplicativo Android nativo
+   (repositorio LensClickApp) e e a identidade oficial do produto. A variante
+   clara e para superficie escura; a escura e para superficie de papel.
+   A wordmark e em serifa (Playfair Display), como no aplicativo.
+   --------------------------------------------------------------------------- */
+.brand-mark {
+  display: block;
+  flex: none;
+  width: 30px;
+  height: 30px;
+}
+
+.brand-word {
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  color: var(--lc-color-brand-primary);
+}
+
+.brand-mark-sm {
+  width: 24px;
+  height: 24px;
+}

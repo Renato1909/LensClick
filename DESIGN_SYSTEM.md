@@ -10,6 +10,29 @@ Este documento registra as decisões visuais compartilhadas do projeto. A regra 
 - Acessível: foco visível, estados que não dependem somente de cor e suporte a movimento reduzido.
 - Responsivo: medidas fluidas somente quando o conteúdo realmente precisa se adaptar.
 
+## Identidade da marca
+
+A identidade oficial do LensClick é definida no **aplicativo Android nativo** (repositório `Renato1909/LensClickApp`, 100% Kotlin) e é a fonte da verdade para o site.
+
+- **Monograma "LC"** com a **abertura de câmera** e duas réguas horizontais — a assinatura do produto. Monocromático, tipográfico, editorial.
+- **Grafia:** sempre **LensClick** (uma só forma). As variantes com espaço agrupado não são usadas em copy, markup ou catálogo.
+- **Wordmark:** em serifa (Playfair Display), na cor do papel.
+- **Cor de papel:** `#F6F3EB` — a cor do app (`colors.xml`), usada como destaque de UI e como cor de acento.
+- **Superfície do site:** escura e quente (`#100e0c`), para que as fotografias ganhem contraste. O papel é o acento, não o fundo.
+
+Ativos versionados em `public/brand/`:
+
+| Arquivo | Uso |
+| --- | --- |
+| `lensclick-mark-light.png` | Monograma creme, para superfície escura (cabeçalho) |
+| `lensclick-mark-dark.png` | Monograma tinta, para superfície de papel |
+| `lensclick-lockup-light.png` / `lensclick-lockup-dark.png` | Lockup completo, para o rodapé |
+| `lensclick-icon.png` | Ícone do aplicativo |
+| `lensclick-banner.jpg` | Banner editorial do app |
+| `public/og/lensclick-cover.jpg` | Imagem social (1200×630), usada em `og:image` |
+
+O monograma é um **ativo oficial**, não uma construção em CSS. O logo anterior (quadrado gradiente com ícone genérico) foi removido.
+
 ## Tokens oficiais
 
 ### Cores
