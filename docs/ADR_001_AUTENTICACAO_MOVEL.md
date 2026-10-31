@@ -20,6 +20,12 @@ O LensClick precisava de autenticação para o app Android (LensClickApp) sem co
 | Limite de sessões | 5 ativas por usuário (compartilhado web+mobile neste slice) | MVP; poda por `expires_at DESC, created_at DESC` |
 | Bypass de Origin | Restrito a `/api/mobile/auth/*` no `router.mjs` | Bearer puro não sofre CSRF; prefixo mínimo necessário |
 
+## Integração das rotas de conta
+
+As rotas protegidas de conta aceitam o principal móvel por `Authorization: Bearer <token>` sem aceitar ou criar cookie web. O principal é resolvido por `authenticatedPrincipal`: a presença do header `Authorization` seleciona exclusivamente a sessão móvel; na ausência dele, a rota usa a sessão web existente. Um token móvel inválido não faz fallback para a sessão web. A administração permanece web-only.
+
+O logout móvel continua revogando apenas a sessão móvel apresentada, enquanto troca de senha, alteração de e-mail, reset de senha e exclusão de conta mantêm as políticas de revogação já existentes.
+
 ## Riscos assumidos (próximos slices — NÃO esquecidos)
 
 Decisões pendentes levantadas na revisão arquitetural do PR 128:

@@ -125,6 +125,63 @@ test('POST /api/mobile/auth/logout revoga somente a sessao Bearer apresentada', 
   assert.equal(fixture.DB.prepare('SELECT COUNT(*) AS total FROM sessions').first('total'), 1);
 });
 
+test('rotas de conta aceitam explicitamente o principal móvel sem cookie web', async (t) => {
+  const fixture = createWorkerFixture();
+  t.after(() => fixture.close());
+
+  await register(fixture);
+  const login = await mobileLogin(fixture);
+  const token = login.json.session.accessToken;
+
+  const updated = await fixture.request('/api/profile', {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` },
+    json: {
+      name: 'Pessoa Mobile Atualizada',
+      email: REGISTRATION.email,
+      phone: REGISTRATION.phone,
+      role: 'client',
+      age: '',
+      gender: 'other',
+      profilePic: ''
+    },
+    originHeader: false,
+    useCookie: false
+  });
+
+  assertJsonContract(updated, 200);
+  assert.equal(updated.json.user.name, 'Pessoa Mobile Atualizada');
+  assert.equal(fixture.cookie.includes('lensclick_session='), true);
+
+  const session = await fixture.request('/api/mobile/auth/me', {
+    headers: { Authorization: `Bearer ${token}` },
+    useCookie: false
+  });
+  assertJsonContract(session, 200);
+  assert.equal(session.json.user.name, 'Pessoa Mobile Atualizada');
+});
+
+test('exclusão de conta móvel não emite cookie de sessão web', async (t) => {
+  const fixture = createWorkerFixture();
+  t.after(() => fixture.close());
+
+  await register(fixture);
+  const login = await mobileLogin(fixture);
+  const token = login.json.session.accessToken;
+
+  const deleted = await fixture.request('/api/account', {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+    json: { confirmation: 'EXCLUIR', currentPassword: REGISTRATION.password },
+    originHeader: false,
+    useCookie: false
+  });
+
+  assertJsonContract(deleted, 200);
+  assert.equal(deleted.response.headers.get('set-cookie'), null);
+  assert.equal(fixture.DB.prepare('SELECT COUNT(*) AS total FROM users WHERE email = ?').bind(REGISTRATION.email).first('total'), 0);
+});
+
 test('sessao móvel respeita o limite de três sessões móveis ativas por usuário', async (t) => {
   const fixture = createWorkerFixture();
   t.after(() => fixture.close());

@@ -707,6 +707,18 @@ async function authenticatedMobileUser(request, env) {
   `).bind(await sha256(token), Date.now()).first();
 }
 
+async function authenticatedPrincipal(request, env) {
+  const authorization = request.headers.get('Authorization');
+  if (authorization !== null) {
+    const user = await authenticatedMobileUser(request, env);
+    if (user) user.authenticated_via = 'mobile';
+    return user;
+  }
+  const user = await authenticatedUser(request, env);
+  if (user) user.authenticated_via = 'web';
+  return user;
+}
+
 async function revokeMobileSession(request, env) {
   const token = bearerToken(request);
   if (!token) return false;
@@ -860,13 +872,13 @@ const monitoring = createMonitoringHandlers({ reportOperationalError });
 const photographerHandlers = createPhotographerHandlers({
   json, cleanText, professionalProfile, portfolioItem,
   professionalSpecialties: PROFESSIONAL_SPECIALTIES, publicReview, responsiveImage: imageService.responsiveImage,
-  isRateLimited, authenticatedUser, readJson, slugify,
+  isRateLimited, authenticatedUser: authenticatedPrincipal, readJson, slugify,
   normalizeEmail, isValidEmail, normalizeWebsite, parseSpecialties, accountReviewRequest
 });
-const accountHandlers = createAccountHandlers({ json, authenticatedUser, isRateLimited, readJson, conversationSummary, accountMessage, portfolioItem });
+const accountHandlers = createAccountHandlers({ json, authenticatedUser: authenticatedPrincipal, isRateLimited, readJson, conversationSummary, accountMessage, portfolioItem });
 const publicInputHandlers = createPublicInputHandlers({ json, isRateLimited, readJson, cleanText, normalizeEmail, isValidEmail });
-const portfolioHandlers = createPortfolioHandlers({ json, cleanText, authenticatedUser, isRateLimited, readJson, portfolioItem, responsiveImage: imageService.responsiveImage });
-const accountSecurityHandlers = createAccountSecurityHandlers({ json, cleanText, normalizeEmail, isValidEmail, authenticatedUser, readJson, verifyPassword, decodeProfilePicture, isValidPassword, hashPassword, publicUser, responsiveImage: imageService.responsiveImage, sessionCookie, isRateLimited, reportOperationalError, authRateLimit: [8, 15 * 60 * 1000], sensitiveRateLimit: [5, 60 * 60 * 1000] });
+const portfolioHandlers = createPortfolioHandlers({ json, cleanText, authenticatedUser: authenticatedPrincipal, isRateLimited, readJson, portfolioItem, responsiveImage: imageService.responsiveImage });
+const accountSecurityHandlers = createAccountSecurityHandlers({ json, cleanText, normalizeEmail, isValidEmail, authenticatedUser: authenticatedPrincipal, readJson, verifyPassword, decodeProfilePicture, isValidPassword, hashPassword, publicUser, responsiveImage: imageService.responsiveImage, sessionCookie, isRateLimited, reportOperationalError, authRateLimit: [8, 15 * 60 * 1000], sensitiveRateLimit: [5, 60 * 60 * 1000] });
 
 // Route matching lives in router.mjs. Domain handlers receive dependencies explicitly
 // so extraction does not change business logic or request-scoped state.
