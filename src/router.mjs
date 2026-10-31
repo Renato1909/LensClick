@@ -69,6 +69,31 @@ const MOBILE_AUTH_ROUTES = new Set([
   'POST /api/mobile/auth/logout'
 ]);
 
+const MOBILE_PRINCIPAL_ROUTES = new Set([
+  'account.review-requests.list',
+  'account.review-requests.update',
+  'account.reviews.create',
+  'account.reviews.update',
+  'account.reviews.delete',
+  'account.conversations.list',
+  'account.export',
+  'account.conversations.messages',
+  'account.conversations.messages.create',
+  'account.conversations.read',
+  'account.portfolio.list',
+  'account.portfolio.create',
+  'account.portfolio.update',
+  'account.portfolio.image',
+  'account.portfolio.delete',
+  'account.professional-profile.read',
+  'account.professional-profile.update',
+  'account.profile.update',
+  'account.password.update',
+  'account.photo.delete',
+  'account.delete',
+  'account.profile-picture'
+]);
+
 export function createRequestRouter({
   dispatchApiRoute,
   handleAssetRequest,
@@ -78,12 +103,13 @@ export function createRequestRouter({
 }) {
   async function handleApi(request, env, url, context, requestContext) {
     const method = request.method.toUpperCase();
+    const route = matchApiRoute(url.pathname, method);
     const isMobileAuthRoute = MOBILE_AUTH_ROUTES.has(`${method} ${url.pathname}`);
-    if (!['GET', 'HEAD'].includes(method) && !isMobileAuthRoute && !requestOriginIsAllowed(request)) {
+    const isMobilePrincipalRoute = route && MOBILE_PRINCIPAL_ROUTES.has(route.id) && request.headers.has('Authorization');
+    if (!['GET', 'HEAD'].includes(method) && !isMobileAuthRoute && !isMobilePrincipalRoute && !requestOriginIsAllowed(request)) {
       return forbiddenResponse();
     }
 
-    const route = matchApiRoute(url.pathname, method);
     if (!route) return notFoundResponse();
     return dispatchApiRoute(route.id, route.params, request, env, url, context, requestContext);
   }

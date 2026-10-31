@@ -40,7 +40,8 @@ export function createAccountSecurityHandlers({ json, cleanText, normalizeEmail,
     const portfolioObjects = await env.DB.prepare('SELECT object_key FROM portfolio_items WHERE user_id = ?').bind(current.id).all(), keys = [current.profile_pic_key, ...portfolioObjects.results.map((item) => item.object_key)].filter(Boolean);
     if (keys.length) await env.PROFILE_IMAGES.delete(keys);
     await env.DB.batch([env.DB.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').bind(current.id), env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(current.id), env.DB.prepare('DELETE FROM users WHERE id = ?').bind(current.id)]);
-    return json(200, { message: 'Conta e dados controlados por ela excluidos permanentemente.' }, { 'Set-Cookie': sessionCookie('', request, 0) });
+    const headers = current.authenticated_via === 'mobile' ? {} : { 'Set-Cookie': sessionCookie('', request, 0) };
+    return json(200, { message: 'Conta e dados controlados por ela excluidos permanentemente.' }, headers);
   }
   async function profilePicture({ params, request, env }) { const [userId] = params, current = await authenticatedUser(request, env); if (!current || Number(userId) !== Number(current.id) || !current.profile_pic_key) return json(404, { error: 'Imagem nao encontrada.' }); return responsiveImage(await env.PROFILE_IMAGES.get(current.profile_pic_key), request, env, PRIVATE_IMAGE_CACHE); }
   return { profileUpdate, passwordUpdate, photoDelete, accountDelete, profilePicture };
