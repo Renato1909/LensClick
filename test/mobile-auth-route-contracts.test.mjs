@@ -243,3 +243,54 @@ test('sessões web e móveis têm caps independentes (5 web + 3 móveis)', async
   const webRowCount = fixture.DB.prepare("SELECT COUNT(*) AS total FROM sessions WHERE kind = 'web'").first('total');
   assert.equal(webRowCount, 5);
 });
+
+test('POST /api/mobile/auth/register cria conta e sessao móvel sem cookie web', async (t) => {
+  const fixture = createWorkerFixture();
+  t.after(() => fixture.close());
+
+  const result = await fixture.request('/api/mobile/auth/register', {
+    method: 'POST',
+    json: {
+      ...REGISTRATION,
+      deviceName: 'Android Test',
+      appVersion: '1.0'
+    },
+    originHeader: false,
+    useCookie: false
+  });
+
+  assertJsonContract(result, 201);
+  assert.equal(result.json.user.email, REGISTRATION.email);
+  assert.match(result.json.session.accessToken, /^[A-Za-z0-9_-]{40,200}$/);
+  assert.match(result.json.session.expiresAt, /^\d{4}-\d{2}-\d{2}T/);
+  assert.equal(result.response.headers.get('set-cookie'), null);
+  assert.equal(fixture.DB.prepare('SELECT COUNT(*) AS total FROM users').first('total'), 1);
+  assert.equal(fixture.DB.prepare('SELECT COUNT(*) AS total FROM sessions WHERE kind = ?').bind('mobile').first('total'), 1);
+});
+
+test('POST /api/mobile/auth/register aplica validação e conflito de e-mail', async (t) => {
+  const fixture = createWorkerFixture();
+  t.after(() => fixture.close());
+
+  const invalid = await fixture.request('/api/mobile/auth/register', {
+    method: 'POST',
+    json: { ...REGISTRATION, password: 'curta' },
+    originHeader: false,
+    useCookie: false
+  });
+  assertJsonContract(invalid, 400);
+
+  await fixture.request('/api/mobile/auth/register', {
+    method: 'POST',
+    json: REGISTRATION,
+    originHeader: false,
+    useCookie: false
+  });
+  const duplicate = await fixture.request('/api/mobile/auth/register', {
+    method: 'POST',
+    json: REGISTRATION,
+    originHeader: false,
+    useCookie: false
+  });
+  assertJsonContract(duplicate, 409);
+});
