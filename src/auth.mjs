@@ -46,6 +46,62 @@ export function createAuthHandlers(deps) {
       });
     },
 
+    async mobileRegister({ request, env, pathname }) {
+      if (await isRateLimited(request, env, pathname, 8, 15 * 60 * 1000, env.AUTH_RATE_LIMITER)) {
+        return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });
+      }
+      const body = await readJson(request);
+      const name = cleanText(body.name, 100);
+      const email = normalizeEmail(body.email);
+      const phone = cleanText(body.phone, 30);
+      const password = String(body.password || '');
+      const deviceName = cleanText(body.deviceName, 100);
+      const appVersion = cleanText(body.appVersion, 30);
+      if (name.length < 2 || !isValidEmail(email) || phone.length < 8) {
+        return json(400, { error: 'Preencha nome, e-mail e telefone corretamente.' });
+      }
+      if (!isValidPassword(password)) {
+        return json(400, { error: 'A senha deve ter ao menos 8 caracteres, uma letra e um numero.' });
+      }
+      if (await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()) {
+        return json(409, { error: 'Este e-mail ja esta cadastrado.' });
+      }
+      try {
+        const user = await env.DB.prepare(`
+          INSERT INTO users (name, email, phone, password_hash)
+          VALUES (?, ?, ?, ?)
+          RETURNING *
+        `).bind(name, email, phone, await hashPassword(password)).first();
+        if (env.BREVO_API_KEY && env.BREVO_SENDER_EMAIL) {
+          try {
+            const token = await issueVerificationToken(env, Number(user.id));
+            const verifyUrl = new URL('/verificar-email.html', request.url);
+            verifyUrl.searchParams.set('token', token);
+            const language = body.language === 'en' ? 'en' : 'pt';
+            await sendVerificationEmail(env, email, name, verifyUrl.toString(), language);
+          } catch {
+            try {
+              reportOperationalError({ requestId: 'mobile-register', sink: () => {} }, 'email.verification.delivery_failed', 'email_delivery_error');
+            } catch {
+              // A falha de entrega não desfaz um cadastro já criado.
+            }
+          }
+        }
+        const session = await createMobileSession(Number(user.id), env);
+        return json(201, {
+          user: publicUser(user),
+          session: {
+            accessToken: session.token,
+            expiresAt: new Date(session.expiresAt).toISOString()
+          },
+          ...(deviceName || appVersion ? { client: { deviceName, appVersion } } : {})
+        });
+      } catch (error) {
+        if (String(error?.message).toUpperCase().includes('UNIQUE')) return json(409, { error: 'Este e-mail ja esta cadastrado.' });
+        throw error;
+      }
+    },
+
     async mobileMe({ request, env }) {
       const user = await authenticatedMobileUser(request, env);
       return user ? json(200, { user: publicUser(user) }) : json(401, { error: 'Sessao nao encontrada.' });

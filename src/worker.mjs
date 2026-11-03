@@ -897,6 +897,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   }
 
   if (routeId === 'auth.register') return authHandlers.register({ request, env, pathname });
+  if (routeId === 'auth.mobile.register') return authHandlers.mobileRegister({ request, env, pathname });
   if (routeId === 'auth.login') return authHandlers.login({ request, env, pathname });
   if (routeId === 'auth.mobile.login') return authHandlers.mobileLogin({ request, env, pathname });
   if (routeId === 'auth.mobile.me') return authHandlers.mobileMe({ request, env });

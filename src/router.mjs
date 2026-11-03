@@ -2,6 +2,7 @@
 const API_ROUTES = Object.freeze([
   { id: 'health', method: 'GET', path: '/api/health' },
   { id: 'auth.register', method: 'POST', path: '/api/auth/register' },
+  { id: 'auth.mobile.register', method: 'POST', path: '/api/mobile/auth/register' },
   { id: 'auth.login', method: 'POST', path: '/api/auth/login' },
   { id: 'auth.mobile.login', method: 'POST', path: '/api/mobile/auth/login' },
   { id: 'auth.mobile.me', method: 'GET', path: '/api/mobile/auth/me' },
@@ -64,6 +65,7 @@ export function matchApiRoute(pathname, method) {
 // Rotas com bypass de Origin/cookie (Bearer puro exige isso).
 // Lista explícita: novas rotas móveis NÃO herdam bypass por acidente.
 const MOBILE_AUTH_ROUTES = new Set([
+  'POST /api/mobile/auth/register',
   'POST /api/mobile/auth/login',
   'GET /api/mobile/auth/me',
   'POST /api/mobile/auth/logout'
