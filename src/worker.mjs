@@ -13,6 +13,7 @@ import { createPhotographerHandlers } from './photographers.mjs';
 import { createAccountHandlers } from './account.mjs';
 import { createPublicInputHandlers } from './public-input.mjs';
 import { createPortfolioHandlers } from './portfolio.mjs';
+import { createBudgetHandlers } from './budgets.mjs';
 import { createAccountSecurityHandlers } from './account-security.mjs';
 import { createImageService } from './images.mjs';
 import { createMonitoringHandlers, recordRequestSample } from './monitoring.mjs';
@@ -878,6 +879,7 @@ const photographerHandlers = createPhotographerHandlers({
 const accountHandlers = createAccountHandlers({ json, authenticatedUser: authenticatedPrincipal, isRateLimited, readJson, conversationSummary, accountMessage, portfolioItem });
 const publicInputHandlers = createPublicInputHandlers({ json, isRateLimited, readJson, cleanText, normalizeEmail, isValidEmail });
 const portfolioHandlers = createPortfolioHandlers({ json, cleanText, authenticatedUser: authenticatedPrincipal, isRateLimited, readJson, portfolioItem, responsiveImage: imageService.responsiveImage });
+const budgetHandlers = createBudgetHandlers({ json, cleanText, authenticatedUser: authenticatedPrincipal, isRateLimited, readJson });
 const accountSecurityHandlers = createAccountSecurityHandlers({ json, cleanText, normalizeEmail, isValidEmail, authenticatedUser: authenticatedPrincipal, readJson, verifyPassword, decodeProfilePicture, isValidPassword, hashPassword, publicUser, responsiveImage: imageService.responsiveImage, sessionCookie, isRateLimited, reportOperationalError, authRateLimit: [8, 15 * 60 * 1000], sensitiveRateLimit: [5, 60 * 60 * 1000] });
 
 // Route matching lives in router.mjs. Domain handlers receive dependencies explicitly
@@ -932,6 +934,15 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'account.reviews.create') return photographerHandlers.reviewCreate({ params, request, env, pathname });
   if (routeId === 'account.reviews.update') return photographerHandlers.reviewUpdate({ params, request, env, pathname });
   if (routeId === 'account.reviews.delete') return photographerHandlers.reviewDelete({ params, request, env, pathname });
+  if (routeId === 'budgets.request.create') return budgetHandlers.requestCreate({ params, request, env, pathname });
+  if (routeId === 'budgets.requests.list') return budgetHandlers.requestsList({ request, env });
+  if (routeId === 'budgets.request.detail') return budgetHandlers.requestDetail({ params, request, env });
+  if (routeId === 'budgets.proposal.create') return budgetHandlers.proposalCreate({ params, request, env, pathname });
+  if (routeId === 'budgets.request.action') return budgetHandlers.requestAction({ params, request, env });
+  if (routeId === 'budgets.agenda') return budgetHandlers.agenda({ request, env });
+  if (routeId === 'budgets.favorites.list') return budgetHandlers.favoritesList({ request, env });
+  if (routeId === 'budgets.favorites.add') return budgetHandlers.favoriteAdd({ request, env, pathname });
+  if (routeId === 'budgets.favorites.remove') return budgetHandlers.favoriteRemove({ params, request, env });
   if (routeId === 'account.conversations.list') return accountHandlers.listConversations({ request, env, url });
   if (routeId === 'account.export') return accountHandlers.exportData({ request, env, pathname });
   if (routeId === 'account.conversations.messages') return accountHandlers.messages({ params, request, env, url });
