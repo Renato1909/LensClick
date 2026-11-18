@@ -7,7 +7,7 @@
 // em migrations/ e a ultima migration deve ter esse mesmo prefixo — o teste
 // `o catalogo db/schema.ts esta em sintonia com as migrations publicadas`
 // verifica essa invariante.
-export const schemaVersion = 14;
+export const schemaVersion = 15;
 
 export const tables = {
   users: "users",
@@ -25,5 +25,9 @@ export const tables = {
   conversations: "conversations",
   messages: "messages",
   monitorState: "monitor_state",
-  monitorMinuteBuckets: "monitor_minute_buckets"
+  monitorMinuteBuckets: "monitor_minute_buckets",
+  budgetRequests: "budget_requests",
+  proposals: "proposals",
+  favorites: "favorites",
+  budgetAudit: "budget_audit"
 } as const;
