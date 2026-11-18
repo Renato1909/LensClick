@@ -7,6 +7,7 @@ const API_ROUTES = Object.freeze([
   { id: 'auth.mobile.login', method: 'POST', path: '/api/mobile/auth/login' },
   { id: 'auth.mobile.me', method: 'GET', path: '/api/mobile/auth/me' },
   { id: 'auth.mobile.logout', method: 'POST', path: '/api/mobile/auth/logout' },
+  { id: 'auth.mobile.refresh', method: 'POST', path: '/api/mobile/auth/refresh' },
   { id: 'auth.password-reset.request', method: 'POST', path: '/api/auth/password-reset/request' },
   { id: 'auth.password-reset.confirm', method: 'POST', path: '/api/auth/password-reset/confirm' },
   { id: 'auth.email.verify', method: 'POST', path: '/api/auth/email/verify' },
@@ -77,7 +78,8 @@ const MOBILE_AUTH_ROUTES = new Set([
   'POST /api/mobile/auth/register',
   'POST /api/mobile/auth/login',
   'GET /api/mobile/auth/me',
-  'POST /api/mobile/auth/logout'
+  'POST /api/mobile/auth/logout',
+  'POST /api/mobile/auth/refresh'
 ]);
 
 const MOBILE_PRINCIPAL_ROUTES = new Set([

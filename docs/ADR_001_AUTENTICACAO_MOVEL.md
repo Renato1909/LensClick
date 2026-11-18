@@ -33,12 +33,12 @@ Decisões pendentes levantadas na revisão arquitetural do PR 128:
 1. **🔴 Bypass de Origin por prefixo** — qualquer rota futura sob `/api/mobile/auth/*` herda a isenção silenciosamente. **Ação:** migrar para allowlist explícita de rotas no router. **→ Resolvido** em `feat/session-critical-fixes` (lista explícita `MOBILE_AUTH_ROUTES`).
 2. **🔴 Cap de sessões compartilhado web/mobile** — 5 sessões via `user_id` misturam web e app; login no celular pode derrubar sessão do desktop. **Ação:** caps por família (ex.: 5 web + 3 mobile) ou coluna `kind` na tabela. **→ Resolvido** em `feat/session-critical-fixes` (coluna `kind` + migração 0014 + caps 5 web / 3 mobile).
 3. **🔴 Revogação em massa** — reset de senha / exclusão de conta devem revogar **todas** as sessões do usuário (mesma tabela hoje, mas confirmar cobertura em testes E2E). **→ Resolvido** em `feat/session-critical-fixes` (teste E2E `password-reset-session-revocation.test.mjs` confirmou a revogação de ambas as famílias; nenhum código novo foi necessário).
-4. **🟡 Refresh token com rotação + replay detection** — hoje o token tem vida fixa; expirar força novo login. Próximo slice Android precisa de refresh rotacionado, com revogação da cadeia em caso de reuso, e janela de tolerância para requests paralelos.
-5. **🟡 Persistir `deviceName`/`appVersion`** — hoje são aceitos, ecoados e **descartados**. Ou persistir (listar/revogar por dispositivo) ou remover do contrato.
-6. **🟡 Rate-limit por conta** — hoje é por rota+IP; força bruta distribuída contra uma conta segue viável. Considerar bloqueio por usuário após N falhas.
-7. **🟡 Auditoria de sessões móveis** — eventos `mobile.auth.*` (login, revogação, reuso de refresh) sem logar token. Necessário antes da publicação na Play.
-8. **🟢 `GET /me` deve devolver `expiresAt`** para o cliente agendar refresh proativo.
-9. **🟢 Regex do Bearer aceita 40–200 chars** — confirmar que cabe o formato do futuro refresh token.
+4. **🟡 Refresh token com rotação + replay detection** — hoje o token tem vida fixa; expirar força novo login. Próximo slice Android precisa de refresh rotacionado, com revogação da cadeia em caso de reuso, e janela de tolerância para requests paralelos. **→ Resolvido** no PR #156 (`POST /api/mobile/auth/refresh`, rotação a cada uso, token antigo nunca reutiliza uma sessão autenticada, replay fora de uma janela de 60 s revoga toda a cadeia móvel do usuário e audita `replay_reuse`; dentro da janela, requests paralelos recebem `401 token_rotated` sem revogar o sucessor).
+5. **🟡 Persistir `deviceName`/`appVersion`** — hoje são aceitos, ecoados e **descartados**. Ou persistir (listar/revogar por dispositivo) ou remover do contrato. **→ Resolvido** no PR #156 (colunas `sessions.device_name`/`app_version`, gravadas no login, cadastro e refresh).
+6. **🟡 Rate-limit por conta** — hoje é por rota+IP; força bruta distribuída contra uma conta segue viável. Considerar bloqueio por usuário após N falhas. **→ Resolvido** no PR #156 (contador de falhas por e-mail na tabela `rate_limits`, 5 falhas por janela de 15 min; sucesso limpa o contador; bloqueio devolve `429 rate_limited`).
+7. **🟡 Auditoria de sessões móveis** — eventos `mobile.auth.*` (login, revogação, reuso de refresh) sem logar token. Necessário antes da publicação na Play. **→ Resolvido** no PR #156 (tabela `mobile_auth_audit` com `login|register|refresh|replay_reuse|logout`; nunca persiste o token).
+8. **🟢 `GET /me` deve devolver `expiresAt`** para o cliente agendar refresh proativo. **→ Resolvido** no PR #156 (`GET /api/mobile/auth/me` devolve `session.expiresAt`).
+9. **🟢 Regex do Bearer aceita 40–200 chars** — confirmar que cabe o formato do futuro refresh token. **→ Confirmado** (tokens seguem com 43 chars `[A-Za-z0-9_-]`; a regex 40–200 comporta o formato atual e variantes futuras).
 
 ## Correções aplicadas no fechamento do PR
 
@@ -50,4 +50,4 @@ Decisões pendentes levantadas na revisão arquitetural do PR 128:
 
 ## Próximo slice
 
-Integração Android (Retrofit, Keystore), refresh/rotate com replay detection, 2FA multicliente — conforme `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`. Revisitar itens 1–3 deste ADR **antes** de mergear o slice Android.
+Integração Android (Retrofit, Keystore) e 2FA multicliente — conforme `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`. O refresh rotativo (PR #156) e a auditoria `mobile_auth_audit` estão implementados e testados; a renovação proativa do token pelo app deve usar `session.expiresAt` devolvido por `GET /api/mobile/auth/me`. Revisitar itens 1–3 deste ADR **antes** de mergear o slice Android.

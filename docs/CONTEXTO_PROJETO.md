@@ -100,7 +100,7 @@ LensClick/
 ├── .opencode/
 │   └── agents/              # 12 agentes OpenCode (.md, mode: primary)
 ├── data/                    # D1 local (NÃO commitar)
-├── db/schema.ts             # Catálogo TypeScript do schema (versão 16)
+├── db/schema.ts             # Catálogo TypeScript do schema (versão 17)
 ├── docs/
 │   ├── DOCUMENTACAO_TECNICA.md   # Documentação técnica completa
 │   └── CONTEXTO_PROJETO.md       # Este documento
@@ -111,7 +111,8 @@ LensClick/
 │   ├── 0013_portfolio_cover_category.sql
 │   ├── 0014_sessions_kind.sql
 │   ├── 0015_budgets.sql
-│   └── 0016_idempotency_keys.sql
+│   ├── 0016_idempotency_keys.sql
+│   └── 0017_mobile_refresh_rotation.sql
 ├── public/                 # Frontend (assets estáticos)
 │   ├── index.html          # Landing
 │   ├── cadastro.html       # Cadastro
@@ -144,7 +145,7 @@ LensClick/
 ├── src/router.mjs          # Catálogo e despacho das rotas HTTP
 ├── src/worker.mjs          # Handlers e entrypoint do Worker
 ├── src/<domínio>.mjs       # Handlers extraídos por domínio (auth, admin, budgets, …)
-├── test/                   # 49 arquivos .test.mjs (256 testes na suíte automatizada)
+├── test/                   # 50 arquivos .test.mjs (263 testes na suíte automatizada)
 ├── tmp/                    # Arquivos temporários (PRs, rascunhos)
 ├── package.json
 ├── wrangler.jsonc          # Configuração Cloudflare
@@ -280,7 +281,7 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 
 ### Próximo ciclo — aplicativo Android
 
-- Orçamentos/propostas para o Android: backend implementado (pedido, proposta, aceite/rejeição, agenda, favoritos) e contrato documentado em `docs/CONTRATO_ORCAMENTOS.md`, com códigos de erro estáveis e `Idempotency-Key` nas mutações (PRs #148–#153). Falta no backend: refresh token rotacionado (ADR 001, riscos #4–#9).
+- Orçamentos/propostas para o Android: backend implementado (pedido, proposta, aceite/rejeição, agenda, favoritos) e contrato documentado em `docs/CONTRATO_ORCAMENTOS.md`, com códigos de erro estáveis e `Idempotency-Key` nas mutações (PRs #148–#155). O backend móvel está completo para a fase de integração Android: `POST /api/mobile/auth/refresh` rotaciona a sessão a cada uso, `GET /me` devolve `session.expiresAt`, e login/refresh/replay/logout são auditados em `mobile_auth_audit` (PR #156).
 - Galerias privadas.
 - Notificações.
 - O aplicativo Android nativo em Kotlin já foi desenvolvido no Android Studio, mas seu código ainda está fora deste repositório e precisa ser disponibilizado, versionado e auditado.
@@ -294,7 +295,7 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 1. **D1 para dados + R2 para imagens** — imagens não são Base64 no banco; cada serviço cumpre sua finalidade.
 2. **Mesmo domínio para frontend e API** — simplifica cookies, origem e deploy; rotas relativas como `/api/auth/me`.
 3. **HTML/CSS/JS sem framework** — preserva a base original e reduz dependências; maior responsabilidade manual na organização.
-4. **Migrações versionadas** — `0001` a `0016`; mudanças futuras criam novos arquivos, nunca editam banco publicado.
+4. **Migrações versionadas** — `0001` a `0017`; mudanças futuras criam novos arquivos, nunca editam banco publicado.
 5. **R2 privado** — privacidade tem prioridade sobre URL pública; foto privada passa por autorização do Worker.
 6. **PBKDF2-SHA-256 com 100k iterações** — maior valor aceito pelo Web Crypto do Workers; 120k foi rejeitado em produção.
 7. **Cookie HttpOnly/Secure/SameSite=Lax** — JavaScript da página não lê o cookie de sessão; TTL de 7 dias e máximo de cinco sessões ativas por usuário.
@@ -399,6 +400,7 @@ A cadeia transitiva do `wrangler` (`miniflare` → `undici` + `sharp` + `workerd
 - Observabilidade estruturada, SLOs e alertas in-worker (disponibilidade, P95 e taxa de 5xx)
 - Autenticação móvel revogável (Bearer opaco, hash-only, cadastro e login móveis)
 - Orçamentos e propostas (pedido, proposta com valor em centavos, aceite/rejeição, agenda do fotógrafo, favoritos) com contrato documentado para o Android (`docs/CONTRATO_ORCAMENTOS.md`)
+- Refresh token rotativo para sessões móveis com replay detection, `session.expiresAt` em `/me`, bloqueio por conta após falhas e auditoria `mobile_auth_audit`
 - Bilíngue PT/EN
 
 ### Branches, PRs e estado Git
@@ -439,7 +441,7 @@ A sequência atual é a **Fase 6**, detalhada em `docs/PLANO_ANDROID_VALIDACAO_P
 
 ### Estado de `db/schema.ts`
 
-- `schemaVersion=16`, com as 21 tabelas das migrações `0001`-`0016`.
+- `schemaVersion=17`, com as 22 tabelas das migrações `0001`-`0017`.
 - As migrações permanecem como fonte executável; o catálogo TypeScript deve acompanhar novas migrações no mesmo PR. A invariante é verificada automaticamente: o teste `o catalogo db/schema.ts esta em sintonia com as migrations publicadas` falha se `schemaVersion` divergir da quantidade de arquivos em `migrations/` ou se a última migration não tiver o prefixo correspondente.
 
 ### Antes de qualquer alteração

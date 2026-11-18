@@ -22,10 +22,10 @@ function countRows(DB, table) {
   return Number(DB.prepare(`SELECT COUNT(*) AS total FROM ${table}`).first('total'));
 }
 
-test('manifesto final fecha 51 rotas e 58 contratos sem duplicatas', () => {
-  assert.equal(API_CONTRACTS.length, 58);
-  assert.equal(new Set(API_CONTRACTS.map(({ method, route }) => `${method} ${route}`)).size, 58);
-  assert.equal(new Set(API_CONTRACTS.map(({ route }) => route)).size, 51);
+test('manifesto final fecha 52 rotas e 59 contratos sem duplicatas', () => {
+  assert.equal(API_CONTRACTS.length, 59);
+  assert.equal(new Set(API_CONTRACTS.map(({ method, route }) => `${method} ${route}`)).size, 59);
+  assert.equal(new Set(API_CONTRACTS.map(({ route }) => route)).size, 52);
   assert.deepEqual(
     [...new Set(API_CONTRACTS.map(({ area }) => area))].sort(),
     ['account', 'admin', 'auth', 'auth-mobile', 'budgets', 'discovery', 'messaging', 'operations', 'portfolio', 'professional-profile', 'public-input', 'reputation']
