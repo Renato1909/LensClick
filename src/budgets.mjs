@@ -28,19 +28,19 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
 
   async function requestCreate({ params, request, env, pathname }) {
     if (await isRateLimited(request, env, pathname, 10, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
-      return json(429, { error: 'Muitos pedidos. Aguarde antes de tentar novamente.' });
+      return json(429, { error: 'Muitos pedidos. Aguarde antes de tentar novamente.', code: 'rate_limited' });
     }
     const current = await authenticatedUser(request, env);
-    if (!current) return json(401, { error: 'Faca login novamente.' });
-    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem solicitar orcamentos.' });
+    if (!current) return json(401, { error: 'Faca login novamente.', code: 'unauthenticated' });
+    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem solicitar orcamentos.', code: 'forbidden_role' });
     const [slug] = params;
     const photographer = await env.DB.prepare(`
       SELECT p.user_id, p.slug FROM professional_profiles p
       JOIN users u ON u.id = p.user_id
       WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
     `).bind(slug).first();
-    if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.' });
-    if (photographer.user_id === current.id) return json(403, { error: 'Nao e permitido solicitar orcamento do proprio perfil.' });
+    if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.', code: 'not_found' });
+    if (photographer.user_id === current.id) return json(403, { error: 'Nao e permitido solicitar orcamento do proprio perfil.', code: 'forbidden_own_profile' });
     const body = await readJson(request);
     const eventType = cleanText(body.eventType, 80);
     const eventDate = String(body.eventDate ?? '').trim();
@@ -48,15 +48,15 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
     const duration = cleanText(body.duration, 80);
     const description = cleanText(body.description, 1000);
     const additionalInfo = cleanText(body.additionalInfo, 1000);
-    if (eventType.length < 2) return json(400, { error: 'Informe o tipo de evento.' });
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(eventDate)) return json(400, { error: 'Informe a data do evento (AAAA-MM-DD).' });
-    if (place.length < 2) return json(400, { error: 'Informe o local do evento.' });
-    if (description.length < 10) return json(400, { error: 'Descreva o evento em pelo menos 10 caracteres.' });
+    if (eventType.length < 2) return json(400, { error: 'Informe o tipo de evento.', code: 'invalid_payload' });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(eventDate)) return json(400, { error: 'Informe a data do evento (AAAA-MM-DD).', code: 'invalid_payload' });
+    if (place.length < 2) return json(400, { error: 'Informe o local do evento.', code: 'invalid_payload' });
+    if (description.length < 10) return json(400, { error: 'Descreva o evento em pelo menos 10 caracteres.', code: 'invalid_payload' });
     const active = await env.DB.prepare(`
       SELECT id FROM budget_requests
       WHERE client_user_id = ? AND photographer_user_id = ? AND status IN ('pending', 'proposed')
     `).bind(current.id, photographer.user_id).first();
-    if (active) return json(409, { error: 'Ja existe um pedido em andamento com este fotografo.' });
+    if (active) return json(409, { error: 'Ja existe um pedido em andamento com este fotografo.', code: 'conflict' });
     const result = await env.DB.prepare(`
       INSERT INTO budget_requests (client_user_id, photographer_user_id, event_type, event_date, place, duration, description, additional_info)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -69,7 +69,7 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
 
   async function requestsList({ request, env }) {
     const current = await authenticatedUser(request, env);
-    if (!current) return json(401, { error: 'Faca login novamente.' });
+    if (!current) return json(401, { error: 'Faca login novamente.', code: 'unauthenticated' });
     const isPhotographer = current.role === 'photographer';
     const filterColumn = isPhotographer ? 'b.photographer_user_id' : 'b.client_user_id';
     const joinColumn = isPhotographer ? 'b.client_user_id' : 'b.photographer_user_id';
@@ -87,12 +87,12 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
 
   async function requestDetail({ params, request, env }) {
     const current = await authenticatedUser(request, env);
-    if (!current) return json(401, { error: 'Faca login novamente.' });
+    if (!current) return json(401, { error: 'Faca login novamente.', code: 'unauthenticated' });
     const [requestId] = params;
     const row = await env.DB.prepare('SELECT * FROM budget_requests WHERE id = ?').bind(Number(requestId)).first();
-    if (!row) return json(404, { error: 'Pedido nao encontrado.' });
+    if (!row) return json(404, { error: 'Pedido nao encontrado.', code: 'not_found' });
     if (row.client_user_id !== current.id && row.photographer_user_id !== current.id) {
-      return json(403, { error: 'Acesso nao autorizado a este pedido.' });
+      return json(403, { error: 'Acesso nao autorizado a este pedido.', code: 'forbidden_not_participant' });
     }
     const proposals = await env.DB.prepare('SELECT * FROM proposals WHERE request_id = ? ORDER BY created_at DESC, id DESC')
       .bind(row.id).all();
@@ -101,25 +101,25 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
 
   async function proposalCreate({ params, request, env, pathname }) {
     if (await isRateLimited(request, env, pathname, 20, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
-      return json(429, { error: 'Muitas propostas. Aguarde antes de tentar novamente.' });
+      return json(429, { error: 'Muitas propostas. Aguarde antes de tentar novamente.', code: 'rate_limited' });
     }
     const current = await authenticatedUser(request, env);
-    if (!current) return json(401, { error: 'Faca login novamente.' });
-    if (current.role !== 'photographer') return json(403, { error: 'Somente fotografos podem enviar propostas.' });
+    if (!current) return json(401, { error: 'Faca login novamente.', code: 'unauthenticated' });
+    if (current.role !== 'photographer') return json(403, { error: 'Somente fotografos podem enviar propostas.', code: 'forbidden_role' });
     const [requestId] = params;
     const row = await env.DB.prepare('SELECT * FROM budget_requests WHERE id = ?').bind(Number(requestId)).first();
-    if (!row) return json(404, { error: 'Pedido nao encontrado.' });
-    if (row.photographer_user_id !== current.id) return json(403, { error: 'Este pedido nao pertence a voce.' });
-    if (!['pending', 'proposed'].includes(row.status)) return json(409, { error: 'Este pedido nao aceita novas propostas.' });
+    if (!row) return json(404, { error: 'Pedido nao encontrado.', code: 'not_found' });
+    if (row.photographer_user_id !== current.id) return json(403, { error: 'Este pedido nao pertence a voce.', code: 'forbidden_not_owner' });
+    if (!['pending', 'proposed'].includes(row.status)) return json(409, { error: 'Este pedido nao aceita novas propostas.', code: 'invalid_state' });
     const body = await readJson(request);
     const priceCents = Number(body.priceCents);
     const conditions = cleanText(body.conditions, 1000);
     if (!Number.isInteger(priceCents) || priceCents < 0 || priceCents > 100000000) {
-      return json(400, { error: 'Informe um preco valido em centavos.' });
+      return json(400, { error: 'Informe um preco valido em centavos.', code: 'invalid_payload' });
     }
     const existingPending = await env.DB.prepare("SELECT id FROM proposals WHERE request_id = ? AND status = 'pending'")
       .bind(row.id).first();
-    if (existingPending) return json(409, { error: 'Ja existe uma proposta pendente para este pedido.' });
+    if (existingPending) return json(409, { error: 'Ja existe uma proposta pendente para este pedido.', code: 'conflict' });
     const result = await env.DB.prepare('INSERT INTO proposals (request_id, photographer_user_id, price_cents, conditions) VALUES (?, ?, ?, ?)')
       .bind(row.id, current.id, priceCents, conditions || null).run();
     await env.DB.batch([
@@ -131,16 +131,16 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
 
   async function requestAction({ params, request, env }) {
     const current = await authenticatedUser(request, env);
-    if (!current) return json(401, { error: 'Faca login novamente.' });
+    if (!current) return json(401, { error: 'Faca login novamente.', code: 'unauthenticated' });
     const [requestId] = params;
     const body = await readJson(request);
     const action = String(body.action ?? '').trim();
     const row = await env.DB.prepare('SELECT * FROM budget_requests WHERE id = ?').bind(Number(requestId)).first();
-    if (!row) return json(404, { error: 'Pedido nao encontrado.' });
+    if (!row) return json(404, { error: 'Pedido nao encontrado.', code: 'not_found' });
 
     if (action === 'cancel') {
-      if (row.client_user_id !== current.id) return json(403, { error: 'Somente o cliente pode cancelar este pedido.' });
-      if (!['pending', 'proposed'].includes(row.status)) return json(409, { error: 'Este pedido nao pode ser cancelado.' });
+      if (row.client_user_id !== current.id) return json(403, { error: 'Somente o cliente pode cancelar este pedido.', code: 'forbidden_role' });
+      if (!['pending', 'proposed'].includes(row.status)) return json(409, { error: 'Este pedido nao pode ser cancelado.', code: 'invalid_state' });
       await env.DB.batch([
         env.DB.prepare("UPDATE budget_requests SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(row.id),
         env.DB.prepare("UPDATE proposals SET status = 'withdrawn', updated_at = CURRENT_TIMESTAMP WHERE request_id = ? AND status = 'pending'").bind(row.id),
@@ -150,12 +150,12 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
     }
 
     if (action === 'accept' || action === 'reject') {
-      if (row.client_user_id !== current.id) return json(403, { error: 'Somente o cliente pode decidir a proposta.' });
-      if (row.status !== 'proposed') return json(409, { error: 'Nao ha proposta para decidir.' });
+      if (row.client_user_id !== current.id) return json(403, { error: 'Somente o cliente pode decidir a proposta.', code: 'forbidden_role' });
+      if (row.status !== 'proposed') return json(409, { error: 'Nao ha proposta para decidir.', code: 'invalid_state' });
       const proposalId = Number(body.proposalId);
       const prop = await env.DB.prepare("SELECT * FROM proposals WHERE id = ? AND request_id = ? AND status = 'pending'")
         .bind(proposalId, row.id).first();
-      if (!prop) return json(404, { error: 'Proposta pendente nao encontrada.' });
+      if (!prop) return json(404, { error: 'Proposta pendente nao encontrada.', code: 'not_found' });
       const newStatus = action === 'accept' ? 'accepted' : 'rejected';
       await env.DB.batch([
         env.DB.prepare('UPDATE proposals SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(newStatus, prop.id),
@@ -167,11 +167,11 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
     }
 
     if (action === 'withdraw') {
-      if (row.photographer_user_id !== current.id) return json(403, { error: 'Somente o fotografo pode retirar a proposta.' });
+      if (row.photographer_user_id !== current.id) return json(403, { error: 'Somente o fotografo pode retirar a proposta.', code: 'forbidden_role' });
       const proposalId = Number(body.proposalId);
       const prop = await env.DB.prepare("SELECT * FROM proposals WHERE id = ? AND request_id = ? AND status = 'pending'")
         .bind(proposalId, row.id).first();
-      if (!prop) return json(404, { error: 'Proposta pendente nao encontrada.' });
+      if (!prop) return json(404, { error: 'Proposta pendente nao encontrada.', code: 'not_found' });
       await env.DB.batch([
         env.DB.prepare("UPDATE proposals SET status = 'withdrawn', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(prop.id),
         env.DB.prepare("UPDATE budget_requests SET status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'proposed'").bind(row.id),
@@ -180,13 +180,13 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
       return json(200, { request: { id: row.id, status: 'pending' }, message: 'Proposta retirada.' });
     }
 
-    return json(400, { error: 'Acao invalida.' });
+    return json(400, { error: 'Acao invalida.', code: 'invalid_payload' });
   }
 
   async function agenda({ request, env }) {
     const current = await authenticatedUser(request, env);
-    if (!current) return json(401, { error: 'Faca login novamente.' });
-    if (current.role !== 'photographer') return json(403, { error: 'Somente fotografos possuem agenda.' });
+    if (!current) return json(401, { error: 'Faca login novamente.', code: 'unauthenticated' });
+    if (current.role !== 'photographer') return json(403, { error: 'Somente fotografos possuem agenda.', code: 'forbidden_role' });
     const rows = await env.DB.prepare(`
       SELECT b.*, u.name AS client_name
       FROM budget_requests b JOIN users u ON u.id = b.client_user_id
@@ -198,8 +198,8 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
 
   async function favoritesList({ request, env }) {
     const current = await authenticatedUser(request, env);
-    if (!current) return json(401, { error: 'Faca login novamente.' });
-    if (current.role !== 'client') return json(403, { error: 'Somente clientes possuem favoritos.' });
+    if (!current) return json(401, { error: 'Faca login novamente.', code: 'unauthenticated' });
+    if (current.role !== 'client') return json(403, { error: 'Somente clientes possuem favoritos.', code: 'forbidden_role' });
     const rows = await env.DB.prepare(`
       SELECT f.photographer_user_id, f.created_at, p.slug, u.name
       FROM favorites f
@@ -217,11 +217,11 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
 
   async function favoriteAdd({ request, env, pathname }) {
     if (await isRateLimited(request, env, pathname, 30, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) {
-      return json(429, { error: 'Muitas alteracoes. Aguarde antes de tentar novamente.' });
+      return json(429, { error: 'Muitas alteracoes. Aguarde antes de tentar novamente.', code: 'rate_limited' });
     }
     const current = await authenticatedUser(request, env);
-    if (!current) return json(401, { error: 'Faca login novamente.' });
-    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem favoritar fotografos.' });
+    if (!current) return json(401, { error: 'Faca login novamente.', code: 'unauthenticated' });
+    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem favoritar fotografos.', code: 'forbidden_role' });
     const body = await readJson(request);
     const slug = String(body.slug ?? '').trim();
     const photographer = await env.DB.prepare(`
@@ -229,8 +229,8 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
       JOIN users u ON u.id = p.user_id
       WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
     `).bind(slug).first();
-    if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.' });
-    if (photographer.user_id === current.id) return json(403, { error: 'Nao e permitido favoritar o proprio perfil.' });
+    if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.', code: 'not_found' });
+    if (photographer.user_id === current.id) return json(403, { error: 'Nao e permitido favoritar o proprio perfil.', code: 'forbidden_own_profile' });
     await env.DB.prepare('INSERT INTO favorites (client_user_id, photographer_user_id) VALUES (?, ?) ON CONFLICT(client_user_id, photographer_user_id) DO NOTHING')
       .bind(current.id, photographer.user_id).run();
     return json(201, { favorite: { slug }, message: 'Fotografo adicionado aos favoritos.' });
@@ -238,8 +238,8 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
 
   async function favoriteRemove({ params, request, env }) {
     const current = await authenticatedUser(request, env);
-    if (!current) return json(401, { error: 'Faca login novamente.' });
-    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem remover favoritos.' });
+    if (!current) return json(401, { error: 'Faca login novamente.', code: 'unauthenticated' });
+    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem remover favoritos.', code: 'forbidden_role' });
     const [photographerId] = params;
     await env.DB.prepare('DELETE FROM favorites WHERE client_user_id = ? AND photographer_user_id = ?')
       .bind(current.id, Number(photographerId)).run();
