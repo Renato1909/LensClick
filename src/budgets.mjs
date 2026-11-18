@@ -1,4 +1,52 @@
+const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9_-]{8,200}$/;
+
+async function sha256Hex(text) {
+  const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buffer)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function stableStringify(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value ?? null);
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  const entries = Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`);
+  return `{${entries.join(',')}}`;
+}
+
 export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRateLimited, readJson }) {
+  // Idempotencia: o Android envia Idempotency-Key em mutacoes; replay da mesma
+  // chave + mesmo payload devolve a resposta gravada (sem reexecutar a escrita).
+  // Somente respostas 2xx sao gravadas; erros reexecutam normalmente.
+  async function idempotencyStart(current, route, body, request, env) {
+    const rawKey = request.headers.get('Idempotency-Key');
+    if (rawKey == null) return null;
+    const key = rawKey.trim();
+    if (!IDEMPOTENCY_KEY_RE.test(key)) {
+      return { response: json(400, { error: 'Idempotency-Key invalida. Use 8-200 caracteres alfanumericos, "-" ou "_".', code: 'invalid_payload' }) };
+    }
+    const requestHash = await sha256Hex(`${route}\n${stableStringify(body ?? null)}`);
+    const row = await env.DB.prepare('SELECT request_hash, status, response_body FROM idempotency_keys WHERE key = ? AND user_id = ? AND route = ?')
+      .bind(key, current.id, route).first();
+    if (row) {
+      if (row.request_hash === requestHash) {
+        return { response: json(row.status, JSON.parse(row.response_body), { 'Idempotency-Replayed': 'true' }) };
+      }
+      return { response: json(409, { error: 'A chave de idempotencia ja foi usada com outro conteudo.', code: 'idempotency_key_reuse' }) };
+    }
+    return { key, route, requestHash };
+  }
+
+  async function idempotencyFinish(idem, current, env, status, payload) {
+    if (!idem || idem.response || status < 200 || status >= 300) {
+      return json(status, payload);
+    }
+    await env.DB.batch([
+      env.DB.prepare('INSERT INTO idempotency_keys (key, user_id, route, request_hash, status, response_body) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(key, user_id, route) DO NOTHING')
+        .bind(idem.key, current.id, idem.route, idem.requestHash, status, JSON.stringify(payload)),
+      env.DB.prepare("DELETE FROM idempotency_keys WHERE created_at < datetime('now', '-7 days')")
+    ]);
+    return json(status, payload, { 'Idempotency-Replayed': 'false' });
+  }
+
   function proposal(row) {
     return {
       id: Number(row.id),
@@ -42,6 +90,8 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
     if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.', code: 'not_found' });
     if (photographer.user_id === current.id) return json(403, { error: 'Nao e permitido solicitar orcamento do proprio perfil.', code: 'forbidden_own_profile' });
     const body = await readJson(request);
+    const idem = await idempotencyStart(current, 'budgets.request.create', body, request, env);
+    if (idem?.response) return idem.response;
     const eventType = cleanText(body.eventType, 80);
     const eventDate = String(body.eventDate ?? '').trim();
     const place = cleanText(body.place, 160);
@@ -64,7 +114,7 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
     const requestId = Number(result.meta.last_row_id);
     await env.DB.prepare("INSERT INTO budget_audit (request_id, actor_user_id, action) VALUES (?, ?, 'created')")
       .bind(requestId, current.id).run();
-    return json(201, { request: { id: requestId, status: 'pending' }, message: 'Pedido de orcamento enviado.' });
+    return idempotencyFinish(idem, current, env, 201, { request: { id: requestId, status: 'pending' }, message: 'Pedido de orcamento enviado.' });
   }
 
   async function requestsList({ request, env }) {
@@ -112,6 +162,8 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
     if (row.photographer_user_id !== current.id) return json(403, { error: 'Este pedido nao pertence a voce.', code: 'forbidden_not_owner' });
     if (!['pending', 'proposed'].includes(row.status)) return json(409, { error: 'Este pedido nao aceita novas propostas.', code: 'invalid_state' });
     const body = await readJson(request);
+    const idem = await idempotencyStart(current, `budgets.proposal.create:${params[0]}`, body, request, env);
+    if (idem?.response) return idem.response;
     const priceCents = Number(body.priceCents);
     const conditions = cleanText(body.conditions, 1000);
     if (!Number.isInteger(priceCents) || priceCents < 0 || priceCents > 100000000) {
@@ -126,7 +178,7 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
       env.DB.prepare("UPDATE budget_requests SET status = 'proposed', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(row.id),
       env.DB.prepare("INSERT INTO budget_audit (request_id, actor_user_id, action) VALUES (?, ?, 'proposed')").bind(row.id, current.id)
     ]);
-    return json(201, { proposal: { id: Number(result.meta.last_row_id), status: 'pending' }, message: 'Proposta enviada.' });
+    return idempotencyFinish(idem, current, env, 201, { proposal: { id: Number(result.meta.last_row_id), status: 'pending' }, message: 'Proposta enviada.' });
   }
 
   async function requestAction({ params, request, env }) {
@@ -134,6 +186,8 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
     if (!current) return json(401, { error: 'Faca login novamente.', code: 'unauthenticated' });
     const [requestId] = params;
     const body = await readJson(request);
+    const idem = await idempotencyStart(current, `budgets.request.action:${requestId}`, body, request, env);
+    if (idem?.response) return idem.response;
     const action = String(body.action ?? '').trim();
     const row = await env.DB.prepare('SELECT * FROM budget_requests WHERE id = ?').bind(Number(requestId)).first();
     if (!row) return json(404, { error: 'Pedido nao encontrado.', code: 'not_found' });
@@ -146,7 +200,7 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
         env.DB.prepare("UPDATE proposals SET status = 'withdrawn', updated_at = CURRENT_TIMESTAMP WHERE request_id = ? AND status = 'pending'").bind(row.id),
         env.DB.prepare("INSERT INTO budget_audit (request_id, actor_user_id, action) VALUES (?, ?, 'cancelled')").bind(row.id, current.id)
       ]);
-      return json(200, { request: { id: row.id, status: 'cancelled' }, message: 'Pedido cancelado.' });
+      return idempotencyFinish(idem, current, env, 200, { request: { id: row.id, status: 'cancelled' }, message: 'Pedido cancelado.' });
     }
 
     if (action === 'accept' || action === 'reject') {
@@ -163,7 +217,7 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
         env.DB.prepare('UPDATE budget_requests SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(newStatus, row.id),
         env.DB.prepare('INSERT INTO budget_audit (request_id, actor_user_id, action) VALUES (?, ?, ?)').bind(row.id, current.id, newStatus)
       ]);
-      return json(200, { request: { id: row.id, status: newStatus }, message: action === 'accept' ? 'Proposta aceita.' : 'Proposta recusada.' });
+      return idempotencyFinish(idem, current, env, 200, { request: { id: row.id, status: newStatus }, message: action === 'accept' ? 'Proposta aceita.' : 'Proposta recusada.' });
     }
 
     if (action === 'withdraw') {
@@ -177,7 +231,7 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
         env.DB.prepare("UPDATE budget_requests SET status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'proposed'").bind(row.id),
         env.DB.prepare("INSERT INTO budget_audit (request_id, actor_user_id, action) VALUES (?, ?, 'withdrawn')").bind(row.id, current.id)
       ]);
-      return json(200, { request: { id: row.id, status: 'pending' }, message: 'Proposta retirada.' });
+      return idempotencyFinish(idem, current, env, 200, { request: { id: row.id, status: 'pending' }, message: 'Proposta retirada.' });
     }
 
     return json(400, { error: 'Acao invalida.', code: 'invalid_payload' });
@@ -223,6 +277,8 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
     if (!current) return json(401, { error: 'Faca login novamente.', code: 'unauthenticated' });
     if (current.role !== 'client') return json(403, { error: 'Somente clientes podem favoritar fotografos.', code: 'forbidden_role' });
     const body = await readJson(request);
+    const idem = await idempotencyStart(current, 'budgets.favorites.add', body, request, env);
+    if (idem?.response) return idem.response;
     const slug = String(body.slug ?? '').trim();
     const photographer = await env.DB.prepare(`
       SELECT p.user_id FROM professional_profiles p
@@ -233,7 +289,7 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
     if (photographer.user_id === current.id) return json(403, { error: 'Nao e permitido favoritar o proprio perfil.', code: 'forbidden_own_profile' });
     await env.DB.prepare('INSERT INTO favorites (client_user_id, photographer_user_id) VALUES (?, ?) ON CONFLICT(client_user_id, photographer_user_id) DO NOTHING')
       .bind(current.id, photographer.user_id).run();
-    return json(201, { favorite: { slug }, message: 'Fotografo adicionado aos favoritos.' });
+    return idempotencyFinish(idem, current, env, 201, { favorite: { slug }, message: 'Fotografo adicionado aos favoritos.' });
   }
 
   async function favoriteRemove({ params, request, env }) {
@@ -241,9 +297,11 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
     if (!current) return json(401, { error: 'Faca login novamente.', code: 'unauthenticated' });
     if (current.role !== 'client') return json(403, { error: 'Somente clientes podem remover favoritos.', code: 'forbidden_role' });
     const [photographerId] = params;
+    const idem = await idempotencyStart(current, `budgets.favorites.remove:${photographerId}`, null, request, env);
+    if (idem?.response) return idem.response;
     await env.DB.prepare('DELETE FROM favorites WHERE client_user_id = ? AND photographer_user_id = ?')
       .bind(current.id, Number(photographerId)).run();
-    return json(200, { message: 'Favorito removido.' });
+    return idempotencyFinish(idem, current, env, 200, { message: 'Favorito removido.' });
   }
 
   return { requestCreate, requestsList, requestDetail, proposalCreate, requestAction, agenda, favoritesList, favoriteAdd, favoriteRemove };

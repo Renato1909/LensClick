@@ -81,22 +81,32 @@ e `code` (estável, máquina):
 | 404 | `not_found` | Recurso inexistente/despublicado |
 | 409 | `invalid_state` | Transição de estado inválida |
 | 409 | `conflict` | Duplicidade (pedido ativo / proposta pendente) |
+| 409 | `idempotency_key_reuse` | Chave de idempotência reutilizada com outro conteúdo |
 | 429 | `rate_limited` | Limite de requisições excedido |
 
 ## Idempotência e proteção contra duplicação
 
-- **Criação de pedido:** índice único parcial `idx_budget_requests_one_active` em
-  `(client_user_id, photographer_user_id) WHERE status IN ('pending','proposed')`.
-  Segunda criação concorrente/redundante → `409 conflict`. No máximo um pedido ativo por par.
-- **Envio de proposta:** índice único parcial `idx_proposals_one_pending` em `(request_id)
-  WHERE status = 'pending'`. Segunda proposta pendente → `409 conflict`.
-- **Aceitar/rejeitar:** somente proposta `pending` em pedido `proposed`; a segunda decisão
-  retorna `409 invalid_state`. A atualização da proposta escolhida e a rejeição das demais
-  acontecem no mesmo `batch` (transação).
-- **Favoritos:** `INSERT ... ON CONFLICT DO NOTHING` — adicionar duas vezes é seguro.
-- Não há `Idempotency-Key` ainda; retries de rede do Android podem tratar `409` como
-  confirmação de que a operação já ocorreu. Estratégia registrada aqui conforme
-  `docs/CONTEXTO_PROJETO.md`.
+- **`Idempotency-Key` (opcional, recomendado para o Android):** aceito em todas as
+  mutações (`POST budget-requests`, `POST proposals`, `PUT .../budget-requests/:id`,
+  `POST/DELETE favorites`). Formato: 8–200 caracteres `[A-Za-z0-9_-]`; inválido →
+  `400 invalid_payload`.
+  - A chave é escopada por `(key, user_id, route)`; o corpo é hasheado (SHA-256 de
+    JSON estável) e comparado — mesma chave + mesmo conteúdo devolve a resposta
+    gravada com `Idempotency-Replayed: true`, sem reexecutar a escrita.
+  - Mesma chave + conteúdo diferente → `409 { "code": "idempotency_key_reuse" }`.
+  - Somente respostas 2xx são gravadas; erros reexecutam a operação.
+  - Entradas com mais de 7 dias são removidas oportunisticamente (tabela
+    `idempotency_keys`, migration `0016_idempotency_keys.sql`).
+- **Defesa em profundidade (sempre ativa, independente do header):**
+  - **Criação de pedido:** índice único parcial `idx_budget_requests_one_active` em
+    `(client_user_id, photographer_user_id) WHERE status IN ('pending','proposed')`.
+    Segunda criação concorrente/redundante → `409 conflict`. No máximo um pedido ativo por par.
+  - **Envio de proposta:** índice único parcial `idx_proposals_one_pending` em `(request_id)
+    WHERE status = 'pending'`. Segunda proposta pendente → `409 conflict`.
+  - **Aceitar/rejeitar:** somente proposta `pending` em pedido `proposed`; a segunda decisão
+    retorna `409 invalid_state`. A atualização da proposta escolhida e a rejeição das demais
+    acontecem no mesmo `batch` (transação).
+  - **Favoritos:** `INSERT ... ON CONFLICT DO NOTHING` — adicionar duas vezes é seguro.
 
 ## Limites
 

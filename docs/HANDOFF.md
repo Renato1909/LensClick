@@ -29,7 +29,7 @@
 | Camada | Tecnologia |
 |---|---|
 | Runtime | Cloudflare Workers (serverless) |
-| Banco de dados | D1 `lensclick-db` (SQLite) — 20 tabelas |
+| Banco de dados | D1 `lensclick-db` (SQLite) — 21 tabelas |
 | Armazenamento de imagens | R2 `lensclick-profile-images` (bucket privado) |
 | Assets estáticos | Workers Assets (`public/`) |
 | E-mail transacional | Brevo |
@@ -53,17 +53,17 @@
 - `npm run test:e2e` — executa os fluxos críticos em Chromium com Playwright.
 - `npm run db:migrate:local` / `db:migrate:remote` — aplica migrações D1.
 
-### Tabelas D1 (20)
+### Tabelas D1 (21)
 
-`users`, `sessions`, `password_reset_tokens`, `email_verification_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`, `budget_requests`, `proposals`, `favorites`, `budget_audit`.
+`users`, `sessions`, `password_reset_tokens`, `email_verification_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`, `budget_requests`, `proposals`, `favorites`, `budget_audit`, `idempotency_keys`.
 
-### Migrações publicadas (15)
+### Migrações publicadas (16)
 
-`0001_initial.sql` … `0010_monitor_minute_buckets.sql`, `0011_email_verification.sql`, `0012_admin_role.sql`, `0013_portfolio_cover_category.sql`, `0014_sessions_kind.sql`, `0015_budgets.sql`.
+`0001_initial.sql` … `0010_monitor_minute_buckets.sql`, `0011_email_verification.sql`, `0012_admin_role.sql`, `0013_portfolio_cover_category.sql`, `0014_sessions_kind.sql`, `0015_budgets.sql`, `0016_idempotency_keys.sql`.
 
-> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0016_*.sql` para qualquer alteração de schema.
+> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0017_*.sql` para qualquer alteração de schema.
 
-> O ADR 002 prevê a migration `0016_two_factor.sql` (colunas em `users` + 3 tabelas novas; a `0015` foi consumida por `budgets`), mas ela **não existe**: até a aprovação da decisão, nenhum schema foi alterado. O total de migrações publicadas permanece 15.
+> O ADR 002 prevê a migration `0017_two_factor.sql` (colunas em `users` + 3 tabelas novas; a `0015` foi consumida por `budgets` e a `0016` por `idempotency_keys`), mas ela **não existe**: até a aprovação da decisão, nenhum schema de 2FA foi alterado. O total de migrações publicadas permanece 16.
 
 ---
 
@@ -115,16 +115,17 @@ Não há funcionalidade em desenvolvimento numa branch pendente. As Fases 1 a 4 
 - **Autenticação móvel revogável (ADR 001)** — Bearer opaco com hash-only no D1, separação web/móvel das sessões (migration `0014_sessions_kind.sql`, tetos de 5 web / 3 móveis), cadastro móvel (`POST /api/mobile/auth/register`), principal móvel aceito nas rotas de conta (PRs #128, #132, #148, #149).
 - **Orçamentos e propostas** — pedido de orçamento por fotógrafo publicado, proposta com valor em centavos inteiros, aceite/rejeição pelo cliente, cancelamento, retirada de proposta, agenda do fotógrafo (eventos aceitos), favoritos e auditoria em `budget_audit` (migration `0015_budgets.sql`, PR #153).
 - **Contrato Android de orçamentos** — `docs/CONTRATO_ORCAMENTOS.md`: endpoints, estados/transições, limites, estratégia de idempotência e **códigos de erro estáveis** (`code`) em todas as respostas de erro das rotas de orçamento/proposta/favoritos (PR #152).
+- **`Idempotency-Key` nas mutações** — header opcional aceito em todas as mutações de orçamento/proposta/favoritos; replay da mesma chave + conteúdo devolve a resposta gravada (`Idempotency-Replayed: true`) sem reexecutar a escrita; chave reutilizada com outro conteúdo → `409 idempotency_key_reuse` (tabela `idempotency_keys`, migration `0016_idempotency_keys.sql`).
 
 ### Não implementado / pendente
 
 - Fase 6: o aplicativo Android nativo em Kotlin existe fora desta árvore; seu projeto Android Studio ainda precisa ser disponibilizado, versionado e auditado antes de qualquer afirmação de paridade ou publicação.
-- Fase 6: paridade funcional, matriz de testes e publicação Google Play ainda não foram executados. O contrato de autenticação móvel está publicado no ADR 001 e o de orçamentos/propostas em `docs/CONTRATO_ORCAMENTOS.md`; o 2FA está projetado no ADR 002 (Proposto, sem implementação). Faltam para o backend móvel: `Idempotency-Key` nas mutações, refresh token rotacionado (ADR 001, riscos #4–#9) e auditoria `mobile.auth.*`.
+- Fase 6: paridade funcional, matriz de testes e publicação Google Play ainda não foram executados. O contrato de autenticação móvel está publicado no ADR 001 e o de orçamentos/propostas em `docs/CONTRATO_ORCAMENTOS.md`; o 2FA está projetado no ADR 002 (Proposto, sem implementação). Faltam para o backend móvel: refresh token rotacionado (ADR 001, riscos #4–#9) e auditoria `mobile.auth.*`. (`Idempotency-Key` foi implementado na migration `0016_idempotency_keys.sql` — ver `docs/CONTRATO_ORCAMENTOS.md`.)
 - 5.8.c: domínio próprio, DNS e remetente Brevo no domínio.
 - 5.5.b: revisão legal formal dos Termos de Uso e da Política de Privacidade.
 - 2FA continua fora do escopo atual: o ADR 002 está **Proposto** (TOTP + 10 códigos de recuperação de uso único, opt-in na fase 1), mas nenhuma rota, migration ou binding foi criado — a implementação depende da aprovação do mantenedor.
 - O rate limiting permanece deliberadamente híbrido: escudo de rajada nativo na edge e políticas longas autoritativas no D1.
-- A suíte de contratos cobre as 51 rotas e os 58 contratos HTTP catalogados e soma 252 testes; apenas os 3 fluxos críticos têm cobertura em navegador real, e testes ponta a ponta com serviços reais permanecem fora do escopo atual.
+- A suíte de contratos cobre as 51 rotas e os 58 contratos HTTP catalogados e soma 256 testes; apenas os 3 fluxos críticos têm cobertura em navegador real, e testes ponta a ponta com serviços reais permanecem fora do escopo atual.
 - O endpoint `GET /api/health` verifica Worker e D1; o R2 é monitorado pelas rotas reais de imagem para evitar operações artificiais de armazenamento.
 
 ---
@@ -287,6 +288,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #151 | `6659948` | chore(deps): atualiza wrangler para 4.160.1 e corrige o smoke diário |
 | #152 | `94df49e` | feat(api): códigos de erro estáveis (`code`) e `docs/CONTRATO_ORCAMENTOS.md` — contrato Android de orçamentos/propostas (mergeado em 18/11, após o #153) |
 | #153 | `36c66dd` | feat(api): orçamentos, propostas, agenda e favoritos (0015_budgets.sql; mergeado em 14/11) |
+| #155 | — | feat(api): `Idempotency-Key` nas mutações de orçamento/propostas/favoritos (0016_idempotency_keys.sql) |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -525,7 +527,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 3. [6.2] Definir o contrato móvel seguro e implementar paridade por fatias.
 4. [5.8.c/6.6] Escolher o domínio e configurar Cloudflare, DNS e remetente Brevo.
 5. [5.5.b/6.6] Conduzir a revisão jurídica formal em paralelo, concluindo-a antes do lançamento comercial.
-6. [6.3] Implementar o 2FA para web e Android conforme o ADR 002 (Proposto): o threat model e a decisão técnica já estão prontos; falta a aprovação do mantenedor, a migration `0016_two_factor.sql` (a `0015` é `budgets`) e o slice de implementação.
+6. [6.3] Implementar o 2FA para web e Android conforme o ADR 002 (Proposto): o threat model e a decisão técnica já estão prontos; falta a aprovação do mantenedor, a migration `0017_two_factor.sql` (a `0015` é `budgets` e a `0016` é `idempotency_keys`) e o slice de implementação.
 7. [6.4] Executar a validação integral e corrigir todos os achados críticos/altos.
 8. [6.5] Publicar na faixa interna, teste fechado e lançamento gradual da Google Play.
 ```
@@ -541,11 +543,11 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 - A Fase 4.2 foi concluída: todos os handlers de domínio foram extraídos e os blocos legados removidos no PR #82.
 - A Fase 4.3 foi concluída com transformação on-demand (Decisão 15) e publicada em produção na versão `e271e165`.
 - A Fase 4.4 foi concluída: além da sonda de disponibilidade (versão `51d056b4`), os sinais de P95 e taxa de 5xx passaram a ser cobertos in-worker pelo PR #95, publicado na versão `9c72c288` em 3 de setembro de 2026.
-- A consolidação documental 5.1 foi concluída; `db/schema.ts` está atualmente na versão 15 com 20 tabelas, após a migration `0015_budgets.sql` (orçamentos, propostas, favoritos e auditoria). O catálogo é verificado contra as migrations publicadas pelo teste `o catalogo db/schema.ts esta em sintonia com as migrations publicadas`.
+- A consolidação documental 5.1 foi concluída; `db/schema.ts` está atualmente na versão 16 com 21 tabelas, após a migration `0015_budgets.sql` (orçamentos, propostas, favoritos e auditoria). O catálogo é verificado contra as migrations publicadas pelo teste `o catalogo db/schema.ts esta em sintonia com as migrations publicadas`.
 - A iniciativa 5.2 foi concluída integralmente: backup remoto, política formal e restore isolado validados. A dependência crítica da 5.6 está atendida.
 - A iniciativa 5.3 foi concluída: HSTS e CSP foram validados nas respostas públicas, e o teto de cinco sessões foi coberto por testes de isolamento entre usuários.
 - As iniciativas 5.4.a (verificação de e-mail, Decisão 18), 5.4.b (papel administrativo, Decisão 19) e 5.4.c (painel de moderação, Decisão 20) foram concluídas e publicadas. A 5.5.a foi concluída pelo PR #113; a 5.5.b continua pendente por ser revisão legal externa. A 5.6 foi concluída pelos PRs #114/#115, a 5.7 pelos PRs #116/#117 e a 5.8.a/b pelo PR #119. Restam na Fase 5 apenas a revisão jurídica 5.5.b e a configuração de domínio, DNS e e-mail 5.8.c; a próxima iniciativa técnica planejada é a Fase 6.
-- O backend móvel avançou pelos PRs #148 (principal móvel nas rotas de conta), #149 (cadastro móvel), #153 (orçamentos/propostas/agenda/favoritos, migration `0015_budgets.sql`) e #152 (códigos de erro estáveis + `docs/CONTRATO_ORCAMENTOS.md`). A suíte cobre 51 rotas / 58 contratos e soma 252 testes.
+- O backend móvel avançou pelos PRs #148 (principal móvel nas rotas de conta), #149 (cadastro móvel), #153 (orçamentos/propostas/agenda/favoritos, migration `0015_budgets.sql`) e #152 (códigos de erro estáveis + `docs/CONTRATO_ORCAMENTOS.md`). A suíte cobre 51 rotas / 58 contratos e soma 256 testes.
 
 ---
 
@@ -589,7 +591,7 @@ Regras práticas:
 
 ### Convenções do projeto
 
-- **Migrações imutáveis** — nunca editar `0001`–`0015`. Nova alteração de schema = novo arquivo `0016_*.sql`.
+- **Migrações imutáveis** — nunca editar `0001`–`0016`. Nova alteração de schema = novo arquivo `0017_*.sql`.
 - **Fast-forward only** — `main` não aceita merge commits. Todo PR é squash-mergeado.
 - **Status check obrigatório** — o CI "Qualidade" precisa passar antes do merge. Rodar `npm test` e `npm run check` localmente antes de abrir PR.
 - **Auditoria de dependências** — rodar `npm audit` antes de abrir PR que toque `package.json` ou `package-lock.json`, e nunca editar o lockfile à mão. O gate do job diário é bloqueante; o do CI de PR é informativo. Política em `docs/DEPENDENCIAS_E_SEGURANCA.md`.
