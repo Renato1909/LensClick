@@ -288,6 +288,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #151 | `6659948` | chore(deps): atualiza wrangler para 4.160.1 e corrige o smoke diário |
 | #152 | `94df49e` | feat(api): códigos de erro estáveis (`code`) e `docs/CONTRATO_ORCAMENTOS.md` — contrato Android de orçamentos/propostas (mergeado em 18/11, após o #153) |
 | #153 | `36c66dd` | feat(api): orçamentos, propostas, agenda e favoritos (0015_budgets.sql; mergeado em 14/11) |
+| #155 | — | feat(api): `Idempotency-Key` nas mutações de orçamento/propostas/favoritos (0016_idempotency_keys.sql) |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
