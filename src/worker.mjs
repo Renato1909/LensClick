@@ -22,6 +22,9 @@ const SESSION_COOKIE = 'lensclick_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_ACTIVE_WEB_SESSIONS = 5;
 const MAX_ACTIVE_MOBILE_SESSIONS = 3;
+const REFRESH_GRACE_MS = 60 * 1000;
+const LOGIN_FAILURE_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_FAILURE_LIMIT = 5;
 const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_BODY_BYTES = 700_000;
@@ -663,19 +666,21 @@ async function createSession(userId, request, env) {
   return createSessionWithKind(userId, 'web', MAX_ACTIVE_WEB_SESSIONS, env, (token) => sessionCookie(token, request));
 }
 
-async function createMobileSession(userId, env) {
-  return createSessionWithKind(userId, 'mobile', MAX_ACTIVE_MOBILE_SESSIONS, env, null);
+async function createMobileSession(userId, env, device = {}) {
+  return createSessionWithKind(userId, 'mobile', MAX_ACTIVE_MOBILE_SESSIONS, env, null, device);
 }
 
-async function createSessionWithKind(userId, kind, maxActive, env, wrapSession) {
+async function createSessionWithKind(userId, kind, maxActive, env, wrapSession, device = {}) {
   const token = randomToken();
   const tokenHash = await sha256(token);
   const now = Date.now();
   const expiresAt = now + SESSION_TTL_MS;
+  const deviceName = device.deviceName ? String(device.deviceName).slice(0, 100) : null;
+  const appVersion = device.appVersion ? String(device.appVersion).slice(0, 30) : null;
   await env.DB.batch([
     env.DB.prepare('DELETE FROM sessions WHERE expires_at <= ?').bind(now),
-    env.DB.prepare('INSERT INTO sessions (token_hash, user_id, expires_at, kind) VALUES (?, ?, ?, ?)')
-      .bind(tokenHash, userId, expiresAt, kind),
+    env.DB.prepare('INSERT INTO sessions (token_hash, user_id, expires_at, kind, device_name, app_version) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(tokenHash, userId, expiresAt, kind, deviceName, appVersion),
     env.DB.prepare(`
       DELETE FROM sessions
       WHERE user_id = ? AND kind = ? AND token_hash <> ?
@@ -701,11 +706,85 @@ async function authenticatedMobileUser(request, env) {
   const token = bearerToken(request);
   if (!token) return null;
   return env.DB.prepare(`
-    SELECT u.*, s.token_hash AS authenticated_session_hash
+    SELECT u.*, s.token_hash AS authenticated_session_hash, s.expires_at AS session_expires_at
     FROM sessions s
     JOIN users u ON u.id = s.user_id
-    WHERE s.token_hash = ? AND s.expires_at > ?
+    WHERE s.token_hash = ? AND s.expires_at > ? AND s.rotated_at IS NULL
   `).bind(await sha256(token), Date.now()).first();
+}
+
+async function auditMobileAuth(env, userId, event, deviceName = null, appVersion = null) {
+  try {
+    await env.DB.prepare('INSERT INTO mobile_auth_audit (user_id, event, device_name, app_version) VALUES (?, ?, ?, ?)')
+      .bind(userId, event, deviceName, appVersion).run();
+  } catch {
+    // Auditoria nunca derruba o fluxo de autenticacao.
+  }
+}
+
+async function rotateMobileSession(request, env) {
+  const token = bearerToken(request);
+  if (!token) return { status: 401, body: { error: 'Sessao nao encontrada.', code: 'unauthenticated' } };
+  const tokenHash = await sha256(token);
+  const now = Date.now();
+  const row = await env.DB.prepare(`
+    SELECT s.token_hash, s.user_id, s.expires_at, s.device_name, s.app_version, s.rotated_at
+    FROM sessions s
+    WHERE s.token_hash = ? AND s.kind = 'mobile'
+  `).bind(tokenHash).first();
+  if (!row) return { status: 401, body: { error: 'Sessao nao encontrada.', code: 'unauthenticated' } };
+
+  if (row.rotated_at) {
+    if (now - Number(row.rotated_at) <= REFRESH_GRACE_MS) {
+      // Corrida benigna de requests paralelos: a rotacao ja aconteceu; nada a revogar.
+      return { status: 401, body: { error: 'Sessao rotacionada. Use a credencial mais recente.', code: 'token_rotated' } };
+    }
+    // Replay detection: token rotacionado reapresentado fora da janela -> revoga a cadeia movel inteira.
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND kind = 'mobile'").bind(row.user_id),
+      env.DB.prepare("INSERT INTO mobile_auth_audit (user_id, event, device_name, app_version) VALUES (?, 'replay_reuse', ?, ?)")
+        .bind(row.user_id, row.device_name, row.app_version)
+    ]);
+    return { status: 401, body: { error: 'Token reutilizado apos rotacao. Sessoes moveis revogadas.', code: 'token_reuse' } };
+  }
+  if (Number(row.expires_at) <= now) {
+    return { status: 401, body: { error: 'Sessao expirada.', code: 'unauthenticated' } };
+  }
+
+  const newSession = await createMobileSession(Number(row.user_id), env, { deviceName: row.device_name, appVersion: row.app_version });
+  const rotated = await env.DB.prepare('UPDATE sessions SET rotated_at = ?, replaced_by_hash = ? WHERE token_hash = ? AND rotated_at IS NULL')
+    .bind(now, await sha256(newSession.token), tokenHash).run();
+  if (Number(rotated?.meta?.changes || 0) === 0) {
+    // Outra requisicao rotacionou primeiro: desfaz a sessao criada e trata como corrida benigna.
+    await env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(await sha256(newSession.token)).run();
+    return { status: 401, body: { error: 'Sessao rotacionada. Use a credencial mais recente.', code: 'token_rotated' } };
+  }
+  await auditMobileAuth(env, row.user_id, 'refresh', row.device_name, row.app_version);
+  return { status: 200, session: newSession, userId: Number(row.user_id) };
+}
+
+// Limitador por conta: complementa o limite por rota+IP contra forca bruta distribuida.
+async function loginBucketKey(email, bucket) {
+  return sha256(`login-fail:${email}:${bucket}`);
+}
+async function recentLoginFailures(env, email) {
+  const bucket = Math.floor(Date.now() / LOGIN_FAILURE_WINDOW_MS);
+  const row = await env.DB.prepare('SELECT request_count FROM rate_limits WHERE bucket_key = ?')
+    .bind(await loginBucketKey(email, bucket)).first();
+  return Number(row?.request_count ?? 0);
+}
+async function recordLoginFailure(env, email) {
+  const now = Date.now();
+  const bucket = Math.floor(now / LOGIN_FAILURE_WINDOW_MS);
+  await env.DB.prepare(`
+    INSERT INTO rate_limits (bucket_key, request_count, expires_at)
+    VALUES (?, 1, ?)
+    ON CONFLICT(bucket_key) DO UPDATE SET request_count = request_count + 1
+  `).bind(await loginBucketKey(email, bucket), now + LOGIN_FAILURE_WINDOW_MS).run();
+}
+async function clearLoginFailures(env, email) {
+  const bucket = Math.floor(Date.now() / LOGIN_FAILURE_WINDOW_MS);
+  await env.DB.prepare('DELETE FROM rate_limits WHERE bucket_key = ?').bind(await loginBucketKey(email, bucket)).run();
 }
 
 async function authenticatedPrincipal(request, env) {
@@ -723,8 +802,14 @@ async function authenticatedPrincipal(request, env) {
 async function revokeMobileSession(request, env) {
   const token = bearerToken(request);
   if (!token) return false;
-  const result = await env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(await sha256(token)).run();
-  return Number(result?.meta?.changes || 0) > 0;
+  const tokenHash = await sha256(token);
+  const row = await env.DB.prepare('SELECT user_id, device_name, app_version FROM sessions WHERE token_hash = ?').bind(tokenHash).first();
+  const result = await env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(tokenHash).run();
+  if (Number(result?.meta?.changes || 0) > 0) {
+    if (row) await auditMobileAuth(env, row.user_id, 'logout', row.device_name, row.app_version);
+    return true;
+  }
+  return false;
 }
 
 async function consumeRateLimit(env, key, limit, intervalMs) {
@@ -861,6 +946,8 @@ const authHandlers = createAuthHandlers({
   isRateLimited, readJson, hashPassword, verifyPassword, createSession, createMobileSession,
   publicUser, consumeRateLimit, randomToken, sha256, sendPasswordResetEmail,
   sendVerificationEmail, authenticatedUser, authenticatedMobileUser, revokeMobileSession,
+  rotateMobileSession, recentLoginFailures, recordLoginFailure, clearLoginFailures, auditMobileAuth,
+  LOGIN_FAILURE_LIMIT,
   parseCookies, sessionCookie, reportOperationalError,
   sessionCookieName: SESSION_COOKIE, passwordResetTtlMs: PASSWORD_RESET_TTL_MS,
   emailVerificationTtlMs: EMAIL_VERIFICATION_TTL_MS
@@ -903,6 +990,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'auth.login') return authHandlers.login({ request, env, pathname });
   if (routeId === 'auth.mobile.login') return authHandlers.mobileLogin({ request, env, pathname });
   if (routeId === 'auth.mobile.me') return authHandlers.mobileMe({ request, env });
+  if (routeId === 'auth.mobile.refresh') return authHandlers.mobileRefresh({ request, env, pathname });
   if (routeId === 'auth.mobile.logout') return authHandlers.mobileLogout({ request, env });
   if (routeId === 'auth.password-reset.request') return authHandlers.passwordResetRequest({ request, env, pathname, context, requestContext });
   if (routeId === 'auth.password-reset.confirm') return authHandlers.passwordResetConfirm({ request, env, pathname });

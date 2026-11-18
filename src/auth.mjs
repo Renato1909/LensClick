@@ -5,6 +5,8 @@ export function createAuthHandlers(deps) {
     isRateLimited, readJson, hashPassword, verifyPassword, createSession,
     publicUser, consumeRateLimit, randomToken, sha256, sendPasswordResetEmail,
     sendVerificationEmail, authenticatedUser, authenticatedMobileUser, revokeMobileSession,
+    rotateMobileSession, recentLoginFailures, recordLoginFailure, clearLoginFailures, auditMobileAuth,
+    LOGIN_FAILURE_LIMIT,
     createMobileSession, parseCookies, sessionCookie, reportOperationalError,
     sessionCookieName, passwordResetTtlMs, emailVerificationTtlMs
   } = deps;
@@ -31,11 +33,17 @@ export function createAuthHandlers(deps) {
       if (!isValidEmail(email) || !password) {
         return json(400, { error: 'Informe e-mail e senha corretamente.' });
       }
+      if (await recentLoginFailures(env, email) >= LOGIN_FAILURE_LIMIT) {
+        return json(429, { error: 'Conta temporariamente bloqueada por excesso de tentativas. Aguarde alguns minutos.', code: 'rate_limited' });
+      }
       const user = await env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first();
       if (!user || !(await verifyPassword(password, user.password_hash))) {
+        await recordLoginFailure(env, email);
         return json(401, { error: 'E-mail ou senha incorretos.' });
       }
-      const session = await createMobileSession(Number(user.id), env);
+      await clearLoginFailures(env, email);
+      const session = await createMobileSession(Number(user.id), env, { deviceName: deviceName || null, appVersion: appVersion || null });
+      await auditMobileAuth(env, Number(user.id), 'login', deviceName || null, appVersion || null);
       return json(200, {
         user: publicUser(user),
         session: {
@@ -87,7 +95,8 @@ export function createAuthHandlers(deps) {
             }
           }
         }
-        const session = await createMobileSession(Number(user.id), env);
+        const session = await createMobileSession(Number(user.id), env, { deviceName: deviceName || null, appVersion: appVersion || null });
+        await auditMobileAuth(env, Number(user.id), 'register', deviceName || null, appVersion || null);
         return json(201, {
           user: publicUser(user),
           session: {
@@ -104,7 +113,26 @@ export function createAuthHandlers(deps) {
 
     async mobileMe({ request, env }) {
       const user = await authenticatedMobileUser(request, env);
-      return user ? json(200, { user: publicUser(user) }) : json(401, { error: 'Sessao nao encontrada.' });
+      if (!user) return json(401, { error: 'Sessao nao encontrada.' });
+      const expiresAt = user.session_expires_at ? new Date(Number(user.session_expires_at)).toISOString() : null;
+      return json(200, { user: publicUser(user), session: { expiresAt } });
+    },
+
+    async mobileRefresh({ request, env, pathname }) {
+      if (await isRateLimited(request, env, pathname, 30, 15 * 60 * 1000, env.AUTH_RATE_LIMITER)) {
+        return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });
+      }
+      const result = await rotateMobileSession(request, env);
+      if (result.status !== 200) return json(result.status, result.body);
+      const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(result.userId).first();
+      if (!user) return json(401, { error: 'Sessao nao encontrada.', code: 'unauthenticated' });
+      return json(200, {
+        user: publicUser(user),
+        session: {
+          accessToken: result.session.token,
+          expiresAt: new Date(result.session.expiresAt).toISOString()
+        }
+      });
     },
 
     async mobileLogout({ request, env }) {

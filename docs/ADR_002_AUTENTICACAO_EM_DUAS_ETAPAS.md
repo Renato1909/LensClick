@@ -68,7 +68,7 @@ Ameaças fora do escopo deste ADR: SIM swap (relevante apenas se e-mail virar fa
 
 Estados de erro e anatomia de contrato seguem a suíte existente de contratos por rota; todas as rotas entram no catálogo do `src/router.mjs` e são cobertas por testes antes do merge (obrigatório pelo Gate C/F).
 
-### Schema previsto (migration `0017_two_factor.sql`; `0015` é `budgets` e `0016` é `idempotency_keys`)
+### Schema previsto (migration `0018_two_factor.sql`; `0015` é `budgets` e `0016` é `idempotency_keys`)
 
 - `users.two_factor_secret` (TEXT, nulo por padrão), `users.two_factor_enabled_at` — **sem ALTER em migração publicada; tudo como migração nova**.
 - `two_factor_recovery_codes` (`user_id`, `code_hash` SHA-256, `used_at`) — uso único confirmado por UPDATE condicional.
@@ -98,7 +98,7 @@ Estados de erro e anatomia de contrato seguem a suíte existente de contratos po
 
 ## 7. Ordem de execução do slice (futuro, não neste ADR)
 
-1. Migration `0017` + `db/schema.ts` no mesmo PR (regra do projeto).
+1. Migration `0018` + `db/schema.ts` no mesmo PR (regra do projeto).
 2. Módulo `src/twofactor.mjs` (enrollment, verificação, códigos, dispositivos) com handlers isolados.
 3. Contratos no catálogo + testes por rota; E2E de três fluxos críticos (ativar, entrar com desafio, entrar com código de recuperação).
 4. Página da central da conta (aba segurança) + tela de desafio pós-login; **i18n completa (os dois catálogos)** e tokens `--lc-*`.
