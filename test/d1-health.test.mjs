@@ -47,7 +47,7 @@ test('o catalogo db/schema.ts esta em sintonia com as migrations publicadas', ()
 
 test('migrations de busca alinham os indices aos filtros e a ordenacao', () => {
   const database = migratedDatabase();
-  assert.match(read('db/schema.ts'), /schemaVersion = 15/);
+  assert.match(read('db/schema.ts'), /schemaVersion = 16/);
   const base = `
     SELECT p.user_id
     FROM professional_profiles p
