@@ -151,12 +151,16 @@ export function renderPublicProfilePage(template, row, requestUrl) {
     description,
     dateModified: row.updated_at || row.user_updated_at,
     mainEntity: {
-      '@type': 'Person',
+      '@type': 'ProfessionalService',
       identifier: profile.slug,
       name: profile.name,
       description: profile.bio,
       ...(imageUrl ? { image: imageUrl } : {}),
-      ...(location ? { address: { '@type': 'PostalAddress', addressLocality: profile.city, addressRegion: profile.state, addressCountry: 'BR' } } : {})
+      ...(location ? { address: { '@type': 'PostalAddress', addressLocality: profile.city, addressRegion: profile.state, addressCountry: 'BR' } } : {}),
+      ...(profile.startingPriceCents != null ? { priceRange: `R$ ${(Number(profile.startingPriceCents) / 100).toFixed(2)}` } : {}),
+      ...(profile.ratingAverage != null && Number(profile.reviewCount) > 0
+        ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: Number(profile.ratingAverage), reviewCount: Number(profile.reviewCount) } }
+        : {})
     }
   };
   const head = [

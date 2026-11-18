@@ -145,7 +145,7 @@ LensClick/
 ├── src/router.mjs          # Catálogo e despacho das rotas HTTP
 ├── src/worker.mjs          # Handlers e entrypoint do Worker
 ├── src/<domínio>.mjs       # Handlers extraídos por domínio (auth, admin, budgets, …)
-├── test/                   # 50 arquivos .test.mjs (264 testes na suíte automatizada)
+├── test/                   # 50 arquivos .test.mjs (265 testes na suíte automatizada)
 ├── tmp/                    # Arquivos temporários (PRs, rascunhos)
 ├── package.json
 ├── wrangler.jsonc          # Configuração Cloudflare

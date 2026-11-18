@@ -87,7 +87,7 @@
   const ONBOARDING_STEP_KEY = 'lensclick.professionalOnboardingStep';
 
   function redirectToLogin() {
-    window.location.replace('login.html?next=perfil.html');
+    window.location.replace('/login?next=/perfil');
   }
 
   function initials(name) {
@@ -800,7 +800,7 @@
           confirmation: deleteConfirmation.value.trim()
         })
       }, UX.t('profile.delete.error'));
-      window.location.replace('login.html?accountDeleted=1');
+      window.location.replace('/login?accountDeleted=1');
     } catch (error) {
       if (error.status === 401) return redirectToLogin();
       UX.showMessage(deleteAccountMessage, error.message, 'error');
@@ -818,7 +818,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: '{}'
       }, UX.t('profile.logout.error'));
-      window.location.replace('login.html');
+      window.location.replace('/login');
     } catch (error) {
       UX.showMessage(profileMessage, error.message, 'error');
       UX.setBusy(logoutButton, false);

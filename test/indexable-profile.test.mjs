@@ -25,6 +25,17 @@ function profile(overrides = {}) {
   };
 }
 
+test('perfil SSR emite ProfessionalService com aggregateRating e priceRange quando presentes', () => {
+  const html = renderPublicProfilePage(template, profile({
+    rating_average: 4.7, review_count: 12, starting_price_cents: 250000
+  }), 'https://lensclick.example/fotografo/ana-luz');
+
+  assert.match(html, /"@type":"ProfessionalService"/);
+  assert.match(html, /"aggregateRating":\{"@type":"AggregateRating","ratingValue":4\.7,"reviewCount":12\}/);
+  assert.match(html, /"priceRange":"R\$ 2500\.00"/);
+  assert.match(html, /"address":\{"@type":"PostalAddress","addressLocality":"São Paulo"/);
+});
+
 test('o perfil indexavel entrega URL canonica, Open Graph e ProfilePage no HTML', () => {
   const html = renderPublicProfilePage(template, profile(), 'https://lensclick.example/fotografo/ana-luz');
 
@@ -33,7 +44,7 @@ test('o perfil indexavel entrega URL canonica, Open Graph e ProfilePage no HTML'
   assert.match(html, /<meta property="og:type" content="profile">/);
   assert.match(html, /<script type="application\/ld\+json">/);
   assert.match(html, /"@type":"ProfilePage"/);
-  assert.match(html, /"mainEntity":\{"@type":"Person"/);
+  assert.match(html, /"mainEntity":\{"@type":"ProfessionalService"/);
   assert.match(html, /<h1 id="photographerName">Ana Luz<\/h1>/);
   assert.match(html, /<article id="professionalProfile">/);
 });

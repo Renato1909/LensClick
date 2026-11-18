@@ -13,7 +13,7 @@ test('recuperacao de senha possui telas bilingues e integracao segura', () => {
   const worker = readFileSync('src/worker.mjs', 'utf8');
   const auth = readFileSync('src/auth.mjs', 'utf8');
 
-  assert.match(login, /href="recuperar-senha\.html"/);
+  assert.match(login, /href="\/recuperar-senha"/);
   assert.match(requestPage, /src="password-recovery\.js"/);
   assert.match(confirmPage, /src="password-reset\.js"/);
   assert.match(requestScript, /\/api\/auth\/password-reset\/request/);

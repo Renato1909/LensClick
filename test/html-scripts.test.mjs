@@ -81,7 +81,7 @@ test('a Fase 3 centraliza feedback e carregamento dos fluxos', () => {
   assert.match(home, /role="tablist"/);
   assert.match(login, /safeNextDestination/);
   assert.match(signup, /setCustomValidity/);
-  assert.match(profile, /login\.html\?next=perfil\.html/);
+  assert.match(profile, /\/login\?next=\/perfil/);
 });
 
 test('as opções do seletor de serviço permanecem legíveis', () => {

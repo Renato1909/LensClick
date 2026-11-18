@@ -14,7 +14,7 @@ function showDeletedAccountMessage() {
 }
 showDeletedAccountMessage();
 document.addEventListener('translations.updated', showDeletedAccountMessage);
-if (accountWasDeleted) window.history.replaceState({}, '', 'login.html');
+if (accountWasDeleted) window.history.replaceState({}, '', '/login');
 
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -29,7 +29,7 @@ loginForm.addEventListener('submit', async (event) => {
       body: JSON.stringify({ email, password })
     }, UX.t('login.error'));
     showLoginMessage(UX.t('login.secureRedirect'), 'success');
-    setTimeout(() => { window.location.href = UX.safeNextDestination('perfil.html'); }, 700);
+    setTimeout(() => { window.location.href = UX.safeNextDestination('/perfil'); }, 700);
   } catch (error) {
     showLoginMessage(error.message);
     UX.setBusy(loginButton, false);

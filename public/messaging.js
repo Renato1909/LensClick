@@ -46,7 +46,7 @@
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: field.value.trim() })
         }, t('messaging.start.error'));
-        window.location.assign(`/perfil.html?conversa=${encodeURIComponent(data.conversation.id)}#messages`);
+        window.location.assign(`/perfil?conversa=${encodeURIComponent(data.conversation.id)}#messages`);
       } catch (error) {
         UX.showMessage(feedback, error.message, 'error');
         UX.setBusy(button, false);

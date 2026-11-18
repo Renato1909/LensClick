@@ -24,7 +24,7 @@ test('a central da conta oferece dados, segurança e remoção de foto', () => {
   assert.match(script, /\/api\/account\/photo/);
   assert.match(script, /method: 'DELETE'/);
   assert.match(script, /expectedDeletionPhrase/);
-  assert.match(script, /login\.html\?accountDeleted=1/);
+  assert.match(script, /\/login\?accountDeleted=1/);
   assert.match(script, /currentPassword: emailCurrentPassword\.value/);
   assert.match(styles, /\.settings-grid/);
   assert.match(styles, /@media \(max-width: 620px\)/);
