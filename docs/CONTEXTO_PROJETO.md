@@ -281,7 +281,7 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 
 ### Próximo ciclo — aplicativo Android
 
-- Orçamentos/propostas para o Android: backend implementado (pedido, proposta, aceite/rejeição, agenda, favoritos) e contrato documentado em `docs/CONTRATO_ORCAMENTOS.md`, com códigos de erro estáveis e `Idempotency-Key` nas mutações (PRs #148–#155). O backend móvel está completo para a fase de integração Android: `POST /api/mobile/auth/refresh` rotaciona a sessão a cada uso, `GET /me` devolve `session.expiresAt`, e login/refresh/replay/logout são auditados em `mobile_auth_audit` (PR #156).
+- Orçamentos/propostas para o Android: backend implementado (pedido, proposta, aceite/rejeição, agenda, favoritos) e contrato documentado em `docs/CONTRATO_ORCAMENTOS.md`, com códigos de erro estáveis e `Idempotency-Key` nas mutações (PRs #148–#155). O backend móvel está completo para a fase de integração Android: `POST /api/mobile/auth/refresh` rotaciona a sessão a cada uso, `GET /me` devolve `session.expiresAt`, e login/refresh/replay/logout são auditados em `mobile_auth_audit` (PR #156). Os documentos de integração são `docs/MATRIZ_PARIDADE_ANDROID.md` (matriz por capacidade) e `docs/CONTRATO_MOVEL_ANDROID.md` (guia de consumo: auth, refresh, Keystore, idempotência, erros, limites).
 - Galerias privadas.
 - Notificações.
 - O aplicativo Android nativo em Kotlin já foi desenvolvido no Android Studio, mas seu código ainda está fora deste repositório e precisa ser disponibilizado, versionado e auditado.
