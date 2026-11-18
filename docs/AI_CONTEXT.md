@@ -154,11 +154,11 @@ Fluxo oficial (em `CONTRIBUTING.md`):
 ## 9. Banco de dados
 
 - **Cloudflare D1** (`lensclick-db`), binding `DB`.
-- **16 tabelas:** `users`, `sessions`, `password_reset_tokens`, `email_verification_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`.
+- **20 tabelas:** `users`, `sessions`, `password_reset_tokens`, `email_verification_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`, `budget_requests`, `proposals`, `favorites`, `budget_audit`.
 - **PRAGMA foreign_keys=ON**; FKs com `ON DELETE CASCADE`.
 - **Statements preparados** com `.bind()` — nunca concatene SQL.
-- **Migrações** em `migrations/` (`0001`–`0013`), imutáveis. Nova alteração = `0014_*.sql`.
-- **`db/schema.ts` está sincronizado** na versão 13 e lista as 16 tabelas das migrações `0001`–`0013`. **As migrações continuam sendo a fonte de verdade.**
+- **Migrações** em `migrations/` (`0001`–`0015`), imutáveis. Nova alteração = `0016_*.sql`.
+- **`db/schema.ts` está sincronizado** na versão 15 e lista as 20 tabelas das migrações `0001`–`0015`. **As migrações continuam sendo a fonte de verdade.**
 - **Índices** em colunas de leitura frequente para reduzir consumo do plano gratuito.
 
 Modelo detalhado (MER/DER/dicionário): `docs/DOCUMENTACAO_TECNICA.md` seção 8.
