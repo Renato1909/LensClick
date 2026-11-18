@@ -29,7 +29,15 @@ test('links e arquivos locais referenciados existem', () => {
     references.forEach((reference) => {
       if (!reference || /^(?:#|https?:|mailto:|data:)/i.test(reference)) return;
       const cleanPath = reference.split(/[?#]/)[0];
-      assert.equal(existsSync(resolve(publicDir, cleanPath.replace(/^\//, ''))), true, `${page}: ${reference}`);
+      const relative = cleanPath.replace(/^\//, '');
+      // Forma limpa (`/busca`) mapeia para o arquivo `busca.html`; `/` mapeia para o index.
+      const candidates = cleanPath === '/'
+        ? ['index.html']
+        : [relative, `${relative}.html`];
+      assert.ok(
+        candidates.some((candidate) => existsSync(resolve(publicDir, candidate))),
+        `${page}: ${reference}`
+      );
     });
   });
 });
@@ -76,7 +84,7 @@ test('rodape usa ano dinamico e respostas mantem cabecalhos de seguranca', () =>
 test('a pagina temporaria de perfil e apenas um redirecionamento seguro', () => {
   const redirect = readPublic('perfil_temp.html');
 
-  assert.match(redirect, /http-equiv="refresh" content="0; url=perfil\.html"/);
-  assert.match(redirect, /rel="canonical" href="perfil\.html"/);
+  assert.match(redirect, /http-equiv="refresh" content="0; url=\/perfil"/);
+  assert.match(redirect, /rel="canonical" href="\/perfil"/);
   assert.doesNotMatch(redirect, /<script|localStorage|sessionStorage/);
 });

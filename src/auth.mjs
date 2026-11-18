@@ -83,7 +83,7 @@ export function createAuthHandlers(deps) {
         if (env.BREVO_API_KEY && env.BREVO_SENDER_EMAIL) {
           try {
             const token = await issueVerificationToken(env, Number(user.id));
-            const verifyUrl = new URL('/verificar-email.html', request.url);
+            const verifyUrl = new URL('/verificar-email', request.url);
             verifyUrl.searchParams.set('token', token);
             const language = body.language === 'en' ? 'en' : 'pt';
             await sendVerificationEmail(env, email, name, verifyUrl.toString(), language);
@@ -168,7 +168,7 @@ export function createAuthHandlers(deps) {
         if (env.BREVO_API_KEY && env.BREVO_SENDER_EMAIL) {
           try {
             const token = await issueVerificationToken(env, Number(user.id));
-            const verifyUrl = new URL('/verificar-email.html', request.url);
+            const verifyUrl = new URL('/verificar-email', request.url);
             verifyUrl.searchParams.set('token', token);
             const language = body.language === 'en' ? 'en' : 'pt';
             await sendVerificationEmail(env, email, name, verifyUrl.toString(), language);
@@ -221,7 +221,7 @@ export function createAuthHandlers(deps) {
       await env.DB.prepare('DELETE FROM password_reset_tokens WHERE expires_at <= ? OR user_id = ?').bind(now, user.id).run();
       await env.DB.prepare('INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES (?, ?, ?)')
         .bind(await sha256(token), user.id, now + passwordResetTtlMs).run();
-      const resetUrl = new URL('/redefinir-senha.html', request.url);
+      const resetUrl = new URL('/redefinir-senha', request.url);
       resetUrl.searchParams.set('token', token);
       const delivery = sendPasswordResetEmail(env, user.email, user.name, resetUrl.toString(), language).catch(async () => {
         reportOperationalError(requestContext, 'email.password_reset.delivery_failed', 'email_delivery_error');
@@ -286,7 +286,7 @@ export function createAuthHandlers(deps) {
       const body = await readJson(request).catch(() => ({}));
       const language = body.language === 'en' ? 'en' : 'pt';
       const token = await issueVerificationToken(env, Number(user.id));
-      const verifyUrl = new URL('/verificar-email.html', request.url);
+      const verifyUrl = new URL('/verificar-email', request.url);
       verifyUrl.searchParams.set('token', token);
       const delivery = sendVerificationEmail(env, user.email, user.name, verifyUrl.toString(), language).catch(async () => {
         reportOperationalError(requestContext, 'email.verification.delivery_failed', 'email_delivery_error');

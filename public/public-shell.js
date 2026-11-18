@@ -160,7 +160,7 @@
     function showLoggedIn(user) {
       loginLink.hidden = true;
       profile.hidden = false;
-      profile.href = 'perfil.html';
+      profile.href = '/perfil';
 
       const name = String(user?.name || '').trim();
       if (name) {

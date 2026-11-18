@@ -34,7 +34,7 @@ signupForm.addEventListener('submit', async (event) => {
       body: JSON.stringify({ name, email, phone, password })
     }, UX.t('signup.createError'));
     showSignupMessage(UX.t('signup.createdRedirect'), 'success');
-    setTimeout(() => { window.location.href = 'perfil.html'; }, 700);
+    setTimeout(() => { window.location.href = '/perfil'; }, 700);
   } catch (error) {
     showSignupMessage(error.message);
     UX.setBusy(signupButton, false);

@@ -128,9 +128,10 @@
     }, true);
   }
 
-  function safeNextDestination(fallback = 'perfil.html') {
+  function safeNextDestination(fallback = '/perfil') {
     const next = new URLSearchParams(window.location.search).get('next');
-    return next && /^[a-z0-9_-]+\.html(?:[?#][^\s]*)?$/i.test(next) ? next : fallback;
+    // Somente caminhos relativos same-origin (forma limpa ou .html legado); bloqueia open redirect.
+    return next && /^\/?[a-z0-9_-]+(\.html)?([?#][^\s]*)?$/i.test(next) ? next : fallback;
   }
 
   window.LensClickUX = {
