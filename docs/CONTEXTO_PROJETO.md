@@ -1,7 +1,7 @@
 # CONTEXTO_PROJETO.md
 
 > Documento permanente de onboarding para novos desenvolvedores e IAs.
-> Última atualização: setembro de 2026.
+> Última atualização: novembro de 2026.
 >
 > Consulte `docs/HANDOFF.md` para HEAD, branch e estado operacional atuais.
 
@@ -14,7 +14,7 @@ O **LensClick** é uma plataforma premium para fotógrafos, construída como uma
 - **URL oficial**: https://lensclick.renato-aparecido-business.workers.dev
 - **Repositório**: monorepo único (frontend + backend + banco + infraestrutura).
 - **Licença/uso**: privado, em evolução contínua.
-- **Maturidade**: produto funcional com cadastro, login, recuperação de senha, central da conta, perfil profissional, portfolio, página pública de fotógrafo, busca, contato e newsletter.
+- **Maturidade**: produto funcional com cadastro, login, recuperação de senha, central da conta, perfil profissional, portfolio, página pública de fotógrafo, busca, contato, newsletter e orçamentos/propostas (contrato de paridade para o Android documentado).
 
 ---
 
@@ -100,7 +100,7 @@ LensClick/
 ├── .opencode/
 │   └── agents/              # 12 agentes OpenCode (.md, mode: primary)
 ├── data/                    # D1 local (NÃO commitar)
-├── db/schema.ts             # Catálogo TypeScript do schema (versão 14)
+├── db/schema.ts             # Catálogo TypeScript do schema (versão 15)
 ├── docs/
 │   ├── DOCUMENTACAO_TECNICA.md   # Documentação técnica completa
 │   └── CONTEXTO_PROJETO.md       # Este documento
@@ -109,7 +109,8 @@ LensClick/
 │   ├── 0011_email_verification.sql
 │   ├── 0012_admin_role.sql
 │   ├── 0013_portfolio_cover_category.sql
-│   └── 0014_sessions_kind.sql
+│   ├── 0014_sessions_kind.sql
+│   └── 0015_budgets.sql
 ├── public/                 # Frontend (assets estáticos)
 │   ├── index.html          # Landing
 │   ├── cadastro.html       # Cadastro
@@ -141,7 +142,8 @@ LensClick/
 │   └── build_documentation_pdf.py
 ├── src/router.mjs          # Catálogo e despacho das rotas HTTP
 ├── src/worker.mjs          # Handlers e entrypoint do Worker
-├── test/                   # 14 arquivos .test.mjs (suíte automatizada de testes)
+├── src/<domínio>.mjs       # Handlers extraídos por domínio (auth, admin, budgets, …)
+├── test/                   # 48 arquivos .test.mjs (252 testes na suíte automatizada)
 ├── tmp/                    # Arquivos temporários (PRs, rascunhos)
 ├── package.json
 ├── wrangler.jsonc          # Configuração Cloudflare
@@ -277,7 +279,7 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 
 ### Próximo ciclo — aplicativo Android
 
-- Agendamento e acompanhamento de orçamentos.
+- Orçamentos/propostas para o Android: backend implementado (pedido, proposta, aceite/rejeição, agenda, favoritos) e contrato documentado em `docs/CONTRATO_ORCAMENTOS.md`, com códigos de erro estáveis (PRs #148–#153). Faltam no backend: `Idempotency-Key` e refresh token rotacionado (ADR 001, riscos #4–#9).
 - Galerias privadas.
 - Notificações.
 - O aplicativo Android nativo em Kotlin já foi desenvolvido no Android Studio, mas seu código ainda está fora deste repositório e precisa ser disponibilizado, versionado e auditado.
@@ -291,7 +293,7 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 1. **D1 para dados + R2 para imagens** — imagens não são Base64 no banco; cada serviço cumpre sua finalidade.
 2. **Mesmo domínio para frontend e API** — simplifica cookies, origem e deploy; rotas relativas como `/api/auth/me`.
 3. **HTML/CSS/JS sem framework** — preserva a base original e reduz dependências; maior responsabilidade manual na organização.
-4. **Migrações versionadas** — `0001` a `0013`; mudanças futuras criam novos arquivos, nunca editam banco publicado.
+4. **Migrações versionadas** — `0001` a `0015`; mudanças futuras criam novos arquivos, nunca editam banco publicado.
 5. **R2 privado** — privacidade tem prioridade sobre URL pública; foto privada passa por autorização do Worker.
 6. **PBKDF2-SHA-256 com 100k iterações** — maior valor aceito pelo Web Crypto do Workers; 120k foi rejeitado em produção.
 7. **Cookie HttpOnly/Secure/SameSite=Lax** — JavaScript da página não lê o cookie de sessão; TTL de 7 dias e máximo de cinco sessões ativas por usuário.
@@ -394,6 +396,8 @@ A cadeia transitiva do `wrangler` (`miniflare` → `undici` + `sharp` + `workerd
 - Sitemap.xml e robots.txt dinâmicos
 - Cache de edge para leituras públicas
 - Observabilidade estruturada, SLOs e alertas in-worker (disponibilidade, P95 e taxa de 5xx)
+- Autenticação móvel revogável (Bearer opaco, hash-only, cadastro e login móveis)
+- Orçamentos e propostas (pedido, proposta com valor em centavos, aceite/rejeição, agenda do fotógrafo, favoritos) com contrato documentado para o Android (`docs/CONTRATO_ORCAMENTOS.md`)
 - Bilíngue PT/EN
 
 ### Branches, PRs e estado Git
@@ -434,7 +438,7 @@ A sequência atual é a **Fase 6**, detalhada em `docs/PLANO_ANDROID_VALIDACAO_P
 
 ### Estado de `db/schema.ts`
 
-- `schemaVersion=14`, com as 16 tabelas das migrações `0001`-`0014`.
+- `schemaVersion=15`, com as 20 tabelas das migrações `0001`-`0015`.
 - As migrações permanecem como fonte executável; o catálogo TypeScript deve acompanhar novas migrações no mesmo PR. A invariante é verificada automaticamente: o teste `o catalogo db/schema.ts esta em sintonia com as migrations publicadas` falha se `schemaVersion` divergir da quantidade de arquivos em `migrations/` ou se a última migration não tiver o prefixo correspondente.
 
 ### Antes de qualquer alteração
