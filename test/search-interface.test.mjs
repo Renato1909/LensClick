@@ -32,3 +32,15 @@ test('a busca avançada expõe preço, raio, ordenação e limpeza em uma interf
     assert.ok(translations['en-US'][key], `en-US: ${key}`);
   }
 });
+
+test('busca e hídratavel pela URL: filtros vem da query string e sincronizam via replaceState', () => {
+  const script = read('public/search.js');
+  assert.match(script, /new URLSearchParams\(window\.location\.search\)/);
+  assert.match(script, /readFiltersFromUrl\(\)/);
+  assert.match(script, /syncFiltersToUrl\(\)/);
+  assert.match(script, /history\.replaceState/);
+  // todos os filtros do formulario sao hidrataveis pela URL
+  for (const parameter of ['state', 'city', 'specialty', 'availability', 'minPrice', 'maxPrice', 'minRadius', 'sort', 'page']) {
+    assert.match(script, new RegExp(`params\\.(has|get|set)\\(["']${parameter}["']`));
+  }
+});

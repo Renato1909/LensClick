@@ -21,6 +21,46 @@
   let pageSize = 12;
   let currentResults = [];
   let currentPagination = null;
+
+  // Busca hidratavel pela URL: os filtros vem da query string, ficam sincronizados
+  // no endereco (replaceState, sem poluir o historico) e tornam resultados
+  // compartilháveis e indexáveis.
+  function readFiltersFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const apply = (input, key, normalize) => {
+      if (!params.has(key)) return;
+      const value = params.get(key);
+      input.value = normalize ? normalize(value) : value;
+    };
+    apply(stateInput, 'state', (v) => String(v).trim().toUpperCase());
+    apply(cityInput, 'city', (v) => String(v).trim());
+    apply(specialtyInput, 'specialty');
+    apply(availabilityInput, 'availability');
+    apply(minPriceInput, 'minPrice');
+    apply(maxPriceInput, 'maxPrice');
+    apply(minRadiusInput, 'minRadius');
+    apply(sortInput, 'sort');
+    const urlPage = Number(params.get('page'));
+    if (Number.isInteger(urlPage) && urlPage >= 1 && urlPage <= 1000) page = urlPage;
+  }
+
+  function syncFiltersToUrl() {
+    const params = new URLSearchParams();
+    if (cityInput.value.trim()) params.set('city', cityInput.value.trim());
+    if (stateInput.value.trim()) params.set('state', String(stateInput.value).trim().toUpperCase());
+    if (specialtyInput.value) params.set('specialty', specialtyInput.value);
+    if (availabilityInput.value) params.set('availability', availabilityInput.value);
+    if (minPriceInput.value) params.set('minPrice', minPriceInput.value);
+    if (maxPriceInput.value) params.set('maxPrice', maxPriceInput.value);
+    if (minRadiusInput.value) params.set('minRadius', minRadiusInput.value);
+    if (sortInput.value) params.set('sort', sortInput.value);
+    if (page > 1) params.set('page', String(page));
+    const query = params.toString();
+    const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}`;
+    if (`${window.location.pathname}${window.location.search}` !== nextUrl) {
+      window.history.replaceState(null, '', nextUrl);
+    }
+  }
   const specialtyKeys = {
     wedding: 'wedding', events: 'events', portrait: 'portrait', family: 'family',
     corporate: 'corporate', product: 'product', fashion: 'fashion', newborn: 'newborn',
@@ -118,6 +158,7 @@
       if (sortInput.value) params.set('sort', sortInput.value);
       params.set('page', String(page));
       params.set('pageSize', String(pageSize));
+      syncFiltersToUrl();
 
       const { data } = await UX.apiFetch(`/api/photographers?${params.toString()}`, { headers: { Accept: 'application/json' } });
       currentResults = data.photographers || [];
@@ -139,5 +180,6 @@
     if (currentPagination) renderResults(currentResults, currentPagination);
   });
 
+  readFiltersFromUrl();
   Promise.resolve(window.i18n?.ready).then(load);
 })();

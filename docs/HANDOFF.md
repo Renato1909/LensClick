@@ -126,7 +126,7 @@ Não há funcionalidade em desenvolvimento numa branch pendente. As Fases 1 a 4 
 - 5.5.b: revisão legal formal dos Termos de Uso e da Política de Privacidade.
 - 2FA continua fora do escopo atual: o ADR 002 está **Proposto** (TOTP + 10 códigos de recuperação de uso único, opt-in na fase 1), mas nenhuma rota, migration ou binding foi criado — a implementação depende da aprovação do mantenedor.
 - O rate limiting permanece deliberadamente híbrido: escudo de rajada nativo na edge e políticas longas autoritativas no D1.
-- A suíte de contratos cobre as 52 rotas e os 59 contratos HTTP catalogados e soma 263 testes; apenas os 3 fluxos críticos têm cobertura em navegador real, e testes ponta a ponta com serviços reais permanecem fora do escopo atual.
+- A suíte de contratos cobre as 52 rotas e os 59 contratos HTTP catalogados e soma 264 testes; apenas os 3 fluxos críticos têm cobertura em navegador real, e testes ponta a ponta com serviços reais permanecem fora do escopo atual.
 - O endpoint `GET /api/health` verifica Worker e D1; o R2 é monitorado pelas rotas reais de imagem para evitar operações artificiais de armazenamento.
 
 ---
@@ -549,7 +549,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 - A iniciativa 5.2 foi concluída integralmente: backup remoto, política formal e restore isolado validados. A dependência crítica da 5.6 está atendida.
 - A iniciativa 5.3 foi concluída: HSTS e CSP foram validados nas respostas públicas, e o teto de cinco sessões foi coberto por testes de isolamento entre usuários.
 - As iniciativas 5.4.a (verificação de e-mail, Decisão 18), 5.4.b (papel administrativo, Decisão 19) e 5.4.c (painel de moderação, Decisão 20) foram concluídas e publicadas. A 5.5.a foi concluída pelo PR #113; a 5.5.b continua pendente por ser revisão legal externa. A 5.6 foi concluída pelos PRs #114/#115, a 5.7 pelos PRs #116/#117 e a 5.8.a/b pelo PR #119. Restam na Fase 5 apenas a revisão jurídica 5.5.b e a configuração de domínio, DNS e e-mail 5.8.c; a próxima iniciativa técnica planejada é a Fase 6.
-- O backend móvel avançou pelos PRs #148 (principal móvel nas rotas de conta), #149 (cadastro móvel), #153 (orçamentos/propostas/agenda/favoritos, migration `0015_budgets.sql`), #152 (códigos de erro estáveis + `docs/CONTRATO_ORCAMENTOS.md`), #155 (`Idempotency-Key`, migration `0016_idempotency_keys.sql`) e #156 (refresh rotativo + auditoria `mobile_auth_audit` + bloqueio por conta, migration `0017_mobile_refresh_rotation.sql`). A suíte cobre 52 rotas / 59 contratos e soma 263 testes.
+- O backend móvel avançou pelos PRs #148 (principal móvel nas rotas de conta), #149 (cadastro móvel), #153 (orçamentos/propostas/agenda/favoritos, migration `0015_budgets.sql`), #152 (códigos de erro estáveis + `docs/CONTRATO_ORCAMENTOS.md`), #155 (`Idempotency-Key`, migration `0016_idempotency_keys.sql`) e #156 (refresh rotativo + auditoria `mobile_auth_audit` + bloqueio por conta, migration `0017_mobile_refresh_rotation.sql`). A suíte cobre 52 rotas / 59 contratos e soma 264 testes.
 
 ---
 
