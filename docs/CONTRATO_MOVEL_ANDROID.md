@@ -106,6 +106,15 @@ erros, limites). Pontos de atenção para o cliente Android:
 - 1 pedido ativo por par cliente/fotógrafo; proposta pendente única por pedido;
   aceite/rejeição controlados pelo servidor.
 
+## Conversas e avaliações (alinhamento PR #161)
+
+- `POST /api/photographers/:slug/conversations` agora aceita **Bearer sem `Origin`** (está na allowlist explícita de principais móveis) e devolve `conversation` com `id`, `counterpartName`, `lastMessage`, `lastMessageAt`, `unreadCount`.
+- `GET /api/account/conversations/:id/messages` e `POST .../messages` devolvem, além dos campos canônicos (`body`, `senderUserId`), os aliases consumidos pelo parser do app: `text`, `senderId` e `isMine`. `PUT .../read` continua retornando `{ok, updated}`.
+- `POST /api/photographers/:slug/reviews` (Bearer) **existe** e mantém a regra de verificação: exige um pedido de contato **confirmado pelo fotógrafo** e ainda sem avaliação; sem isso responde `403 {"code":"review_not_eligible"}`. Envie `{rating: 1..5, comment: ≥10 chars}`; a listagem pública devolve `summary.total|average` e `reviews[{id, authorName, rating, comment, createdAt}]` (`clientName` também é enviado para compatibilidade).
+- Fluxo verificado continua disponível: `POST /api/photographers/:slug/review-requests` → fotógrafo `PUT /api/account/review-requests/:id {status:"confirmed"}` → `POST /api/account/review-requests/:id/review`.
+
+**Nota para a demo:** o app `ad5cc75` não envia `Idempotency-Key` e não chama `/refresh`; retries de escrita e renovação proativa não estão ativos no app (o backend suporta ambos). Ver `docs/MATRIZ_PARIDADE_ANDROID.md`.
+
 ## Limites (por principal, por janela)
 
 | Rota / operação | Limite |

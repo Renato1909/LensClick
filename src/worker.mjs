@@ -575,6 +575,7 @@ function publicReview(row) {
     rating: Number(row.rating),
     comment: row.comment || '',
     clientName: row.client_name || '',
+    authorName: row.client_name || '',
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -603,6 +604,7 @@ function conversationSummary(row, currentUserId) {
     updatedAt: row.updated_at,
     unreadCount: Number(row.unread_count || 0),
     lastMessage: row.last_message || '',
+    counterpartName: isClient ? row.photographer_name : row.client_name,
     counterpart: {
       id: Number(isClient ? row.photographer_user_id : row.client_user_id),
       name: isClient ? row.photographer_name : row.client_name,
@@ -612,14 +614,18 @@ function conversationSummary(row, currentUserId) {
   };
 }
 
-function accountMessage(row) {
+function accountMessage(row, currentUserId = null) {
   return {
     id: Number(row.id),
     conversationId: Number(row.conversation_id),
     senderUserId: Number(row.sender_user_id),
     body: row.body,
     readAt: row.read_at || null,
-    createdAt: row.created_at
+    createdAt: row.created_at,
+    // Aliases consumidos pelo LensClickApp (parser org.json sem biblioteca).
+    text: row.body,
+    senderId: Number(row.sender_user_id),
+    isMine: currentUserId != null && Number(row.sender_user_id) === Number(currentUserId)
   };
 }
 
@@ -1028,7 +1034,7 @@ const photographerHandlers = createPhotographerHandlers({
   json, cleanText, professionalProfile, portfolioItem,
   professionalSpecialties: PROFESSIONAL_SPECIALTIES, publicReview, responsiveImage: imageService.responsiveImage,
   isRateLimited, authenticatedUser: authenticatedPrincipal, readJson, slugify,
-  normalizeEmail, isValidEmail, normalizeWebsite, parseSpecialties, accountReviewRequest
+  normalizeEmail, isValidEmail, normalizeWebsite, parseSpecialties, accountReviewRequest, conversationSummary
 });
 const accountHandlers = createAccountHandlers({ json, authenticatedUser: authenticatedPrincipal, isRateLimited, readJson, conversationSummary, accountMessage, portfolioItem });
 const publicInputHandlers = createPublicInputHandlers({ json, isRateLimited, readJson, cleanText, normalizeEmail, isValidEmail });
@@ -1089,6 +1095,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'photographers.photo') return photographerHandlers.photo({ params, env, request });
   if (routeId === 'photographers.portfolio-image') return photographerHandlers.portfolioImage({ params, env, request });
   if (routeId === 'photographers.reviews') return photographerHandlers.reviews({ params, env });
+  if (routeId === 'photographers.reviews.create') return photographerHandlers.reviewDirectCreate({ params, request, env, pathname });
   if (routeId === 'photographers.review-request.create') return photographerHandlers.reviewRequestCreate({ params, request, env, pathname });
   if (routeId === 'photographers.conversations.create') return photographerHandlers.conversationCreate({ params, request, env, pathname });
   if (routeId === 'account.professional-profile.read') return photographerHandlers.professionalProfileRead({ request, env });
