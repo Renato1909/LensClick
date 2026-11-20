@@ -6,6 +6,7 @@ export function createAuthHandlers(deps) {
     publicUser, consumeRateLimit, randomToken, sha256, sendPasswordResetEmail,
     sendVerificationEmail, authenticatedUser, authenticatedMobileUser, revokeMobileSession,
     rotateMobileSession, recentLoginFailures, recordLoginFailure, clearLoginFailures, auditMobileAuth,
+    isTwoFactorEnabled, createTwoFactorChallenge, auditTwoFactor,
     LOGIN_FAILURE_LIMIT,
     createMobileSession, parseCookies, sessionCookie, reportOperationalError,
     sessionCookieName, passwordResetTtlMs, emailVerificationTtlMs
@@ -42,6 +43,15 @@ export function createAuthHandlers(deps) {
         return json(401, { error: 'E-mail ou senha incorretos.' });
       }
       await clearLoginFailures(env, email);
+      if (await isTwoFactorEnabled(Number(user.id), env)) {
+        const challenge = await createTwoFactorChallenge(Number(user.id), 'login', env);
+        await auditTwoFactor(env, Number(user.id), 'challenge_issued');
+        return json(202, {
+          status: 'twoFactorRequired',
+          challengeToken: challenge.token,
+          expiresAt: new Date(challenge.expiresAt).toISOString()
+        });
+      }
       const session = await createMobileSession(Number(user.id), env, { deviceName: deviceName || null, appVersion: appVersion || null });
       await auditMobileAuth(env, Number(user.id), 'login', deviceName || null, appVersion || null);
       return json(200, {
@@ -65,8 +75,9 @@ export function createAuthHandlers(deps) {
       const password = String(body.password || '');
       const deviceName = cleanText(body.deviceName, 100);
       const appVersion = cleanText(body.appVersion, 30);
-      if (name.length < 2 || !isValidEmail(email) || phone.length < 8) {
-        return json(400, { error: 'Preencha nome, e-mail e telefone corretamente.' });
+      // O app Android não envia phone no cadastro; o campo é opcional no canal móvel.
+      if (name.length < 2 || !isValidEmail(email) || (phone && phone.length < 8)) {
+        return json(400, { error: 'Preencha nome e e-mail corretamente.' });
       }
       if (!isValidPassword(password)) {
         return json(400, { error: 'A senha deve ter ao menos 8 caracteres, uma letra e um numero.' });

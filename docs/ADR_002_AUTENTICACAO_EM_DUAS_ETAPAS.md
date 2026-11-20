@@ -1,6 +1,7 @@
 # ADR 002 — Autenticação em Duas Etapas Multicliente (2FA)
 
-- **Status:** Proposto — nenhuma implementação iniciada (Gate E do `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`)
+- **Status:** Aceito e **implementado no backend** em 20/11/2026 (PR #160; Gate E aprovado para a demo da feira do LensClickApp). Fluxo web (UI) permanece pendente; ver item §5 e a ressalva do cliente Android abaixo.
+- **Ressalva do cliente Android (`ad5cc75`):** o ViewModel só reconhece `FORBIDDEN + 202` no login, mas o transporte mapeia 202 para `SERVER`, e o `challengeToken` é **fabricado no cliente** (`"challenge_"+millis`, ~18 chars) em vez de lido da resposta. O backend emite token de 43 chars e valida 40–200 no `verify`: o app precisa aceitar `202 {status:"twoFactorRequired", challengeToken, expiresAt}` e enviar esse token de volta. A UI de desativação envia senha fixa `senha123` — deve pedir a senha real. Sem esse ajuste no app, o fluxo 2FA ainda falha na demo (bloqueio documentado, fora deste repositório).
 - **Data:** 16/10/2026
 - **Iniciativa:** 6.3.1 (Fase 6.3 — produção multicliente)
 - **Relacionado:** `docs/ADR_001_AUTENTICACAO_MOVEL.md` (Bearer opaco revogável, migration `0014_sessions_kind`), Decisões 9, 13, 17 e 18 de `docs/DECISOES_TECNICAS.md`
@@ -56,6 +57,8 @@ Ameaças fora do escopo deste ADR: SIM swap (relevante apenas se e-mail virar fa
 | QR code | Renderizado no cliente por SVG a partir do `otpauth://` servido **uma única vez** | CSP sem `'unsafe-inline'` em scripts: qualquer loader virá como asset externo ou SVG inline |
 
 ### Contratos previstos (novo catálogo)
+
+Implementados no PR #160 (as rotas em **negrito** são as que o LensClickApp consome em `ad5cc75`). O app usa `setup` (equivalente a `enrollment`), `enable` (equivalente a `confirm`) e `password` (equivalente a `currentPassword`); ambos os nomes são expostos pelo backend para compatibilidade. Respostas incluem `success` (app) e `enabled`/`ok` (ADR) de forma aditiva.
 
 | Rota | Autenticação | Efeito |
 |---|---|---|

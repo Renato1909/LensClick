@@ -7,7 +7,7 @@
 > app). Nenhuma afirmação de paridade é válida antes disso.
 >
 > **Fonte:** rotas em `src/router.mjs`, contratos em `test-support/api-contracts.mjs`
-> (52 rotas / 59 contratos, verificados pelo teste `manifesto da API registra 52
+> (61 rotas / 68 contratos, verificados pelo teste `manifesto da API registra 52
 > rotas e 59 contratos sem duplicatas`) e suíte `node --test` (264 testes).
 
 ## Como ler
@@ -42,6 +42,7 @@
 | Verificação de e-mail | `POST /api/auth/email/verify`, `POST /api/auth/email/resend` | ✅ | ? | deep link ou tela nativa | P1 | Brevo | `email-verification` | A classificar |
 | Limites de sessão | 5 web / 3 móveis (teto) | ✅ | ? | — | P1 | ADR 001 | `mobile-auth-refresh` | A classificar |
 | Bloqueio por conta | 5 falhas / 15 min (429) | ✅ | ? | — | P1 | ADR 001 #6 | `mobile-auth-refresh` | A classificar |
+| 2FA TOTP no app | `GET/POST /api/account/2fa/status\|setup\|enable\|disable`, `POST /api/mobile/auth/2fa/verify` | ✅ (backend) | ? | app `ad5cc75` fabrica o `challengeToken` e não trata 202 | **P0 (demo)** | ADR 002 / PR #160 | `two-factor` | A classificar |
 
 ### 2. Conta e dados do titular
 

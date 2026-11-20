@@ -17,6 +17,11 @@ import { createBudgetHandlers } from './budgets.mjs';
 import { createAccountSecurityHandlers } from './account-security.mjs';
 import { createImageService } from './images.mjs';
 import { createMonitoringHandlers, recordRequestSample } from './monitoring.mjs';
+import {
+  createTwoFactorHandlers, isTwoFactorEnabled, createChallenge, loadChallenge,
+  failChallenge, deleteChallenge, verifyTotp, generateTotpSecret,
+  generateRecoveryCodes, audit as auditTwoFactor
+} from './twofactor.mjs';
 
 const SESSION_COOKIE = 'lensclick_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -767,6 +772,49 @@ async function rotateMobileSession(request, env) {
   return { status: 200, session: newSession, userId: Number(row.user_id) };
 }
 
+async function verifyTwoFactorChallenge({ request, env, pathname, web = false }) {
+  if (await isRateLimited(request, env, pathname, 10, 15 * 60 * 1000, env.AUTH_RATE_LIMITER)) {
+    return json(429, { error: 'Muitas tentativas. Aguarde alguns minutos.' });
+  }
+  let body = {};
+  try { body = await readJson(request); } catch { return json(400, { error: 'Envie o desafio e o codigo em JSON.' }); }
+  const token = body.challengeToken || bearerToken(request);
+  const challenge = await loadChallenge(env, token, 'login', sha256);
+  if (!challenge) return json(400, { error: 'Desafio invalido ou expirado.', code: 'invalid_challenge' });
+  const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(challenge.user_id).first();
+  if (!user?.two_factor_enabled_at || !user.two_factor_secret) {
+    await deleteChallenge(env, await sha256(String(token)));
+    return json(400, { error: 'Desafio invalido.', code: 'invalid_challenge' });
+  }
+  const code = String(body.code ?? '').trim();
+  let valid = await verifyTotp(user.two_factor_secret, code);
+  if (!valid && code) {
+    const hashed = await sha256(code.toUpperCase());
+    const match = await env.DB.prepare('SELECT id FROM two_factor_recovery_codes WHERE user_id = ? AND code_hash = ? AND used_at IS NULL').bind(user.id, hashed).first();
+    if (match) {
+      valid = true;
+      await env.DB.batch([
+        env.DB.prepare('UPDATE two_factor_recovery_codes SET used_at = ? WHERE id = ?').bind(Date.now(), match.id),
+        env.DB.prepare("INSERT INTO two_factor_audit (user_id, event, at) VALUES (?, 'recovery_code_used', ?)").bind(user.id, Date.now())
+      ]);
+    }
+  }
+  if (!valid) {
+    await failChallenge(env, await sha256(String(token)));
+    await auditTwoFactor(env, user.id, 'verify_failed');
+    return json(400, { error: 'Codigo invalido.', code: 'invalid_code' });
+  }
+  await deleteChallenge(env, await sha256(String(token)));
+  await auditTwoFactor(env, user.id, 'verify_success');
+  const session = await createMobileSession(Number(user.id), env, { deviceName: body.deviceName || null, appVersion: body.appVersion || null });
+  await auditMobileAuth(env, user.id, 'login');
+  const headers = web ? { 'Set-Cookie': sessionCookie(session.token, request) } : {};
+  return json(200, {
+    user: publicUser(user),
+    session: { accessToken: session.token, expiresAt: new Date(session.expiresAt).toISOString() }
+  }, headers);
+}
+
 // Limitador por conta: complementa o limite por rota+IP contra forca bruta distribuida.
 async function loginBucketKey(email, bucket) {
   return sha256(`login-fail:${email}:${bucket}`);
@@ -951,10 +999,25 @@ const authHandlers = createAuthHandlers({
   publicUser, consumeRateLimit, randomToken, sha256, sendPasswordResetEmail,
   sendVerificationEmail, authenticatedUser, authenticatedMobileUser, revokeMobileSession,
   rotateMobileSession, recentLoginFailures, recordLoginFailure, clearLoginFailures, auditMobileAuth,
+  isTwoFactorEnabled: (userId, env) => isTwoFactorEnabled(env, userId),
+  createTwoFactorChallenge: (userId, kind, env) => createChallenge(env, userId, kind, sha256, randomToken),
+  auditTwoFactor,
   LOGIN_FAILURE_LIMIT,
   parseCookies, sessionCookie, reportOperationalError,
   sessionCookieName: SESSION_COOKIE, passwordResetTtlMs: PASSWORD_RESET_TTL_MS,
   emailVerificationTtlMs: EMAIL_VERIFICATION_TTL_MS
+});
+
+const twoFactorHandlers = createTwoFactorHandlers({
+  json, authenticatedUser: authenticatedPrincipal, readJson, cleanText,
+  isRateLimited, sha256, randomToken, verifyPassword, verifyTotp,
+  generateSecret: generateTotpSecret,
+  generateCodes: generateRecoveryCodes,
+  audit: auditTwoFactor,
+  loadChallenge: (env, token, kind) => loadChallenge(env, token, kind, sha256),
+  failChallenge,
+  deleteChallenge,
+  createChallenge: (env, userId, kind) => createChallenge(env, userId, kind, sha256, randomToken)
 });
 
 const imageService = createImageService({ storedImageResponse });
@@ -995,6 +1058,15 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'auth.mobile.login') return authHandlers.mobileLogin({ request, env, pathname });
   if (routeId === 'auth.mobile.me') return authHandlers.mobileMe({ request, env });
   if (routeId === 'auth.mobile.refresh') return authHandlers.mobileRefresh({ request, env, pathname });
+  if (routeId === 'auth.mobile.2fa.verify') return verifyTwoFactorChallenge({ request, env, pathname });
+  if (routeId === 'auth.2fa.verify') return verifyTwoFactorChallenge({ request, env, pathname, web: true });
+  if (routeId === 'account.2fa.status') return twoFactorHandlers.status({ request, env });
+  if (routeId === 'account.2fa.enrollment') return twoFactorHandlers.enrollment({ request, env, pathname });
+  if (routeId === 'account.2fa.setup') return twoFactorHandlers.setup({ request, env, pathname });
+  if (routeId === 'account.2fa.confirm') return twoFactorHandlers.confirm({ request, env, pathname });
+  if (routeId === 'account.2fa.enable') return twoFactorHandlers.enable({ request, env, pathname });
+  if (routeId === 'account.2fa.disable') return twoFactorHandlers.disable({ request, env, pathname });
+  if (routeId === 'account.2fa.trusted-device.delete') return twoFactorHandlers.revokeTrustedDevice({ params, request, env });
   if (routeId === 'auth.mobile.logout') return authHandlers.mobileLogout({ request, env });
   if (routeId === 'auth.password-reset.request') return authHandlers.passwordResetRequest({ request, env, pathname, context, requestContext });
   if (routeId === 'auth.password-reset.confirm') return authHandlers.passwordResetConfirm({ request, env, pathname });

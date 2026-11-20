@@ -154,9 +154,26 @@ register/login → guardar accessToken (Keystore) + agendar refresh
 → logout → POST /logout → limpar token local
 ```
 
+## 2FA no app (implementada no backend, PR #160)
+
+Rotas (todas com Bearer de sessão, exceto `verify`):
+
+| Rota | Request | Response |
+|---|---|---|
+| `GET /api/account/2fa/status` | — | `{ enabled, method: "totp", trustedDevices, recoveryCodesRemaining }` |
+| `POST /api/account/2fa/setup` | sem corpo | `{ secret, otpauthUrl, recoveryCodes: string[10], challengeToken, expiresAt }` — **uma única vez** |
+| `POST /api/account/2fa/enable` | `{ code }` | `{ success: true, enabled: true }` |
+| `POST /api/account/2fa/disable` | `{ password, code }` (aceita `currentPassword`) | `{ success: true, ok: true }` — revoga todas as sessões |
+| `POST /api/mobile/auth/login` | credenciais | sem 2FA: `200 {user, session}`; com 2FA: **`202 { status:"twoFactorRequired", challengeToken, expiresAt }`** (sem sessão) |
+| `POST /api/mobile/auth/2fa/verify` | `{ challengeToken, code }` (sem Bearer) | `200 {user, session}` — mesmo formato do login; aceita TOTP ou código de recuperação |
+
+Aliases do ADR 002 (`enrollment`/`confirm` e `POST /api/auth/2fa/verify`) também existem para clientes que seguem o contrato original.
+
+**Segurança:** desafio de 5 min no D1, 5 tentativas, janela TOTP ±1 passo, códigos de recuperação em SHA-256 e uso único; segredo nunca reaparece em respostas; desativação revoga sessões web + móveis e dispositivos confiáveis; eventos auditados em `two_factor_audit`.
+
+**Ajuste pendente no app Kotlin (`ad5cc75`):** tratar HTTP 202 no login (hoje cai como `SERVER`) e usar o `challengeToken` **da resposta** (hoje o app fabrica `"challenge_"+millis`, que o backend rejeita). Também trocar a senha fixa `senha123` da tela de desativação pela senha real. Ver `docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`.
+
 ## Fora da versão 1 (adiado com risco aceito)
 
 - Push notifications (não há push no backend).
-- 2FA no app — projetado no ADR 002 (status Proposto; depende de aprovação do
-  mantenedor). Quando aprovado, o login devolverá `202
-  {"status":"twoFactorRequired","challengeToken":...}`.
+- Passkeys/WebAuthn (evolução futura, ADR próprio).
