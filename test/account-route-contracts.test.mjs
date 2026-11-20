@@ -48,12 +48,19 @@ function editableProfile(user, overrides = {}) {
   };
 }
 
-test('manifesto da API registra os oito contratos autenticados de conta desta entrega', () => {
+test('manifesto da API registra os contratos autenticados de conta', () => {
   const contracts = API_CONTRACTS
     .filter(({ area }) => ['account', 'professional-profile'].includes(area))
     .map(({ method, route }) => `${method} ${route}`);
   assert.deepEqual(contracts, [
     'GET /api/account/export',
+    'GET /api/account/2fa/status',
+    'POST /api/account/2fa/enrollment',
+    'POST /api/account/2fa/setup',
+    'POST /api/account/2fa/confirm',
+    'POST /api/account/2fa/enable',
+    'POST /api/account/2fa/disable',
+    'DELETE /api/account/2fa/trusted-devices/:id',
     'GET /api/account/professional-profile',
     'PUT /api/account/professional-profile',
     'PUT /api/profile',
