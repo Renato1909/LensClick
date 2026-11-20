@@ -25,6 +25,7 @@ const API_ROUTES = Object.freeze([
   { id: 'photographers.photo', method: 'GET', pattern: /^\/api\/photographers\/([a-z0-9-]{3,80})\/photo$/ },
   { id: 'photographers.portfolio-image', method: 'GET', pattern: /^\/api\/photographers\/([a-z0-9-]{3,80})\/portfolio\/(\d+)$/ },
   { id: 'photographers.reviews', method: 'GET', pattern: /^\/api\/photographers\/([a-z0-9-]{3,80})\/reviews$/ },
+  { id: 'photographers.reviews.create', method: 'POST', pattern: /^\/api\/photographers\/([a-z0-9-]{3,80})\/reviews$/ },
   { id: 'photographers.conversations.create', method: 'POST', pattern: /^\/api\/photographers\/([a-z0-9-]{3,80})\/conversations$/ },
   { id: 'photographers.review-request.create', method: 'POST', pattern: /^\/api\/photographers\/([a-z0-9-]{3,80})\/review-requests$/ },
   { id: 'budgets.request.create', method: 'POST', pattern: /^\/api\/photographers\/([a-z0-9-]{3,80})\/budget-requests$/ },
@@ -95,6 +96,9 @@ const MOBILE_AUTH_ROUTES = new Set([
 const MOBILE_PRINCIPAL_ROUTES = new Set([
   'account.review-requests.list',
   'account.review-requests.update',
+  'photographers.conversations.create',
+  'photographers.review-request.create',
+  'photographers.reviews.create',
   'account.2fa.status',
   'account.2fa.enrollment',
   'account.2fa.setup',

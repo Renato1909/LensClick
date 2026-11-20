@@ -14,7 +14,8 @@ export function createPhotographerHandlers({
   isValidEmail,
   normalizeWebsite,
   parseSpecialties,
-  accountReviewRequest
+  accountReviewRequest,
+  conversationSummary
 }) {
   const PUBLIC_IMAGE_CACHE = { storedCacheControl: 'public, max-age=300, must-revalidate', transformedCacheControl: 'public, max-age=300, stale-while-revalidate=86400' };
   async function list({ request, env }) {
@@ -178,9 +179,18 @@ export function createPhotographerHandlers({
       env.DB.prepare('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE client_user_id = ? AND photographer_user_id = ? AND status = \'active\'').bind(current.id, photographer.user_id)
     ]);
     if (Number(creationResults[1]?.meta?.changes || 0) !== 1) return json(409, { error: 'Nao foi possivel iniciar esta conversa.' });
-    const conversation = await env.DB.prepare('SELECT id FROM conversations WHERE client_user_id = ? AND photographer_user_id = ?')
-      .bind(current.id, photographer.user_id).first();
-    return json(existing ? 200 : 201, { conversation: { id: Number(conversation.id) } });
+    const conversation = await env.DB.prepare(`
+      SELECT c.*, client.name AS client_name, photographer.name AS photographer_name,
+        p.slug AS photographer_slug,
+        (SELECT body FROM messages WHERE conversation_id = c.id ORDER BY id DESC LIMIT 1) AS last_message,
+        (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND sender_user_id <> ? AND read_at IS NULL) AS unread_count
+      FROM conversations c
+      JOIN users client ON client.id = c.client_user_id
+      JOIN users photographer ON photographer.id = c.photographer_user_id
+      LEFT JOIN professional_profiles p ON p.user_id = c.photographer_user_id
+      WHERE c.client_user_id = ? AND c.photographer_user_id = ?
+    `).bind(current.id, current.id, photographer.user_id).first();
+    return json(existing ? 200 : 201, { conversation: conversationSummary(conversation, current.id) });
   }
 
   async function professionalProfileRead({ request, env }) {
@@ -246,6 +256,14 @@ export function createPhotographerHandlers({
     return json(200, { message: status === 'confirmed' ? 'Contato confirmado. O cliente ja pode avaliar.' : 'Solicitacao rejeitada.' });
   }
 
+  async function publishReview(env, current, requestId, photographerId, rating, comment) {
+    const [inserted] = await env.DB.batch([
+      env.DB.prepare('INSERT INTO reviews (request_id, client_user_id, photographer_user_id, rating, comment) VALUES (?, ?, ?, ?, ?)').bind(Number(requestId), current.id, Number(photographerId), rating, comment),
+      env.DB.prepare("INSERT INTO review_audit (review_id, actor_user_id, action, rating, comment) SELECT id, ?, 'created', ?, ? FROM reviews WHERE request_id = ?").bind(current.id, rating, comment, Number(requestId))
+    ]);
+    return json(201, { review: { id: Number(inserted.meta.last_row_id), rating, comment, status: 'active' }, message: 'Avaliacao publicada.' });
+  }
+
   async function reviewCreate({ params, request, env, pathname }) {
     if (await isRateLimited(request, env, pathname, 8, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) return json(429, { error: 'Muitas avaliacoes. Aguarde antes de tentar novamente.' });
     const [requestId] = params, current = await authenticatedUser(request, env);
@@ -256,11 +274,32 @@ export function createPhotographerHandlers({
     if (eligibility.review_id) return json(409, { error: 'Este contato ja possui uma avaliacao.' });
     const body = await readJson(request), rating = Number(body.rating), comment = cleanText(body.comment, 1000);
     if (!Number.isInteger(rating) || rating < 1 || rating > 5 || comment.length < 10) return json(400, { error: 'Informe uma nota de 1 a 5 e um comentario com pelo menos 10 caracteres.' });
-    const [inserted] = await env.DB.batch([
-      env.DB.prepare('INSERT INTO reviews (request_id, client_user_id, photographer_user_id, rating, comment) VALUES (?, ?, ?, ?, ?)').bind(Number(requestId), current.id, eligibility.photographer_user_id, rating, comment),
-      env.DB.prepare("INSERT INTO review_audit (review_id, actor_user_id, action, rating, comment) SELECT id, ?, 'created', ?, ? FROM reviews WHERE request_id = ?").bind(current.id, rating, comment, Number(requestId))
-    ]);
-    return json(201, { review: { id: Number(inserted.meta.last_row_id), rating, comment, status: 'active' }, message: 'Avaliacao publicada.' });
+    return publishReview(env, current, requestId, eligibility.photographer_user_id, rating, comment);
+  }
+
+  // Contrato consumido pelo LensClickApp: POST /api/photographers/:slug/reviews.
+  // Mantém a regra de elegibilidade verificada do projeto: exige contato já
+  // confirmado pelo fotógrafo e ainda sem avaliação publicada.
+  async function reviewDirectCreate({ params, request, env, pathname }) {
+    if (await isRateLimited(request, env, pathname, 8, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) return json(429, { error: 'Muitas avaliacoes. Aguarde antes de tentar novamente.' });
+    const [slug] = params, current = await authenticatedUser(request, env);
+    if (!current) return json(401, { error: 'Faca login novamente.' });
+    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem avaliar fotografos.' });
+    const photographer = await env.DB.prepare(`
+      SELECT p.user_id FROM professional_profiles p JOIN users u ON u.id = p.user_id
+      WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
+    `).bind(slug).first();
+    if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.' });
+    const eligibility = await env.DB.prepare(`
+      SELECT q.id FROM review_requests q
+      LEFT JOIN reviews r ON r.request_id = q.id
+      WHERE q.client_user_id = ? AND q.photographer_user_id = ? AND q.status = 'confirmed' AND r.id IS NULL
+      ORDER BY q.id DESC LIMIT 1
+    `).bind(current.id, photographer.user_id).first();
+    if (!eligibility) return json(403, { error: 'Avaliacao exige contato confirmado com o fotografo. Solicite contato e aguarde a confirmacao.', code: 'review_not_eligible' });
+    const body = await readJson(request), rating = Number(body.rating), comment = cleanText(body.comment, 1000);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5 || comment.length < 10) return json(400, { error: 'Informe uma nota de 1 a 5 e um comentario com pelo menos 10 caracteres.', code: 'invalid_payload' });
+    return publishReview(env, current, eligibility.id, photographer.user_id, rating, comment);
   }
 
   async function reviewUpdate({ params, request, env, pathname }) {
@@ -291,5 +330,5 @@ export function createPhotographerHandlers({
     return json(200, { message: 'Avaliacao removida e acao registrada.' });
   }
 
-  return { list, detail, photo, portfolioImage, reviews, reviewRequestCreate, conversationCreate, professionalProfileRead, professionalProfileUpdate, reviewRequestsList, reviewRequestUpdate, reviewCreate, reviewUpdate, reviewDelete };
+  return { list, detail, photo, portfolioImage, reviews, reviewDirectCreate, reviewRequestCreate, conversationCreate, professionalProfileRead, professionalProfileUpdate, reviewRequestsList, reviewRequestUpdate, reviewCreate, reviewUpdate, reviewDelete };
 }

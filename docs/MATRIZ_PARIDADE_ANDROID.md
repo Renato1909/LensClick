@@ -7,7 +7,7 @@
 > app). Nenhuma afirmação de paridade é válida antes disso.
 >
 > **Fonte:** rotas em `src/router.mjs`, contratos em `test-support/api-contracts.mjs`
-> (61 rotas / 68 contratos, verificados pelo teste `manifesto da API registra 52
+> (61 rotas / 69 contratos, verificados pelo teste `manifesto da API registra 52
 > rotas e 59 contratos sem duplicatas`) e suíte `node --test` (264 testes).
 
 ## Como ler
@@ -71,6 +71,7 @@
 | Recurso | Contrato | Web | Android | Diferença | Prioridade | Dependência | Teste | Estado |
 |---|---|---|---|---|---|---|---|---|
 | Avaliações públicas | `GET /api/photographers/:slug/reviews` | ✅ | ? | — | P1 | — | `reviews` | A classificar |
+| Enviar avaliação (app) | `POST /api/photographers/:slug/reviews` | ✅ (PR #161, exige contato confirmado) | ? | app envia direto; verificação preservada no backend | P1 | — | `android-contract-alignment` | A classificar |
 | Solicitar avaliação (cliente) | `POST /api/photographers/:slug/review-requests` | ✅ | ? | — | P2 | — | `reviews` | A classificar |
 | Gerir pedidos de avaliação | `GET/PUT /api/account/review-requests*` | ✅ | ? | — | P2 | — | `auth-route-contracts` | A classificar |
 | Criar/editar/excluir avaliação | `POST .../review\-requests/:id/review`, `PUT/DELETE /api/account/reviews/:id` | ✅ | ? | — | P2 | — | `reviews` | A classificar |
@@ -79,7 +80,7 @@
 
 | Recurso | Contrato | Web | Android | Diferença | Prioridade | Dependência | Teste | Estado |
 |---|---|---|---|---|---|---|---|---|
-| Criar conversa (cliente) | `POST /api/photographers/:slug/conversations` | ✅ | ? | — | P1 | — | `messaging` | A classificar |
+| Criar conversa (cliente) | `POST /api/photographers/:slug/conversations` | ✅ (Bearer sem Origin, PR #161) | ? | Origin corrigido; resposta com `counterpartName` | P1 | — | `android-contract-alignment` | A classificar |
 | Listar inbox + não lidas | `GET /api/account/conversations` | ✅ | ? | — | P1 | — | `messaging` | A classificar |
 | Mensagens (ler/enviar) | `GET/POST /api/account/conversations/:id/messages` | ✅ | ? | paginação | P1 | — | `messaging` | A classificar |
 | Marcar como lida | `PUT /api/account/conversations/:id/read` | ✅ | ? | — | P1 | — | `messaging` | A classificar |
