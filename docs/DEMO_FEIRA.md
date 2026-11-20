@@ -3,6 +3,22 @@
 > Uso exclusivo para a feira. **Nunca** versionar senhas, tokens ou credenciais
 > de produção. O seed grava apenas hashes PBKDF2 (mesmo formato do Worker).
 
+## Aplicação em produção — 20/11/2026
+
+Seed aplicado no D1 de produção (`lensclick-db`, conta Cloudflare correta,
+`wrangler whoami` confirmado). Validações pós-seed:
+
+- `GET /api/photographers/demo-fotografo` → **200**, perfil publicado.
+- `GET /api/photographers/demo-fotografo/reviews` → **200**.
+- Login móvel das duas contas (`POST /api/mobile/auth/login`) → **200** com
+  sessão Bearer de 43 caracteres e papéis `client`/`photographer`.
+- D1: 2 usuários demo, 2 orçamentos (1 com proposta pendente), 1 contato de
+  avaliação confirmado, 1 conversa com 2 mensagens, 1 favorito.
+- As senhas foram geradas localmente, definidas apenas em variáveis de ambiente
+  e rotacionadas antes da validação final; nenhuma senha aparece neste
+  documento, em log ou no Git. Recuperação local: variáveis de ambiente de
+  usuário `DEMO_CLIENT_PASSWORD` e `DEMO_PHOTOGRAPHER_PASSWORD`.
+
 ## O que o seed cria
 
 - Conta **cliente** e conta **fotógrafo** (perfis publicados) com e-mails e senhas
