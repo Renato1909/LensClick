@@ -43,6 +43,23 @@ test('o cabecalho usa o monograma oficial em vez de um logo em CSS', () => {
   assert.doesNotMatch(home, /\.brand \.click\{/);
 });
 
+test('login e cadastro usam o ícone oficial e mantêm os botões na largura do card', () => {
+  for (const file of ['public/login.html', 'public/cadastro.html']) {
+    const page = read(file);
+    assert.match(page, /class="auth-logo"[^>]*>[\s\S]{0,80}<img src="brand\/lensclick-icon\.png"/, file);
+    assert.doesNotMatch(page, /fa-camera/, file);
+    assert.match(page, /\.auth-footer\s*\{[^}]*width:\s*100%[^}]*box-sizing:\s*border-box/, file);
+  }
+  assert.match(read('public/login.html'), /\.auth-card\s*\{[^}]*box-sizing:\s*border-box/);
+});
+
+test('estilos inline de login e cadastro têm chaves balanceadas', () => {
+  for (const file of ['public/login.html', 'public/cadastro.html']) {
+    const css = /<style>([\s\S]*?)<\/style>/.exec(read(file))[1];
+    assert.equal((css.match(/\{/g) || []).length, (css.match(/\}/g) || []).length, file);
+  }
+});
+
 test('as paginas legais tambem usam o monograma oficial', () => {
   for (const file of ['public/privacidade.html', 'public/termos.html']) {
     const page = read(file);

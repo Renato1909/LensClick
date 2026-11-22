@@ -274,6 +274,7 @@ button.is-loading::after {
 }
 
 .btn-back {
+  box-sizing: border-box;
   color: var(--lc-color-text-muted);
   background: var(--lc-color-surface-soft);
   border-color: var(--lc-line-strong);
