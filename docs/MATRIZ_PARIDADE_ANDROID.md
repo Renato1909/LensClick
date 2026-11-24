@@ -7,8 +7,8 @@
 > app). Nenhuma afirmação de paridade é válida antes disso.
 >
 > **Fonte:** rotas em `src/router.mjs`, contratos em `test-support/api-contracts.mjs`
-> (61 rotas / 69 contratos, verificados pelo teste `manifesto da API registra 52
-> rotas e 59 contratos sem duplicatas`) e suíte `node --test` (264 testes).
+> (61 rotas / 69 contratos, verificados pelo teste `manifesto da API registra 61
+> rotas e 69 contratos sem duplicatas`) e suíte `node --test` (277 testes).
 
 ## Como ler
 
@@ -138,6 +138,6 @@
 
 ## Saída esperada deste documento
 
-Este rascunho garante ausência de lacunas **no backend** (todas as 52 rotas estão
+Este rascunho garante ausência de lacunas **no backend** (todas as 61 rotas estão
 representadas acima ou mapeadas em outra linha). As colunas Android são
 preenchidas na auditoria (Gate A/B) com o código Kotlin em mãos.

@@ -112,7 +112,7 @@ Estados de erro e anatomia de contrato seguem a suíte existente de contratos po
 
 - Nenhuma resposta de API contém secret TOTP, código de recuperação em claro ou `device_hash` completo depois de criados — confirmado por testes.
 - Tabela `two_factor_audit` registra todos os eventos da seção 4 sem PII extra.
-- A suíte de contratos inclui as rotas novas no catálogo vigente (48 contratos); CI "Qualidade" verde.
+- A suíte de contratos inclui as rotas novas no catálogo vigente (69 contratos no total); CI "Qualidade" verde.
 - Revogação em massa (desativação de 2FA) apaga sessões web **e** `kind='mobile'` — verificado por teste.
 - Desafio expira em 5 min; estado pendente vive no D1 (durável), nunca em memória isolada do Worker.
 

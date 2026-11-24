@@ -146,7 +146,7 @@ LensClick/
 ├── src/router.mjs          # Catálogo e despacho das rotas HTTP
 ├── src/worker.mjs          # Handlers e entrypoint do Worker
 ├── src/<domínio>.mjs       # Handlers extraídos por domínio (auth, admin, budgets, …)
-├── test/                   # 50 arquivos .test.mjs (273 testes na suíte automatizada)
+├── test/                   # 54 arquivos .test.mjs (277 testes na suíte automatizada)
 ├── tmp/                    # Arquivos temporários (PRs, rascunhos)
 ├── package.json
 ├── wrangler.jsonc          # Configuração Cloudflare
@@ -282,7 +282,7 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 
 ### Próximo ciclo — aplicativo Android
 
-- Orçamentos/propostas para o Android: backend implementado (pedido, proposta, aceite/rejeição, agenda, favoritos) e contrato documentado em `docs/CONTRATO_ORCAMENTOS.md`, com códigos de erro estáveis e `Idempotency-Key` nas mutações (PRs #148–#155). O backend móvel está completo para a fase de integração Android: `POST /api/mobile/auth/refresh` rotaciona a sessão a cada uso, `GET /me` devolve `session.expiresAt`, e login/refresh/replay/logout são auditados em `mobile_auth_audit` (PR #156). Os documentos de integração são `docs/MATRIZ_PARIDADE_ANDROID.md` (matriz por capacidade) e `docs/CONTRATO_MOVEL_ANDROID.md` (guia de consumo: auth, refresh, Keystore, idempotência, erros, limites).
+- Orçamentos/propostas para o Android: backend implementado (pedido, proposta, aceite/rejeição, agenda, favoritos) e contrato documentado em `docs/CONTRATO_ORCAMENTOS.md`, com códigos de erro estáveis e `Idempotency-Key` nas mutações (PRs #148–#155). O backend móvel está completo para a fase de integração Android: `POST /api/mobile/auth/refresh` rotaciona a sessão a cada uso, `GET /me` devolve `session.expiresAt`, e login/refresh/replay/logout são auditados em `mobile_auth_audit` (PR #156); a 2FA TOTP multicliente também está implementada no backend (PR #160, ADR 002). Os documentos de integração são `docs/MATRIZ_PARIDADE_ANDROID.md` (matriz por capacidade) e `docs/CONTRATO_MOVEL_ANDROID.md` (guia de consumo: auth, refresh, Keystore, idempotência, erros, limites).
 - Galerias privadas.
 - Notificações.
 - O aplicativo Android nativo em Kotlin já foi desenvolvido no Android Studio, mas seu código ainda está fora deste repositório e precisa ser disponibilizado, versionado e auditado.
@@ -411,7 +411,7 @@ O estado atual de branches, branches órfãs, PRs e pendências Git é mantido e
 ### Débitos técnicos conhecidos
 
 1. **Hotspots de conflito** — os catálogos em `public/locales/` concentram alterações frequentes. `src/worker.mjs` segue como ponto de composição, mas os handlers de domínio foram extraídos na Fase 4.2, reduzindo conflitos.
-2. **Sem 2FA** — a verificação de e-mail existe em modo de aviso, mas o segundo fator ainda não foi implementado; foi **projetado** no ADR 002 (`docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`, status Proposto: TOTP + códigos de recuperação), e a implementação está prevista para a Fase 6, web e Android.
+2. **2FA sem UI** — a verificação de e-mail existe em modo de aviso; o segundo fator foi **implementado no backend** (`docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`, ADR Aceito: TOTP + códigos de recuperação, PR #160). Faltam a interface na central da conta e o ajuste do app Android `ad5cc75`.
 3. **Android fora da fonte de verdade** — o projeto Kotlin existe, mas ainda precisa ser incorporado ao Git e auditado quanto a arquitetura, segurança, paridade e publicação.
 4. **Rate limit híbrido** — escudo de rajada nativo na edge (PR #30) combinado a políticas longas no D1; atende o volume atual.
 5. **Termos/política precisam de revisão jurídica** — divulgações LGPD de alta prioridade (PR #89), de média prioridade (PR #91) e cláusulas opcionais (PR #93) já publicadas; resta a revisão legal formal antes do uso comercial. Iniciativa 5.5.
@@ -438,7 +438,7 @@ Na Fase 5, restam a revisão jurídica formal (5.5.b) e domínio/DNS/e-mail (5.8
 | 23 | 5.7 Qualidade e débitos técnicos — concluída | Média |
 | 24 | 5.8 Produto e presença — parcial; domínio/e-mail pendentes | Média |
 
-A sequência atual é a **Fase 6**, detalhada em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`: incorporar o projeto Kotlin; auditar paridade; definir contrato móvel; implementar diferenças; implementar o 2FA projetado no ADR 002 (Proposto); validar web/API/Android; concluir domínio e jurídico; publicar por faixas na Google Play.
+A sequência atual é a **Fase 6**, detalhada em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`: incorporar o projeto Kotlin; auditar paridade; definir contrato móvel; implementar diferenças; concluir a 2FA do ADR 002 (backend já pronto; faltam UI web e app Kotlin); validar web/API/Android; concluir domínio e jurídico; publicar por faixas na Google Play. O estado detalhado dos gates está em `docs/HANDOFF.md`.
 
 ### Estado de `db/schema.ts`
 
@@ -466,14 +466,14 @@ A sequência atual é a **Fase 6**, detalhada em `docs/PLANO_ANDROID_VALIDACAO_P
 5. **`README.md`** — produto, requisitos, execução local, verificações, escopo atual.
 6. **`CONTRIBUTING.md`** — fluxo Git/GitHub de 6 passos, regras de branch e PR.
 7. **`docs/DOCUMENTACAO_TECNICA.md`** — documentação técnica completa (arquitetura, endpoints, modelo de dados, segurança, testes, deploy).
-8. **`docs/ROADMAP_EVOLUCAO.md`** — documento vivo: Fases 1 a 4 concluídas e Fase 5 em execução. **Não confundir intenção futura com implementação.**
+8. **`docs/ROADMAP_EVOLUCAO.md`** — documento vivo: Fases 1 a 4 concluídas, Fase 5 com apenas os gates externos pendentes e Fase 6 em execução. **Não confundir intenção futura com implementação.**
 9. **`DESIGN_SYSTEM.md`** — tokens visuais, componentes, direção visual.
 10. **`CLOUDFLARE_SETUP.md`** — procedimentos de deploy, segredos, conferência pós-publicar.
 11. **`wrangler.jsonc`** — bindings (D1 `DB`, R2 `PROFILE_IMAGES`, Assets `ASSETS`), configuração do Worker.
 12. **`package.json`** — scripts (`start`, `dev`, `test`, `check`, `test:smoke`, `db:migrate:*`), engines.
 13. **`.github/agents/`** — 11 agentes Copilot e suas responsabilidades.
 14. **`.opencode/agents/`** — os mesmos 11 agentes portados para o OpenCode, mais o `explore` (12 no total), com `mode: primary`.
-15. **`docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`** — decisão de 2FA (status Proposto): threat model, comparação de opções e contratos previstos, sem implementação iniciada.
+15. **`docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`** — decisão de 2FA (Aceita): threat model, comparação de opções, contratos e backend implementados; falta a experiência de usuário na central da conta e no app Android.
 
 ### Leitura contextual (conforme a tarefa)
 
