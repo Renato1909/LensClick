@@ -431,7 +431,7 @@
   "reputation.ratingLabel": "Nota {rating} de 5",
   "reputation.reject": "Rejeitar",
   "reputation.request.error": "Não foi possível enviar a solicitação.",
-  "reputation.request.lead": "Após o fotógrafo confirmar o contato, você poderá publicar uma avaliação.",
+  "reputation.request.lead": "Contatos verificados ficam no seu perfil. Avaliações estão disponíveis após a conclusão de uma contratação.",
   "reputation.request.message": "Contexto do contato",
   "reputation.request.submit": "Enviar solicitação",
   "reputation.request.title": "Solicitar contato verificado",

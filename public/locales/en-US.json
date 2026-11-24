@@ -431,7 +431,7 @@
   "reputation.ratingLabel": "Rating {rating} out of 5",
   "reputation.reject": "Reject",
   "reputation.request.error": "Unable to send the request.",
-  "reputation.request.lead": "Once the photographer confirms the contact, you can publish a review.",
+  "reputation.request.lead": "Verified contacts appear on your account. You can publish a review after completing a booking.",
   "reputation.request.message": "Contact context",
   "reputation.request.submit": "Send request",
   "reputation.request.title": "Request verified contact",
