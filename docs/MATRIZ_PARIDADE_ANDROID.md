@@ -8,7 +8,7 @@
 >
 > **Fonte:** rotas em `src/router.mjs`, contratos em `test-support/api-contracts.mjs`
 > (61 rotas / 69 contratos, verificados pelo teste `manifesto da API registra 61
-> rotas e 69 contratos sem duplicatas`) e suíte `node --test` (277 testes).
+> rotas e 69 contratos sem duplicatas`) e suíte `node --test` (280 testes).
 
 ## Como ler
 

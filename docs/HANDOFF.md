@@ -2,7 +2,7 @@
 
 > Documento de transferência do projeto. Representa o estado atual e serve como guia para quem assumir o desenvolvimento a partir de agora.
 >
-> **Data de referência:** 24 de novembro de 2026, com a base `main` em `a707102` (PR #165 mergeado).
+> **Data de referência:** 24 de novembro de 2026, com a base `main` em `2544815` (PR #166 mergeado).
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
 > **Estado do roadmap:** Fases 1 a 4 concluídas. Na Fase 5, restam a revisão jurídica formal (5.5.b) e domínio/DNS/remetente Brevo (5.8.c). A **Fase 6** foi planejada para incorporar o aplicativo Android nativo em Kotlin, auditar e implementar sua paridade com a web, implementar o 2FA multicliente, validar web/API/Android e publicar com segurança na Google Play. O contrato móvel de orçamentos/propostas para o Android já está **implementado e documentado** (`docs/CONTRATO_ORCAMENTOS.md`, PRs #148–#153). A **2FA** (`docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`) está **Aceita e implementada no backend** (PR #160, Gate E aprovado para a demo); pendem a UI web da central de conta e o ajuste do app Kotlin `ad5cc75` para consumir o `202 twoFactorRequired`. Plano detalhado em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`; o estado de cada gate está na seção "Estado dos gates (Fase 6)" deste documento.
 
@@ -10,7 +10,7 @@
 
 ## 1. Situação atual da main
 
-- **Base da entrega:** `main` → commit `a707102` — "fix(ui): padroniza seletor de idioma e titulos nas paginas legais" (#165).
+- **Base da entrega:** `main` → commit `2544815` — "Persiste contratações e valida avaliações de serviços concluídos" (#166).
 - **Working tree após a integração:** arquivos rastreados limpos e sincronizados com `origin/main`; artefatos locais não rastreados e alheios ao projeto devem ser preservados.
 - **Sincronização:** `main` está alinhada com `origin/main` (nenhum commit local à frente ou atrás).
 - **Proteção da branch (`main`):** configurada como **strict**:
@@ -29,7 +29,7 @@
 | Camada | Tecnologia |
 |---|---|
 | Runtime | Cloudflare Workers (serverless) |
-| Banco de dados | D1 `lensclick-db` (SQLite) — 26 tabelas |
+| Banco de dados | D1 `lensclick-db` (SQLite) — 28 tabelas |
 | Armazenamento de imagens | R2 `lensclick-profile-images` (bucket privado) |
 | Assets estáticos | Workers Assets (`public/`) |
 | E-mail transacional | Brevo |
@@ -53,17 +53,17 @@
 - `npm run test:e2e` — executa os fluxos críticos em Chromium com Playwright.
 - `npm run db:migrate:local` / `db:migrate:remote` — aplica migrações D1.
 
-### Tabelas D1 (26)
+### Tabelas D1 (28)
 
-`users`, `sessions`, `password_reset_tokens`, `email_verification_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`, `budget_requests`, `proposals`, `favorites`, `budget_audit`, `idempotency_keys`, `mobile_auth_audit`, `two_factor_challenges`, `two_factor_recovery_codes`, `two_factor_trusted_devices`, `two_factor_audit`.
+`users`, `sessions`, `password_reset_tokens`, `email_verification_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`, `budget_requests`, `proposals`, `favorites`, `budget_audit`, `idempotency_keys`, `mobile_auth_audit`, `two_factor_challenges`, `two_factor_recovery_codes`, `two_factor_trusted_devices`, `two_factor_audit`, `engagements`, `engagement_events`.
 
-### Migrações publicadas (18)
+### Migrações publicadas (19)
 
-`0001_initial.sql` … `0010_monitor_minute_buckets.sql`, `0011_email_verification.sql`, `0012_admin_role.sql`, `0013_portfolio_cover_category.sql`, `0014_sessions_kind.sql`, `0015_budgets.sql`, `0016_idempotency_keys.sql`, `0017_mobile_refresh_rotation.sql`, `0018_two_factor.sql`.
+`0001_initial.sql` … `0010_monitor_minute_buckets.sql`, `0011_email_verification.sql`, `0012_admin_role.sql`, `0013_portfolio_cover_category.sql`, `0014_sessions_kind.sql`, `0015_budgets.sql`, `0016_idempotency_keys.sql`, `0017_mobile_refresh_rotation.sql`, `0018_two_factor.sql`, `0019_engagements.sql`.
 
-> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0019_*.sql` para qualquer alteração de schema.
+> ⚠️ **Regra de ouro:** nunca editar migrações já publicadas. Criar nova `0020_*.sql` para qualquer alteração de schema.
 
-> A migration `0018_two_factor.sql` implementa o ADR 002 (4 tabelas: `two_factor_challenges`, `two_factor_recovery_codes`, `two_factor_trusted_devices`, `two_factor_audit`). Total de migrações publicadas: 18.
+> A migration `0018_two_factor.sql` implementa o ADR 002 (4 tabelas: `two_factor_challenges`, `two_factor_recovery_codes`, `two_factor_trusted_devices`, `two_factor_audit`); a `0019_engagements.sql` registra contratações e eventos de serviço (PR #166). Total de migrações publicadas: 19.
 
 ---
 
@@ -125,6 +125,7 @@ Não há funcionalidade em desenvolvimento numa branch pendente. As Fases 1 a 4 
 - **Seed de demonstração (PR #162)** — `scripts/seed-demo.mjs` idempotente, com credenciais via variáveis de ambiente e apenas hashes PBKDF2 no SQL; procedimento em `docs/DEMO_FEIRA.md`.
 - **Identidade visual no login/cadastro (PR #164)** — ícone oficial da marca e botões alinhados à largura do card.
 - **Páginas legais e seletor de idioma (PR #165)** — `/privacidade` e `/termos` usam o mesmo `.lang-toggle` da home em um cabeçalho dedicado, e os títulos passaram a usar os tokens `--lc-*` da marca.
+- **Contratações e avaliações de serviço (PR #166)** — contratações persistidas em `engagements`/`engagement_events` (migration `0019`) e avaliação permitida somente após serviço concluído.
 
 ### Não implementado / pendente
 
@@ -134,7 +135,7 @@ Não há funcionalidade em desenvolvimento numa branch pendente. As Fases 1 a 4 
 - 5.5.b: revisão legal formal dos Termos de Uso e da Política de Privacidade.
 - 2FA backend implementada no PR #160 (ADR 002 Aceito); pendem a UI web da central de conta e o ajuste do app Kotlin (`ad5cc75`) para ler o `challengeToken` do 202 e aceitar 202 no login — hoje o app fabrica o token e cai em `SERVER`.
 - O rate limiting permanece deliberadamente híbrido: escudo de rajada nativo na edge e políticas longas autoritativas no D1.
-- A suíte de contratos cobre as 61 rotas e os 69 contratos HTTP catalogados e soma 277 testes; apenas os 3 fluxos críticos têm cobertura em navegador real, e testes ponta a ponta com serviços reais permanecem fora do escopo atual.
+- A suíte de contratos cobre as 61 rotas e os 69 contratos HTTP catalogados e soma 280 testes; apenas os 3 fluxos críticos têm cobertura em navegador real, e testes ponta a ponta com serviços reais permanecem fora do escopo atual.
 - O endpoint `GET /api/health` verifica Worker e D1; o R2 é monitorado pelas rotas reais de imagem para evitar operações artificiais de armazenamento.
 
 ### Estado dos gates (Fase 6)
@@ -324,6 +325,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 | #163 | `f6a5498` | docs: registra aplicação do seed de demonstração em produção |
 | #164 | `2fac52b` | fix(auth): alinha botões e usa o ícone oficial da marca no login/cadastro |
 | #165 | `a707102` | fix(ui): padroniza seletor de idioma e títulos nas páginas legais |
+| #166 | `2544815` | feat(api): persiste contratações e valida avaliações de serviços concluídos (`0019_engagements.sql`) |
 
 > Nota: o PR #15 não aparece no histórico mergeado consultado; a numeração foi pulada ou o PR não foi integrado.
 
@@ -578,11 +580,11 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 - A Fase 4.2 foi concluída: todos os handlers de domínio foram extraídos e os blocos legados removidos no PR #82.
 - A Fase 4.3 foi concluída com transformação on-demand (Decisão 15) e publicada em produção na versão `e271e165`.
 - A Fase 4.4 foi concluída: além da sonda de disponibilidade (versão `51d056b4`), os sinais de P95 e taxa de 5xx passaram a ser cobertos in-worker pelo PR #95, publicado na versão `9c72c288` em 3 de setembro de 2026.
-- A consolidação documental 5.1 foi concluída; `db/schema.ts` está atualmente na versão 18 com 26 tabelas, após as migrations `0015_budgets.sql` (orçamentos, propostas, favoritos e auditoria), `0016_idempotency_keys.sql` (idempotência) e `0017_mobile_refresh_rotation.sql` (refresh rotativo + `mobile_auth_audit`). O catálogo é verificado contra as migrations publicadas pelo teste `o catalogo db/schema.ts esta em sintonia com as migrations publicadas`.
+- A consolidação documental 5.1 foi concluída; `db/schema.ts` está atualmente na versão 19 com 28 tabelas, após as migrations `0015_budgets.sql` (orçamentos, propostas, favoritos e auditoria), `0016_idempotency_keys.sql` (idempotência), `0017_mobile_refresh_rotation.sql` (refresh rotativo + `mobile_auth_audit`), `0018_two_factor.sql` (2FA) e `0019_engagements.sql` (contratações). O catálogo é verificado contra as migrations publicadas pelo teste `o catalogo db/schema.ts esta em sintonia com as migrations publicadas`.
 - A iniciativa 5.2 foi concluída integralmente: backup remoto, política formal e restore isolado validados. A dependência crítica da 5.6 está atendida.
 - A iniciativa 5.3 foi concluída: HSTS e CSP foram validados nas respostas públicas, e o teto de cinco sessões foi coberto por testes de isolamento entre usuários.
 - As iniciativas 5.4.a (verificação de e-mail, Decisão 18), 5.4.b (papel administrativo, Decisão 19) e 5.4.c (painel de moderação, Decisão 20) foram concluídas e publicadas. A 5.5.a foi concluída pelo PR #113; a 5.5.b continua pendente por ser revisão legal externa. A 5.6 foi concluída pelos PRs #114/#115, a 5.7 pelos PRs #116/#117 e a 5.8.a/b pelo PR #119. Restam na Fase 5 apenas a revisão jurídica 5.5.b e a configuração de domínio, DNS e e-mail 5.8.c; a próxima iniciativa técnica planejada é a Fase 6.
-- O backend móvel avançou pelos PRs #148 (principal móvel nas rotas de conta), #149 (cadastro móvel), #153 (orçamentos/propostas/agenda/favoritos, migration `0015_budgets.sql`), #152 (códigos de erro estáveis + `docs/CONTRATO_ORCAMENTOS.md`), #155 (`Idempotency-Key`, migration `0016_idempotency_keys.sql`), #156 (refresh rotativo + auditoria `mobile_auth_audit` + bloqueio por conta, migration `0017_mobile_refresh_rotation.sql`) e #160 (2FA TOTP multicliente, migration `0018_two_factor.sql`). A suíte cobre 61 rotas / 69 contratos e soma 277 testes. Registros de integração criados para o LensClickApp: `docs/MATRIZ_PARIDADE_ANDROID.md` (Gate B, coluna Android a classificar) e `docs/CONTRATO_MOVEL_ANDROID.md` (guia de consumo do backend).
+- O backend móvel avançou pelos PRs #148 (principal móvel nas rotas de conta), #149 (cadastro móvel), #153 (orçamentos/propostas/agenda/favoritos, migration `0015_budgets.sql`), #152 (códigos de erro estáveis + `docs/CONTRATO_ORCAMENTOS.md`), #155 (`Idempotency-Key`, migration `0016_idempotency_keys.sql`), #156 (refresh rotativo + auditoria `mobile_auth_audit` + bloqueio por conta, migration `0017_mobile_refresh_rotation.sql`) , #160 (2FA TOTP multicliente, migration `0018_two_factor.sql`) e #166 (contratações, migration `0019_engagements.sql`). A suíte cobre 61 rotas / 69 contratos e soma 280 testes. Registros de integração criados para o LensClickApp: `docs/MATRIZ_PARIDADE_ANDROID.md` (Gate B, coluna Android a classificar) e `docs/CONTRATO_MOVEL_ANDROID.md` (guia de consumo do backend).
 
 ---
 
@@ -626,7 +628,7 @@ Regras práticas:
 
 ### Convenções do projeto
 
-- **Migrações imutáveis** — nunca editar `0001`–`0018`. Nova alteração de schema = novo arquivo `0019_*.sql`.
+- **Migrações imutáveis** — nunca editar `0001`–`0019`. Nova alteração de schema = novo arquivo `0020_*.sql`.
 - **Fast-forward only** — `main` não aceita merge commits. Todo PR é squash-mergeado.
 - **Status check obrigatório** — o CI "Qualidade" precisa passar antes do merge. Rodar `npm test` e `npm run check` localmente antes de abrir PR.
 - **Auditoria de dependências** — rodar `npm audit` antes de abrir PR que toque `package.json` ou `package-lock.json`, e nunca editar o lockfile à mão. O gate do job diário é bloqueante; o do CI de PR é informativo. Política em `docs/DEPENDENCIAS_E_SEGURANCA.md`.
@@ -662,4 +664,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 24 de novembro de 2026, com base `main` em `a707102` (PR #165). Fase 5 encerrada com os gates externos (revisão legal formal e domínio próprio) pendentes; Fase 6 em execução — autenticação móvel, refresh rotativo e 2FA no backend já em produção (#128/#132/#148/#149/#156/#160), contratos Android e seed de demo documentados (#152/#159/#162), convergência visual da web padronizada (#164/#165). Restam a UI web e o cliente Android da 2FA, a paridade funcional, a validação integral, domínio/jurídico e a publicação na Google Play; o detalhamento por gate está na seção "Estado dos gates (Fase 6)".
+**Última atualização deste handoff:** 24 de novembro de 2026, com base `main` em `2544815` (PR #166). Fase 5 encerrada com os gates externos (revisão legal formal e domínio próprio) pendentes; Fase 6 em execução — autenticação móvel, refresh rotativo e 2FA no backend já em produção (#128/#132/#148/#149/#156/#160), contratos Android e seed de demo documentados (#152/#159/#162), convergência visual da web padronizada (#164/#165) e contratações com avaliação validada (#166). Restam a UI web e o cliente Android da 2FA, a paridade funcional, a validação integral, domínio/jurídico e a publicação na Google Play; o detalhamento por gate está na seção "Estado dos gates (Fase 6)".

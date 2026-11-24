@@ -100,7 +100,7 @@ LensClick/
 ├── .opencode/
 │   └── agents/              # 12 agentes OpenCode (.md, mode: primary)
 ├── data/                    # D1 local (NÃO commitar)
-├── db/schema.ts             # Catálogo TypeScript do schema (versão 18)
+├── db/schema.ts             # Catálogo TypeScript do schema (versão 19)
 ├── docs/
 │   ├── DOCUMENTACAO_TECNICA.md   # Documentação técnica completa
 │   └── CONTEXTO_PROJETO.md       # Este documento
@@ -113,7 +113,8 @@ LensClick/
 │   ├── 0015_budgets.sql
 │   ├── 0016_idempotency_keys.sql
 │   ├── 0017_mobile_refresh_rotation.sql
-│   └── 0018_two_factor.sql
+│   ├── 0018_two_factor.sql
+│   └── 0019_engagements.sql
 ├── public/                 # Frontend (assets estáticos)
 │   ├── index.html          # Landing
 │   ├── cadastro.html       # Cadastro
@@ -146,7 +147,7 @@ LensClick/
 ├── src/router.mjs          # Catálogo e despacho das rotas HTTP
 ├── src/worker.mjs          # Handlers e entrypoint do Worker
 ├── src/<domínio>.mjs       # Handlers extraídos por domínio (auth, admin, budgets, …)
-├── test/                   # 54 arquivos .test.mjs (277 testes na suíte automatizada)
+├── test/                   # 55 arquivos .test.mjs (280 testes na suíte automatizada)
 ├── tmp/                    # Arquivos temporários (PRs, rascunhos)
 ├── package.json
 ├── wrangler.jsonc          # Configuração Cloudflare
@@ -442,7 +443,7 @@ A sequência atual é a **Fase 6**, detalhada em `docs/PLANO_ANDROID_VALIDACAO_P
 
 ### Estado de `db/schema.ts`
 
-- `schemaVersion=18`, com as 26 tabelas das migrações `0001`-`0018`.
+- `schemaVersion=19`, com as 28 tabelas das migrações `0001`-`0019`.
 - As migrações permanecem como fonte executável; o catálogo TypeScript deve acompanhar novas migrações no mesmo PR. A invariante é verificada automaticamente: o teste `o catalogo db/schema.ts esta em sintonia com as migrations publicadas` falha se `schemaVersion` divergir da quantidade de arquivos em `migrations/` ou se a última migration não tiver o prefixo correspondente.
 
 ### Antes de qualquer alteração
