@@ -66,7 +66,7 @@ test('Bearer sem Origin: conversas, mensagens, avaliação, exportação e exclu
     method: 'POST', json: { rating: 5, comment: 'Trabalho excelente, recomendo.' }, useCookie: false, headers: bearer(client.token)
   });
   assert.equal(tooSoon.response.status, 403);
-  assert.equal(tooSoon.json.code, 'review_not_eligible');
+  assert.equal(tooSoon.json.code, 'engagement_required');
 
   const requested = await fixture.request('/api/photographers/foto-android/review-requests', {
     method: 'POST', json: { message: 'Trabalhei com este fotografo e quero avaliar.' }, useCookie: false, headers: bearer(client.token)
@@ -80,12 +80,12 @@ test('Bearer sem Origin: conversas, mensagens, avaliação, exportação e exclu
   const reviewed = await fixture.request('/api/photographers/foto-android/reviews', {
     method: 'POST', json: { rating: 5, comment: 'Trabalho excelente, recomendo.' }, useCookie: false, headers: bearer(client.token)
   });
-  assert.equal(reviewed.response.status, 201);
+  assert.equal(reviewed.response.status, 403);
+  assert.equal(reviewed.json.code, 'engagement_required');
 
   const list = await fixture.request('/api/photographers/foto-android/reviews', { useCookie: false });
   assert.equal(list.response.status, 200);
-  assert.equal(list.json.summary.total, 1);
-  assert.equal(list.json.reviews[0].authorName, 'Cliente Android');
+  assert.equal(list.json.summary.total, 0);
 
   // Exportação e exclusão com Bearer, sem Origin
   const exported = await fixture.request('/api/account/export', { useCookie: false, headers: bearer(client.token) });
