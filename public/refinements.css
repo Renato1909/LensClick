@@ -273,6 +273,10 @@ button.is-loading::after {
   color: var(--lc-color-text);
 }
 
+.lang-toggle .abbr {
+  font-weight: 700;
+}
+
 .btn-back {
   box-sizing: border-box;
   color: var(--lc-color-text-muted);
@@ -727,6 +731,18 @@ form label:focus-within .eyebrow {
 }
 
 /* Termos e privacidade */
+.legal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lc-space-4);
+  margin-bottom: var(--lc-space-8);
+}
+
+.legal-header .brand {
+  margin-bottom: 0;
+}
+
 .legal-page .container {
   max-width: 900px;
 }
