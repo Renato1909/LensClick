@@ -103,7 +103,7 @@
       try {
         await UX.apiFetch(request.review
           ? `/api/account/reviews/${request.review.id}`
-          : `/api/account/review-requests/${request.id}/review`, {
+          : `/api/account/engagements/${request.id}/review`, {
           method: request.review ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ rating: Number(rating.value), comment: comment.value.trim() })
         }, t('reputation.editor.error'));
@@ -120,8 +120,18 @@
     const feedback = document.getElementById('reputationDashboardMsg');
     try {
       const { data } = await UX.apiFetch('/api/account/review-requests', { headers: { Accept: 'application/json' } }, t('reputation.dashboard.error'));
+      const pending = data.role === 'client' ? await UX.apiFetch('/api/account/engagements', {
+        headers: { Accept: 'application/json' }
+      }, t('reputation.dashboard.error')) : null;
+      const reviewable = (pending?.data.engagements || []).filter(booking => booking.status === 'completed' && !booking.reviewPublished);
+
       list.replaceChildren();
-      empty.hidden = Boolean(data.requests?.length);
+      empty.hidden = Boolean(data.requests?.length || reviewable.length);
+      for (const booking of reviewable) {
+        const card = element('article', 'reputation-request-card');
+        card.append(element('strong', '', booking.photographerName), element('p', '', booking.eventType), reviewEditor(booking, loadDashboard));
+        list.append(card);
+      }
       (data.requests || []).forEach((request) => {
         const card = element('article', 'reputation-request-card');
         const header = element('header');
@@ -147,7 +157,7 @@
           });
           card.append(actions);
         }
-        if (data.role === 'client' && request.status === 'confirmed' && request.review?.status !== 'deleted') {
+        if (data.role === 'client' && request.review?.status === 'active') {
           card.append(reviewEditor(request, loadDashboard));
           if (request.review) {
             const remove = element('button', 'danger-outline-button', t('reputation.editor.delete'));
