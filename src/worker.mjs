@@ -13,6 +13,7 @@ import { createPhotographerHandlers } from './photographers.mjs';
 import { createAccountHandlers } from './account.mjs';
 import { createPublicInputHandlers } from './public-input.mjs';
 import { createPortfolioHandlers } from './portfolio.mjs';
+import { createEngagementHandlers } from './engagements.mjs';
 import { createBudgetHandlers } from './budgets.mjs';
 import { createAccountSecurityHandlers } from './account-security.mjs';
 import { createImageService } from './images.mjs';
@@ -528,7 +529,7 @@ function professionalProfile(row, ownerView = false) {
     serviceRadiusKm: row.service_radius_km == null ? null : Number(row.service_radius_km),
     startingPriceCents: row.starting_price_cents == null ? null : Number(row.starting_price_cents),
     availability: row.availability || 'available',
-    ratingAverage: row.rating_average == null ? null : Number(row.rating_average),
+    ratingAverage: row.rating_average == null ? null : Math.round(Number(row.rating_average) * 100) / 100,
     reviewCount: Number(row.review_count || 0),
     instagram: row.instagram || '',
     website: row.website || '',
@@ -546,6 +547,7 @@ function professionalProfile(row, ownerView = false) {
   return {
     ...base,
     name: row.name,
+    portfolioPreviewUrl: row.preview_id ? `/api/photographers/${encodeURIComponent(row.slug)}/portfolio/${Number(row.preview_id)}` : '',
     profilePic: row.profile_pic_key ? `/api/photographers/${encodeURIComponent(row.slug)}/photo?v=${encodeURIComponent(row.user_updated_at || '')}` : '',
     contacts: {
       email: row.show_email ? row.public_email || '' : '',
@@ -1039,6 +1041,7 @@ const photographerHandlers = createPhotographerHandlers({
 const accountHandlers = createAccountHandlers({ json, authenticatedUser: authenticatedPrincipal, isRateLimited, readJson, conversationSummary, accountMessage, portfolioItem });
 const publicInputHandlers = createPublicInputHandlers({ json, isRateLimited, readJson, cleanText, normalizeEmail, isValidEmail });
 const portfolioHandlers = createPortfolioHandlers({ json, cleanText, authenticatedUser: authenticatedPrincipal, isRateLimited, readJson, portfolioItem, responsiveImage: imageService.responsiveImage });
+const engagementHandlers = createEngagementHandlers({ json, cleanText, authenticatedUser: authenticatedPrincipal, readJson, isRateLimited, sha256 });
 const budgetHandlers = createBudgetHandlers({ json, cleanText, authenticatedUser: authenticatedPrincipal, isRateLimited, readJson });
 const accountSecurityHandlers = createAccountSecurityHandlers({ json, cleanText, normalizeEmail, isValidEmail, authenticatedUser: authenticatedPrincipal, readJson, verifyPassword, decodeProfilePicture, isValidPassword, hashPassword, publicUser, responsiveImage: imageService.responsiveImage, sessionCookie, isRateLimited, reportOperationalError, authRateLimit: [8, 15 * 60 * 1000], sensitiveRateLimit: [5, 60 * 60 * 1000] });
 
@@ -1091,7 +1094,7 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
     return json(404, { error: 'Endpoint nao encontrado.' });
   }
   if (routeId === 'photographers.list') return photographerHandlers.list({ request, env });
-  if (routeId === 'photographers.detail') return photographerHandlers.detail({ params, env });
+  if (routeId === 'photographers.detail') return photographerHandlers.detail({ params, env, request });
   if (routeId === 'photographers.photo') return photographerHandlers.photo({ params, env, request });
   if (routeId === 'photographers.portfolio-image') return photographerHandlers.portfolioImage({ params, env, request });
   if (routeId === 'photographers.reviews') return photographerHandlers.reviews({ params, env });
@@ -1105,6 +1108,11 @@ async function dispatchApiRoute(routeId, params, request, env, url, context, req
   if (routeId === 'account.reviews.create') return photographerHandlers.reviewCreate({ params, request, env, pathname });
   if (routeId === 'account.reviews.update') return photographerHandlers.reviewUpdate({ params, request, env, pathname });
   if (routeId === 'account.reviews.delete') return photographerHandlers.reviewDelete({ params, request, env, pathname });
+  if (routeId === 'engagements.create') return engagementHandlers.create({ params, request, env, pathname });
+  if (routeId === 'engagements.list') return engagementHandlers.list({ request, env });
+  if (routeId === 'engagements.detail') return engagementHandlers.detail({ params, request, env });
+  if (routeId === 'engagements.update') return engagementHandlers.update({ params, request, env });
+  if (routeId === 'engagements.review') return engagementHandlers.review({ params, request, env, pathname });
   if (routeId === 'budgets.request.create') return budgetHandlers.requestCreate({ params, request, env, pathname });
   if (routeId === 'budgets.requests.list') return budgetHandlers.requestsList({ request, env });
   if (routeId === 'budgets.request.detail') return budgetHandlers.requestDetail({ params, request, env });
