@@ -68,6 +68,32 @@ test('as paginas legais tambem usam o monograma oficial', () => {
   }
 });
 
+test('as paginas legais usam o botao de idioma padronizado da pagina inicial', () => {
+  const home = read('public/index.html');
+  const styles = read('public/refinements.css');
+  assert.match(home, /<button id="langToggle" class="lang-toggle"/);
+  assert.match(styles, /\.lang-toggle \.abbr\s*\{[^}]*font-weight: 700/);
+  assert.match(styles, /\.legal-header\s*\{[^}]*justify-content: space-between/);
+
+  for (const file of ['public/privacidade.html', 'public/termos.html']) {
+    const page = read(file);
+    assert.match(page, /<header class="legal-header">/, file);
+    assert.match(page, /<button id="langToggle" class="lang-toggle"/, file);
+    assert.doesNotMatch(page, /class="public-language"/, file);
+  }
+});
+
+test('os titulos das paginas legais usam a paleta de marca', () => {
+  for (const file of ['public/privacidade.html', 'public/termos.html']) {
+    const page = read(file);
+    const gradient = /\.gradient-text\s*\{([^}]*)\}/.exec(page)?.[1] || '';
+    assert.match(gradient, /var\(--lc-color-brand-primary\)/m, file);
+    assert.match(gradient, /var\(--lc-color-brand-secondary\)/m, file);
+    assert.doesNotMatch(gradient, /#[0-9a-f]{3,8}\b/i, file);
+    assert.match(page, /h1, h2, h3 \{[^}]*color: var\(--lc-color-text\)/m, file);
+  }
+});
+
 test('todas as paginas declaram o icone do site', () => {
   for (const file of publicPages()) {
     const page = read(`public/${file}`);
