@@ -30,7 +30,7 @@ export function createAccountHandlers({ json, authenticatedUser, isRateLimited, 
     if (await isRateLimited(request, env, pathname, 5, 60 * 60 * 1000, env.SENSITIVE_RATE_LIMITER)) return json(429, { error: 'Muitas solicitacoes. Aguarde antes de tentar novamente.' });
     const current = await authenticatedUser(request, env); if (!current) return json(401, { error: 'Faca login novamente.' });
     const id = Number(current.id);
-    const [profile, professionalProfile, portfolio, reviewRequests, reviewsAuthored, reviewsReceived, conversations, messages, contactMessages, newsletter] = await Promise.all([
+    const [profile, professionalProfile, portfolio, reviewRequests, reviewsAuthored, reviewsReceived, conversations, messages, contactMessages, newsletter, engagements, engagementEvents] = await Promise.all([
       env.DB.prepare('SELECT id, name, email, phone, role, age, gender, profile_pic_key, email_verified_at, is_admin, created_at, updated_at FROM users WHERE id = ?').bind(id).first(),
       env.DB.prepare('SELECT slug, bio, specialties, city, state, service_radius_km, starting_price_cents, availability, is_published, public_email, public_phone, show_email, show_phone, created_at, updated_at FROM professional_profiles WHERE user_id = ?').bind(id).first(),
       env.DB.prepare('SELECT id, caption, alt_text, position, created_at, updated_at FROM portfolio_items WHERE user_id = ? ORDER BY position, id').bind(id).all(),
@@ -40,7 +40,14 @@ export function createAccountHandlers({ json, authenticatedUser, isRateLimited, 
       env.DB.prepare('SELECT id, client_user_id, photographer_user_id, status, last_message_at, created_at, updated_at FROM conversations WHERE client_user_id = ? OR photographer_user_id = ? ORDER BY id').bind(id, id).all(),
       env.DB.prepare('SELECT m.id, m.conversation_id, m.sender_user_id, m.body, m.read_at, m.created_at FROM messages m JOIN conversations c ON c.id = m.conversation_id WHERE c.client_user_id = ? OR c.photographer_user_id = ? ORDER BY m.id').bind(id, id).all(),
       env.DB.prepare('SELECT id, name, email, message, created_at FROM contact_messages WHERE email = ? ORDER BY id').bind(String(current.email)).all(),
-      env.DB.prepare('SELECT id, email, created_at FROM newsletter_subscriptions WHERE email = ? ORDER BY id').bind(String(current.email)).all()
+      env.DB.prepare('SELECT id, email, created_at FROM newsletter_subscriptions WHERE email = ? ORDER BY id').bind(String(current.email)).all(),
+      env.DB.prepare(`SELECT id, proposal_id, service_category, service_description, event_type, event_date,
+        starts_at, ends_at, venue, address, city, state, venue_details, notes, price_cents, fee_cents,
+        payment_method, payment_status, status, created_at, updated_at
+        FROM engagements WHERE client_user_id = ? OR photographer_user_id = ? ORDER BY id`).bind(id, id).all(),
+      env.DB.prepare(`SELECT h.engagement_id, h.status, h.payment_status, h.created_at
+        FROM engagement_events h JOIN engagements e ON e.id = h.engagement_id
+        WHERE e.client_user_id = ? OR e.photographer_user_id = ? ORDER BY h.id`).bind(id, id).all()
     ]);
     const pick = (row, keys) => { const out = {}; for (const key of keys) out[key] = row?.[key] ?? null; return out; };
     return json(200, {
@@ -54,6 +61,8 @@ export function createAccountHandlers({ json, authenticatedUser, isRateLimited, 
       reviewsReceived: reviewsReceived.results || [],
       conversations: conversations.results || [],
       messages: messages.results || [],
+      engagements: engagements.results || [],
+      engagementEvents: engagementEvents.results || [],
       contactMessages: contactMessages.results || [],
       newsletterSubscriptions: newsletter.results || []
     }, { 'Content-Disposition': 'attachment; filename="lensclick-dados.json"' });

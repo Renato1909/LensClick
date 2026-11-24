@@ -139,14 +139,26 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
     const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.', code: 'unauthenticated' });
     const [requestId] = params;
-    const row = await env.DB.prepare('SELECT * FROM budget_requests WHERE id = ?').bind(Number(requestId)).first();
+    const row = await env.DB.prepare(`
+      SELECT b.*, p.slug AS photographer_slug, p.specialties, u.name AS photographer_name
+      FROM budget_requests b JOIN users u ON u.id = b.photographer_user_id
+      LEFT JOIN professional_profiles p ON p.user_id = b.photographer_user_id
+      WHERE b.id = ?`).bind(Number(requestId)).first();
     if (!row) return json(404, { error: 'Pedido nao encontrado.', code: 'not_found' });
     if (row.client_user_id !== current.id && row.photographer_user_id !== current.id) {
       return json(403, { error: 'Acesso nao autorizado a este pedido.', code: 'forbidden_not_participant' });
     }
     const proposals = await env.DB.prepare('SELECT * FROM proposals WHERE request_id = ? ORDER BY created_at DESC, id DESC')
       .bind(row.id).all();
-    return json(200, { request: budgetRequest(row, { proposals: proposals.results.map(proposal) }) });
+    const history = await env.DB.prepare('SELECT action, created_at FROM budget_audit WHERE request_id = ? ORDER BY id')
+      .bind(row.id).all();
+    return json(200, { request: budgetRequest(row, {
+      photographerSlug: row.photographer_slug || '',
+      photographerName: row.photographer_name,
+      photographerSpecialties: JSON.parse(row.specialties || '[]'),
+      proposals: proposals.results.map(proposal),
+      history: history.results.map(event => ({ action: event.action, createdAt: event.created_at }))
+    }) });
   }
 
   async function proposalCreate({ params, request, env, pathname }) {
@@ -169,16 +181,19 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
     if (!Number.isInteger(priceCents) || priceCents < 0 || priceCents > 100000000) {
       return json(400, { error: 'Informe um preco valido em centavos.', code: 'invalid_payload' });
     }
-    const existingPending = await env.DB.prepare("SELECT id FROM proposals WHERE request_id = ? AND status = 'pending'")
-      .bind(row.id).first();
-    if (existingPending) return json(409, { error: 'Ja existe uma proposta pendente para este pedido.', code: 'conflict' });
-    const result = await env.DB.prepare('INSERT INTO proposals (request_id, photographer_user_id, price_cents, conditions) VALUES (?, ?, ?, ?)')
-      .bind(row.id, current.id, priceCents, conditions || null).run();
-    await env.DB.batch([
-      env.DB.prepare("UPDATE budget_requests SET status = 'proposed', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(row.id),
-      env.DB.prepare("INSERT INTO budget_audit (request_id, actor_user_id, action) VALUES (?, ?, 'proposed')").bind(row.id, current.id)
+    const [inserted] = await env.DB.batch([
+      env.DB.prepare(`INSERT INTO proposals (request_id, photographer_user_id, price_cents, conditions)
+        SELECT id, ?, ?, ? FROM budget_requests
+        WHERE id = ? AND status IN ('pending', 'proposed')
+          AND NOT EXISTS (SELECT 1 FROM proposals WHERE request_id = ? AND status = 'pending')`)
+        .bind(current.id, priceCents, conditions || null, row.id, row.id),
+      env.DB.prepare(`INSERT INTO budget_audit (request_id, actor_user_id, action)
+        SELECT ?, ?, 'proposed' WHERE changes() = 1`).bind(row.id, current.id),
+      env.DB.prepare(`UPDATE budget_requests SET status = 'proposed', updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND changes() = 1`).bind(row.id)
     ]);
-    return idempotencyFinish(idem, current, env, 201, { proposal: { id: Number(result.meta.last_row_id), status: 'pending' }, message: 'Proposta enviada.' });
+    if (!inserted.meta.changes) return json(409, { error: 'O pedido foi encerrado ou ja tem uma proposta pendente.', code: 'conflict' });
+    return idempotencyFinish(idem, current, env, 201, { proposal: { id: Number(inserted.meta.last_row_id), status: 'pending' }, message: 'Proposta enviada.' });
   }
 
   async function requestAction({ params, request, env }) {
@@ -192,15 +207,23 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
     const row = await env.DB.prepare('SELECT * FROM budget_requests WHERE id = ?').bind(Number(requestId)).first();
     if (!row) return json(404, { error: 'Pedido nao encontrado.', code: 'not_found' });
 
-    if (action === 'cancel') {
-      if (row.client_user_id !== current.id) return json(403, { error: 'Somente o cliente pode cancelar este pedido.', code: 'forbidden_role' });
-      if (!['pending', 'proposed'].includes(row.status)) return json(409, { error: 'Este pedido nao pode ser cancelado.', code: 'invalid_state' });
-      await env.DB.batch([
-        env.DB.prepare("UPDATE budget_requests SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(row.id),
-        env.DB.prepare("UPDATE proposals SET status = 'withdrawn', updated_at = CURRENT_TIMESTAMP WHERE request_id = ? AND status = 'pending'").bind(row.id),
-        env.DB.prepare("INSERT INTO budget_audit (request_id, actor_user_id, action) VALUES (?, ?, 'cancelled')").bind(row.id, current.id)
+    if (action === 'cancel' || action === 'decline') {
+      const isDecline = action === 'decline';
+      const ownerId = isDecline ? row.photographer_user_id : row.client_user_id;
+      if (ownerId !== current.id) return json(403, { error: 'Acesso nao autorizado a este pedido.', code: 'forbidden_role' });
+      const status = isDecline ? 'rejected' : 'cancelled';
+      const eligible = "id = ? AND status IN ('pending', 'proposed')";
+      const [, , updated] = await env.DB.batch([
+        env.DB.prepare(`INSERT INTO budget_audit (request_id, actor_user_id, action)
+          SELECT id, ?, ? FROM budget_requests WHERE ${eligible}`).bind(current.id, status, row.id),
+        env.DB.prepare(`UPDATE proposals SET status = 'withdrawn', updated_at = CURRENT_TIMESTAMP
+          WHERE request_id IN (SELECT id FROM budget_requests WHERE ${eligible}) AND status = 'pending'`).bind(row.id),
+        env.DB.prepare(`UPDATE budget_requests SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE ${eligible}`).bind(status, row.id)
       ]);
-      return idempotencyFinish(idem, current, env, 200, { request: { id: row.id, status: 'cancelled' }, message: 'Pedido cancelado.' });
+      if (!updated.meta.changes) return json(409, { error: 'Este pedido ja foi encerrado.', code: 'invalid_state' });
+      return idempotencyFinish(idem, current, env, 200, {
+        request: { id: row.id, status }, message: isDecline ? 'Pedido recusado.' : 'Pedido cancelado.'
+      });
     }
 
     if (action === 'accept' || action === 'reject') {
@@ -211,12 +234,16 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
         .bind(proposalId, row.id).first();
       if (!prop) return json(404, { error: 'Proposta pendente nao encontrada.', code: 'not_found' });
       const newStatus = action === 'accept' ? 'accepted' : 'rejected';
-      await env.DB.batch([
-        env.DB.prepare('UPDATE proposals SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(newStatus, prop.id),
-        env.DB.prepare("UPDATE proposals SET status = 'rejected', updated_at = CURRENT_TIMESTAMP WHERE request_id = ? AND status = 'pending' AND id <> ?").bind(row.id, prop.id),
-        env.DB.prepare('UPDATE budget_requests SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(newStatus, row.id),
-        env.DB.prepare('INSERT INTO budget_audit (request_id, actor_user_id, action) VALUES (?, ?, ?)').bind(row.id, current.id, newStatus)
+      const [updated] = await env.DB.batch([
+        env.DB.prepare(`UPDATE proposals SET status = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ? AND status = 'pending' AND request_id IN (SELECT id FROM budget_requests WHERE id = ? AND status = 'proposed')`)
+          .bind(newStatus, prop.id, row.id),
+        env.DB.prepare(`UPDATE budget_requests SET status = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ? AND changes() = 1`).bind(newStatus, row.id),
+        env.DB.prepare(`INSERT INTO budget_audit (request_id, actor_user_id, action)
+          SELECT ?, ?, ? WHERE changes() = 1`).bind(row.id, current.id, newStatus)
       ]);
+      if (!updated.meta.changes) return json(409, { error: 'O pedido foi encerrado.', code: 'invalid_state' });
       return idempotencyFinish(idem, current, env, 200, { request: { id: row.id, status: newStatus }, message: action === 'accept' ? 'Proposta aceita.' : 'Proposta recusada.' });
     }
 
@@ -226,11 +253,16 @@ export function createBudgetHandlers({ json, cleanText, authenticatedUser, isRat
       const prop = await env.DB.prepare("SELECT * FROM proposals WHERE id = ? AND request_id = ? AND status = 'pending'")
         .bind(proposalId, row.id).first();
       if (!prop) return json(404, { error: 'Proposta pendente nao encontrada.', code: 'not_found' });
-      await env.DB.batch([
-        env.DB.prepare("UPDATE proposals SET status = 'withdrawn', updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(prop.id),
-        env.DB.prepare("UPDATE budget_requests SET status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'proposed'").bind(row.id),
-        env.DB.prepare("INSERT INTO budget_audit (request_id, actor_user_id, action) VALUES (?, ?, 'withdrawn')").bind(row.id, current.id)
+      const [updated] = await env.DB.batch([
+        env.DB.prepare(`UPDATE proposals SET status = 'withdrawn', updated_at = CURRENT_TIMESTAMP
+          WHERE id = ? AND status = 'pending' AND request_id IN (SELECT id FROM budget_requests WHERE id = ? AND status = 'proposed')`)
+          .bind(prop.id, row.id),
+        env.DB.prepare(`UPDATE budget_requests SET status = 'pending', updated_at = CURRENT_TIMESTAMP
+          WHERE id = ? AND changes() = 1`).bind(row.id),
+        env.DB.prepare(`INSERT INTO budget_audit (request_id, actor_user_id, action)
+          SELECT ?, ?, 'withdrawn' WHERE changes() = 1`).bind(row.id, current.id)
       ]);
+      if (!updated.meta.changes) return json(409, { error: 'O pedido foi encerrado.', code: 'invalid_state' });
       return idempotencyFinish(idem, current, env, 200, { request: { id: row.id, status: 'pending' }, message: 'Proposta retirada.' });
     }
 

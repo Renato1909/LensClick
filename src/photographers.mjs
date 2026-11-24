@@ -37,7 +37,11 @@ export function createPhotographerHandlers({
       price_asc: 'p.starting_price_cents IS NULL, p.starting_price_cents ASC, p.updated_at DESC',
       price_desc: 'p.starting_price_cents IS NULL, p.starting_price_cents DESC, p.updated_at DESC',
       radius_desc: 'p.service_radius_km IS NULL, p.service_radius_km DESC, p.updated_at DESC',
-      rating_desc: 'rating_average IS NULL, rating_average DESC, review_count DESC, p.updated_at DESC'
+      rating_desc: 'rating_average IS NULL, rating_average DESC, review_count DESC, p.updated_at DESC',
+      rating_rank: `rating_average IS NULL,
+        ((rating_average * review_count + 20.0) / (review_count + 5)) -
+          0.10 * MAX(0, rating_square - rating_average * rating_average) DESC,
+        review_count DESC, p.slug ASC`
     };
     const selectedSort = Object.hasOwn(orderBy, sort) ? sort : 'recommended';
     const whereClauses = ['p.is_published = 1', "u.role = 'photographer'"];
@@ -55,8 +59,10 @@ export function createPhotographerHandlers({
     const total = Number(totalResult?.total || 0);
     const profiles = await env.DB.prepare(`
       SELECT p.*, u.name, u.profile_pic_key, u.updated_at AS user_updated_at,
-        (SELECT ROUND(AVG(r.rating), 2) FROM reviews r WHERE r.photographer_user_id = p.user_id AND r.status = 'active') AS rating_average,
-        (SELECT COUNT(*) FROM reviews r WHERE r.photographer_user_id = p.user_id AND r.status = 'active') AS review_count
+        (SELECT AVG(r.rating) FROM reviews r WHERE r.photographer_user_id = p.user_id AND r.status = 'active') AS rating_average,
+        (SELECT COUNT(*) FROM reviews r WHERE r.photographer_user_id = p.user_id AND r.status = 'active') AS review_count,
+        (SELECT AVG(r.rating * r.rating) FROM reviews r WHERE r.photographer_user_id = p.user_id AND r.status = 'active') AS rating_square,
+        (SELECT i.id FROM portfolio_items i WHERE i.user_id = p.user_id ORDER BY i.is_cover DESC, i.position, i.id LIMIT 1) AS preview_id
       FROM professional_profiles p JOIN users u ON u.id = p.user_id WHERE ${whereSql}
       ORDER BY ${orderBy[selectedSort]} LIMIT ? OFFSET ?
     `).bind(...params, pageSize, offset).all();
@@ -64,10 +70,10 @@ export function createPhotographerHandlers({
       photographers: (profiles.results || []).map((row) => professionalProfile(row)),
       pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
       sort: selectedSort
-    }, { 'Cache-Control': 'public, max-age=60' });
+    }, { 'Cache-Control': selectedSort === 'rating_rank' ? 'no-store' : 'public, max-age=60' });
   }
 
-  async function detail({ params, env }) {
+  async function detail({ params, env, request }) {
     const [slug] = params;
     const profile = await env.DB.prepare(`
       SELECT p.*, u.name, u.profile_pic_key, u.updated_at AS user_updated_at,
@@ -78,7 +84,9 @@ export function createPhotographerHandlers({
     `).bind(slug).first();
     if (!profile) return json(404, { error: 'Perfil profissional nao encontrado.' });
     const portfolio = await env.DB.prepare('SELECT id, caption, alt_text, position, is_cover, category, updated_at FROM portfolio_items WHERE user_id = ? ORDER BY position, id').bind(profile.user_id).all();
-    return json(200, { profile: { ...professionalProfile(profile), portfolio: portfolio.results.map((item) => portfolioItem(item, profile.slug)) } }, { 'Cache-Control': 'public, max-age=60' });
+    return json(200, { profile: { ...professionalProfile(profile), portfolio: portfolio.results.map((item) => portfolioItem(item, profile.slug)) } }, {
+      'Cache-Control': new URL(request.url).searchParams.has('fresh') ? 'no-store' : 'public, max-age=60'
+    });
   }
 
   async function photo({ params, env, request }) {
@@ -112,7 +120,9 @@ export function createPhotographerHandlers({
     `).bind(slug).first();
     if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.' });
     const summary = await env.DB.prepare(`
-      SELECT COUNT(*) AS total, ROUND(AVG(rating), 2) AS average
+      SELECT COUNT(*) AS total, ROUND(AVG(rating), 2) AS average,
+        SUM(rating = 1) AS stars1, SUM(rating = 2) AS stars2, SUM(rating = 3) AS stars3,
+        SUM(rating = 4) AS stars4, SUM(rating = 5) AS stars5
       FROM reviews WHERE photographer_user_id = ? AND status = 'active'
     `).bind(photographer.user_id).first();
     const reviewRows = await env.DB.prepare(`
@@ -123,8 +133,9 @@ export function createPhotographerHandlers({
     `).bind(photographer.user_id).all();
     return json(200, {
       summary: { total: Number(summary?.total || 0), average: summary?.average == null ? null : Number(summary.average) },
+      distribution: Object.fromEntries([1, 2, 3, 4, 5].map(stars => [stars, Number(summary?.['stars' + stars] || 0)])),
       reviews: reviewRows.results.map(publicReview)
-    }, { 'Cache-Control': 'public, max-age=60' });
+    }, { 'Cache-Control': 'no-store' });
   }
 
   async function reviewRequestCreate({ params, request, env, pathname }) {
@@ -253,54 +264,17 @@ export function createPhotographerHandlers({
     const existing = await env.DB.prepare("SELECT id FROM review_requests WHERE id = ? AND photographer_user_id = ? AND status = 'pending'").bind(Number(requestId), current.id).first();
     if (!existing) return json(404, { error: 'Solicitacao pendente nao encontrada.' });
     await env.DB.prepare("UPDATE review_requests SET status = ?, confirmed_at = CASE WHEN ? = 'confirmed' THEN CURRENT_TIMESTAMP ELSE NULL END, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND photographer_user_id = ?").bind(status, status, Number(requestId), current.id).run();
-    return json(200, { message: status === 'confirmed' ? 'Contato confirmado. O cliente ja pode avaliar.' : 'Solicitacao rejeitada.' });
+    return json(200, { message: status === 'confirmed' ? 'Contato confirmado.' : 'Solicitacao rejeitada.' });
   }
 
-  async function publishReview(env, current, requestId, photographerId, rating, comment) {
-    const [inserted] = await env.DB.batch([
-      env.DB.prepare('INSERT INTO reviews (request_id, client_user_id, photographer_user_id, rating, comment) VALUES (?, ?, ?, ?, ?)').bind(Number(requestId), current.id, Number(photographerId), rating, comment),
-      env.DB.prepare("INSERT INTO review_audit (review_id, actor_user_id, action, rating, comment) SELECT id, ?, 'created', ?, ? FROM reviews WHERE request_id = ?").bind(current.id, rating, comment, Number(requestId))
-    ]);
-    return json(201, { review: { id: Number(inserted.meta.last_row_id), rating, comment, status: 'active' }, message: 'Avaliacao publicada.' });
-  }
-
-  async function reviewCreate({ params, request, env, pathname }) {
-    if (await isRateLimited(request, env, pathname, 8, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) return json(429, { error: 'Muitas avaliacoes. Aguarde antes de tentar novamente.' });
-    const [requestId] = params, current = await authenticatedUser(request, env);
+  async function reviewCreate({ request, env }) {
+    const current = await authenticatedUser(request, env);
     if (!current) return json(401, { error: 'Faca login novamente.' });
-    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem avaliar fotografos.' });
-    const eligibility = await env.DB.prepare('SELECT q.photographer_user_id, r.id AS review_id FROM review_requests q LEFT JOIN reviews r ON r.request_id = q.id WHERE q.id = ? AND q.client_user_id = ? AND q.status = \'confirmed\'').bind(Number(requestId), current.id).first();
-    if (!eligibility) return json(403, { error: 'Este contato ainda nao esta confirmado para avaliacao.' });
-    if (eligibility.review_id) return json(409, { error: 'Este contato ja possui uma avaliacao.' });
-    const body = await readJson(request), rating = Number(body.rating), comment = cleanText(body.comment, 1000);
-    if (!Number.isInteger(rating) || rating < 1 || rating > 5 || comment.length < 10) return json(400, { error: 'Informe uma nota de 1 a 5 e um comentario com pelo menos 10 caracteres.' });
-    return publishReview(env, current, requestId, eligibility.photographer_user_id, rating, comment);
+    return json(403, { error: 'Avalie a partir de uma contratacao concluida.', code: 'engagement_required' });
   }
 
-  // Contrato consumido pelo LensClickApp: POST /api/photographers/:slug/reviews.
-  // Mantém a regra de elegibilidade verificada do projeto: exige contato já
-  // confirmado pelo fotógrafo e ainda sem avaliação publicada.
-  async function reviewDirectCreate({ params, request, env, pathname }) {
-    if (await isRateLimited(request, env, pathname, 8, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) return json(429, { error: 'Muitas avaliacoes. Aguarde antes de tentar novamente.' });
-    const [slug] = params, current = await authenticatedUser(request, env);
-    if (!current) return json(401, { error: 'Faca login novamente.' });
-    if (current.role !== 'client') return json(403, { error: 'Somente clientes podem avaliar fotografos.' });
-    const photographer = await env.DB.prepare(`
-      SELECT p.user_id FROM professional_profiles p JOIN users u ON u.id = p.user_id
-      WHERE p.slug = ? AND p.is_published = 1 AND u.role = 'photographer'
-    `).bind(slug).first();
-    if (!photographer) return json(404, { error: 'Perfil profissional nao encontrado.' });
-    const eligibility = await env.DB.prepare(`
-      SELECT q.id FROM review_requests q
-      LEFT JOIN reviews r ON r.request_id = q.id
-      WHERE q.client_user_id = ? AND q.photographer_user_id = ? AND q.status = 'confirmed' AND r.id IS NULL
-      ORDER BY q.id DESC LIMIT 1
-    `).bind(current.id, photographer.user_id).first();
-    if (!eligibility) return json(403, { error: 'Avaliacao exige contato confirmado com o fotografo. Solicite contato e aguarde a confirmacao.', code: 'review_not_eligible' });
-    const body = await readJson(request), rating = Number(body.rating), comment = cleanText(body.comment, 1000);
-    if (!Number.isInteger(rating) || rating < 1 || rating > 5 || comment.length < 10) return json(400, { error: 'Informe uma nota de 1 a 5 e um comentario com pelo menos 10 caracteres.', code: 'invalid_payload' });
-    return publishReview(env, current, eligibility.id, photographer.user_id, rating, comment);
-  }
+  // A publicacao exige o identificador da contratacao concluida.
+  const reviewDirectCreate = reviewCreate;
 
   async function reviewUpdate({ params, request, env, pathname }) {
     if (await isRateLimited(request, env, pathname, 12, 60 * 60 * 1000, env.CONTENT_RATE_LIMITER)) return json(429, { error: 'Muitas alteracoes de avaliacao. Aguarde antes de tentar novamente.' });

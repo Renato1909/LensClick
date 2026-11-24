@@ -11,7 +11,7 @@ async function register(fixture, name, email) {
   return { user: result.json.user, cookie: fixture.cookie };
 }
 
-test('avaliacao exige contato confirmado, preserva autoria e registra auditoria', async (t) => {
+test('contato confirmado não libera nova avaliação e avaliações históricas continuam gerenciáveis', async (t) => {
   const fixture = createWorkerFixture();
   t.after(() => fixture.close());
 
@@ -53,11 +53,14 @@ test('avaliacao exige contato confirmado, preserva autoria e registra auditoria'
   const created = await fixture.request(`/api/account/review-requests/${requestId}/review`, {
     method: 'POST', json: { rating: 5, comment: 'Trabalho excelente e atendimento muito cuidadoso.' }
   });
-  assert.equal(created.response.status, 201);
-  const reviewId = created.json.review.id;
-  assert.equal((await fixture.request(`/api/account/review-requests/${requestId}/review`, {
-    method: 'POST', json: { rating: 4, comment: 'Tentativa duplicada de avaliacao confirmada.' }
-  })).response.status, 409);
+  assert.equal(created.response.status, 403);
+  assert.equal(created.json.code, 'engagement_required');
+  const reviewId = fixture.DB.prepare(`
+    INSERT INTO reviews (request_id, client_user_id, photographer_user_id, rating, comment)
+    VALUES (?, ?, ?, 5, 'Trabalho excelente e atendimento cuidadoso.')`)
+    .bind(requestId, client.user.id, photographer.user.id).run().meta.last_row_id;
+  fixture.DB.prepare("INSERT INTO review_audit (review_id, actor_user_id, action, rating) VALUES (?, ?, 'created', 5)")
+    .bind(reviewId, client.user.id).run();
 
   const publicReviews = await fixture.request('/api/photographers/fotografa-reputacao/reviews', { useCookie: false });
   assert.equal(publicReviews.response.status, 200);
@@ -77,7 +80,7 @@ test('avaliacao exige contato confirmado, preserva autoria e registra auditoria'
 });
 
 test('criacao da avaliacao persiste avaliacao e auditoria no mesmo batch', () => {
-  const creation = readFileSync('src/photographers.mjs', 'utf8');
+  const creation = readFileSync('src/engagements.mjs', 'utf8');
   assert.match(creation, /env\.DB\.batch\(\[/);
   assert.match(creation, /INSERT INTO reviews/);
   assert.match(creation, /INSERT INTO review_audit/);
