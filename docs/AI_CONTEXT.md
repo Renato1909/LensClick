@@ -245,7 +245,7 @@ Pontos que exigem atenção especial ou estão em débito técnico conhecido:
 - **Helpers compartilhados permanecem em `src/worker.mjs`** — a iniciativa 4.2 extraiu todos os handlers de domínio (blocos legados removidos no PR #82); o worker mantém formatters, sessão, rate limiting, cache de edge e SSR como ponto de composição.
 - **Aliases visuais legados** (`--accent-2`, `--bg-*`, `--muted` etc.) — o lote principal (`--accent-1`, `--text`, `--radius`, `--shadow`) foi migrado para `--lc-*` na 5.7; o restante segue como débito documentado.
 - **Termos de Uso e Política de Privacidade** — pendentes de revisão institucional antes de publicação comercial.
-- **Aplicativo Android externo à árvore atual** — precisa ser incorporado ao Git, auditado contra a matriz web/API e validado antes da Google Play.
+- **Aplicativo Android em repositório próprio** (`Renato1909/LensClickApp`) — gates técnicos A–F fechados com evidência em `docs/STATUS_GATES.md`; faltam a UI web da 2FA e os gates externos de domínio, jurídico e Play.
 - **Domínio próprio e e-mail institucional** — escolha/registro, Custom Domain Cloudflare e autenticação Brevo permanecem pendentes e são gates da Fase 6.
 - **2FA multicliente** — implementada no backend (ADR 002, PR #160); faltam a interface web e o ajuste do app Android. Qualquer entrega deve compartilhar política e estado no backend para web e Android.
 - **Auth git remoto no ambiente Windows** — pode estar indisponível; comandos git sensíveis podem precisar do usuário.

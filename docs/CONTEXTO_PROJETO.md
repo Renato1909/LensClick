@@ -286,8 +286,8 @@ Baseado na seção 15 de `docs/DOCUMENTACAO_TECNICA.md`:
 - Orçamentos/propostas para o Android: backend implementado (pedido, proposta, aceite/rejeição, agenda, favoritos) e contrato documentado em `docs/CONTRATO_ORCAMENTOS.md`, com códigos de erro estáveis e `Idempotency-Key` nas mutações (PRs #148–#155). O backend móvel está completo para a fase de integração Android: `POST /api/mobile/auth/refresh` rotaciona a sessão a cada uso, `GET /me` devolve `session.expiresAt`, e login/refresh/replay/logout são auditados em `mobile_auth_audit` (PR #156); a 2FA TOTP multicliente também está implementada no backend (PR #160, ADR 002). Os documentos de integração são `docs/MATRIZ_PARIDADE_ANDROID.md` (matriz por capacidade) e `docs/CONTRATO_MOVEL_ANDROID.md` (guia de consumo: auth, refresh, Keystore, idempotência, erros, limites).
 - Galerias privadas.
 - Notificações.
-- O aplicativo Android nativo em Kotlin já foi desenvolvido no Android Studio, mas seu código ainda está fora deste repositório e precisa ser disponibilizado, versionado e auditado.
-- A Fase 6 incorpora o projeto, cria a matriz de paridade web/API/Android, define autenticação móvel, implementa o 2FA multicliente projetado no ADR 002, valida o release e prepara a publicação Google Play.
+- O aplicativo Android nativo em Kotlin está versionado em `Renato1909/LensClickApp` (v1.3.0), com os gates técnicos A–F fechados e a paridade auditada; restam a UI web da 2FA e os gates externos de domínio, jurídico e Play.
+- A Fase 6 tem o projeto Android versionado em repositório próprio, a matriz de paridade preenchida no app, a autenticação móvel e o 2FA multicliente implementados no backend e no cliente; restam a UI web da 2FA, o release/faixas na Play e os gates externos.
 - O plano e os gates estão em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`.
 
 ---
@@ -412,7 +412,7 @@ O estado atual de branches, branches órfãs, PRs e pendências Git é mantido e
 ### Débitos técnicos conhecidos
 
 1. **Hotspots de conflito** — os catálogos em `public/locales/` concentram alterações frequentes. `src/worker.mjs` segue como ponto de composição, mas os handlers de domínio foram extraídos na Fase 4.2, reduzindo conflitos.
-2. **2FA sem UI** — a verificação de e-mail existe em modo de aviso; o segundo fator foi **implementado no backend** (`docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`, ADR Aceito: TOTP + códigos de recuperação, PR #160). Faltam a interface na central da conta e o ajuste do app Android `ad5cc75`.
+2. **2FA sem UI web** — a verificação de e-mail existe em modo de aviso; o segundo fator foi **implementado no backend** (`docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`, ADR Aceito: TOTP + códigos de recuperação, PR #160) e integrado no app Android v1.3.0. Falta a interface na central da conta web.
 3. **Android fora da fonte de verdade** — o projeto Kotlin existe, mas ainda precisa ser incorporado ao Git e auditado quanto a arquitetura, segurança, paridade e publicação.
 4. **Rate limit híbrido** — escudo de rajada nativo na edge (PR #30) combinado a políticas longas no D1; atende o volume atual.
 5. **Termos/política precisam de revisão jurídica** — divulgações LGPD de alta prioridade (PR #89), de média prioridade (PR #91) e cláusulas opcionais (PR #93) já publicadas; resta a revisão legal formal antes do uso comercial. Iniciativa 5.5.
@@ -439,7 +439,7 @@ Na Fase 5, restam a revisão jurídica formal (5.5.b) e domínio/DNS/e-mail (5.8
 | 23 | 5.7 Qualidade e débitos técnicos — concluída | Média |
 | 24 | 5.8 Produto e presença — parcial; domínio/e-mail pendentes | Média |
 
-A sequência atual é a **Fase 6**, detalhada em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`: incorporar o projeto Kotlin; auditar paridade; definir contrato móvel; implementar diferenças; concluir a 2FA do ADR 002 (backend já pronto; faltam UI web e app Kotlin); validar web/API/Android; concluir domínio e jurídico; publicar por faixas na Google Play. O estado detalhado dos gates está em `docs/HANDOFF.md`.
+A sequência atual é a **Fase 6**, detalhada em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`: o projeto Kotlin está versionado no repositório do app, com os gates técnicos A–F fechados; restam a interface web da 2FA do ADR 002, o AAB/faixas da Play, o domínio e o jurídico antes da publicação. O estado detalhado dos gates está em `docs/HANDOFF.md` e, no app, em `docs/STATUS_GATES.md`.
 
 ### Estado de `db/schema.ts`
 

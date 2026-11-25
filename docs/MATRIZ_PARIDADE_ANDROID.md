@@ -1,10 +1,12 @@
 # MATRIZ_PARIDADE_ANDROID.md — Matriz de paridade web/API/Android
 
 > **Gate B** do `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`.
-> **Status:** rascunho iniciado em 18/11/2026 (PR pós-#158). O código Kotlin do
-> LensClickApp ainda está fora deste repositório: as colunas Android estão **a
-> classificar** e só podem ser preenchidas após o Gate A (levantamento técnico do
-> app). Nenhuma afirmação de paridade é válida antes disso.
+> **Status:** revalidado em 24/11/2026. O projeto Kotlin está versionado em
+> `Renato1909/LensClickApp` e a **matriz canônica do lado Android** é
+> [`docs/MATRIZ_PARIDADE.md`](https://github.com/Renato1909/LensClickApp/blob/main/docs/MATRIZ_PARIDADE.md),
+> com as capacidades avaliadas já classificadas e o Gate B fechado. Este arquivo
+> é o inventário web/API: as linhas marcadas com `?` aguardam classificação neste
+> rascunho, não indicam ausência de implementação no app.
 >
 > **Fonte:** rotas em `src/router.mjs`, contratos em `test-support/api-contracts.mjs`
 > (61 rotas / 69 contratos, verificados pelo teste `manifesto da API registra 61
@@ -42,7 +44,7 @@
 | Verificação de e-mail | `POST /api/auth/email/verify`, `POST /api/auth/email/resend` | ✅ | ? | deep link ou tela nativa | P1 | Brevo | `email-verification` | A classificar |
 | Limites de sessão | 5 web / 3 móveis (teto) | ✅ | ? | — | P1 | ADR 001 | `mobile-auth-refresh` | A classificar |
 | Bloqueio por conta | 5 falhas / 15 min (429) | ✅ | ? | — | P1 | ADR 001 #6 | `mobile-auth-refresh` | A classificar |
-| 2FA TOTP no app | `GET/POST /api/account/2fa/status\|setup\|enable\|disable`, `POST /api/mobile/auth/2fa/verify` | ✅ (backend) | ? | app `ad5cc75` fabrica o `challengeToken` e não trata 202 | **P0 (demo)** | ADR 002 / PR #160 | `two-factor` | A classificar |
+| 2FA TOTP no app | `GET/POST /api/account/2fa/status\|setup\|enable\|disable`, `POST /api/mobile/auth/2fa/verify` | ✅ (backend) | ✅ (v1.3.0) | HTTP 202 e `challengeToken` reais; senha digitada na desativação | **P0 (concluído)** | ADR 002 / PR #160 / `STATUS_GATES` do app | `two-factor` | Paridade |
 
 ### 2. Conta e dados do titular
 
@@ -138,6 +140,8 @@
 
 ## Saída esperada deste documento
 
-Este rascunho garante ausência de lacunas **no backend** (todas as 61 rotas estão
-representadas acima ou mapeadas em outra linha). As colunas Android são
-preenchidas na auditoria (Gate A/B) com o código Kotlin em mãos.
+Este inventário garante ausência de lacunas **no backend** (todas as 61 rotas estão
+representadas acima ou mapeadas em outra linha). A classificação Android já
+concluída está na matriz do repositório do app; os `?` remanescentes aqui são
+pendências deste rascunho web e devem ser reconciliados com aquela fonte antes
+de serem usados como evidência de Gate B.

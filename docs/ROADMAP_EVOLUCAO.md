@@ -465,7 +465,7 @@ Este marco nao e uma iniciativa numerada; e uma atividade estrutural executada u
 
 ### 6.3 Autenticação em duas etapas multicliente
 
-> **Estado:** **parcial** — o ADR 002 (`docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`, PR #138) cobre o threat model, a comparação de TOTP/passkeys/código por e-mail e o desenho de ativação, desafio, códigos de recuperação, dispositivo confiável, desativação, rate limiting, auditoria e revogação de sessões. O item 3 (backend) foi implementado no PR #160, com Gate E aprovado para a demo; o item 4 (validação) e as experiências web/Android ainda faltam.
+> **Estado:** **parcial** — o ADR 002 (`docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`, PR #138) cobre o threat model, a comparação de TOTP/passkeys/código por e-mail e o desenho de ativação, desafio, códigos de recuperação, dispositivo confiável, desativação, rate limiting, auditoria e revogação de sessões. O item 3 (backend) foi implementado no PR #160 e o cliente Android o consome na v1.3.0, com Gate E aprovado para a demo; falta a interface na central da conta web e a validação final de publicação (Gate I).
 
 1. Elaborar threat model e ADR comparando TOTP, passkeys/WebAuthn e códigos por e-mail.
 2. Projetar ativação, desafio, códigos de recuperação, dispositivo confiável, desativação, recuperação, rate limiting, auditoria e revogação de sessões.

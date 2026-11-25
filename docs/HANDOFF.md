@@ -4,7 +4,7 @@
 >
 > **Data de referência:** 24 de novembro de 2026, com a base `main` em `2544815` (PR #166 mergeado).
 > **Fonte primária:** `docs/CONTEXTO_PROJETO.md` + estado ao vivo do git.
-> **Estado do roadmap:** Fases 1 a 4 concluídas. Na Fase 5, restam a revisão jurídica formal (5.5.b) e domínio/DNS/remetente Brevo (5.8.c). A **Fase 6** foi planejada para incorporar o aplicativo Android nativo em Kotlin, auditar e implementar sua paridade com a web, implementar o 2FA multicliente, validar web/API/Android e publicar com segurança na Google Play. O contrato móvel de orçamentos/propostas para o Android já está **implementado e documentado** (`docs/CONTRATO_ORCAMENTOS.md`, PRs #148–#153). A **2FA** (`docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`) está **Aceita e implementada no backend** (PR #160, Gate E aprovado para a demo); pendem a UI web da central de conta e o ajuste do app Kotlin `ad5cc75` para consumir o `202 twoFactorRequired`. Plano detalhado em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`; o estado de cada gate está na seção "Estado dos gates (Fase 6)" deste documento.
+> **Estado do roadmap:** Fases 1 a 4 concluídas. Na Fase 5, restam a revisão jurídica formal (5.5.b) e domínio/DNS/remetente Brevo (5.8.c). A **Fase 6** foi planejada para incorporar o aplicativo Android nativo em Kotlin, auditar e implementar sua paridade com a web, implementar o 2FA multicliente, validar web/API/Android e publicar com segurança na Google Play. O contrato móvel de orçamentos/propostas para o Android já está **implementado e documentado** (`docs/CONTRATO_ORCAMENTOS.md`, PRs #148–#153). A **2FA** (`docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`) está **Aceita, implementada no backend** (PR #160) e **integrada no app Android v1.3.0** (Gate E aprovado para a demo); falta a UI web da central de conta. Plano detalhado em `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`; o estado de cada gate está na seção "Estado dos gates (Fase 6)" deste documento.
 
 ---
 
@@ -129,27 +129,27 @@ Não há funcionalidade em desenvolvimento numa branch pendente. As Fases 1 a 4 
 
 ### Não implementado / pendente
 
-- Fase 6: o aplicativo Android nativo em Kotlin existe fora desta árvore; seu projeto Android Studio ainda precisa ser disponibilizado, versionado e auditado antes de qualquer afirmação de paridade ou publicação.
-- Fase 6: paridade funcional, matriz de testes e publicação Google Play ainda não foram executados. O contrato de autenticação móvel está publicado no ADR 001 (refresh rotativo implementado no PR #156) e o de orçamentos/propostas em `docs/CONTRATO_ORCAMENTOS.md`; a 2FA está aceita no ADR 002 e implementada no backend (PR #160). O backend móvel está completo para a fase de integração Android (auth, refresh, 2FA, auditoria, orçamentos, favoritos, agenda).
+- Fase 6: o aplicativo Android nativo em Kotlin está versionado no repositório próprio `Renato1909/LensClickApp` (v1.3.0, `ae7ce27`). Os gates técnicos A–F estão fechados com evidência em [`STATUS_GATES.md`](https://github.com/Renato1909/LensClickApp/blob/main/docs/STATUS_GATES.md); restam os gate externos G/H/I e a interface web da 2FA.
+- Fase 6: a paridade funcional no app foi concluída por fatias (auth/conta, descoberta, portfólio, avaliações, mensagens, orçamentos, contratações e pagamentos). O contrato de autenticação móvel está no ADR 001 (refresh rotativo no backend, FORA do contrato do app), o de orçamentos em `docs/CONTRATO_ORCAMENTOS.md` e a 2FA no ADR 002 (backend #160 + app v1.3.0). Falta expor a 2FA na central da conta web.
 - 5.8.c: domínio próprio, DNS e remetente Brevo no domínio.
 - 5.5.b: revisão legal formal dos Termos de Uso e da Política de Privacidade.
-- 2FA backend implementada no PR #160 (ADR 002 Aceito); pendem a UI web da central de conta e o ajuste do app Kotlin (`ad5cc75`) para ler o `challengeToken` do 202 e aceitar 202 no login — hoje o app fabrica o token e cai em `SERVER`.
+- 2FA backend implementada no PR #160 (ADR 002 Aceito) e integrada no app v1.3.0 (HTTP 202, `challengeToken` real e senha digitada na desativação); falta apenas a UI da central da conta web.
 - O rate limiting permanece deliberadamente híbrido: escudo de rajada nativo na edge e políticas longas autoritativas no D1.
 - A suíte de contratos cobre as 61 rotas e os 69 contratos HTTP catalogados e soma 280 testes; apenas os 3 fluxos críticos têm cobertura em navegador real, e testes ponta a ponta com serviços reais permanecem fora do escopo atual.
 - O endpoint `GET /api/health` verifica Worker e D1; o R2 é monitorado pelas rotas reais de imagem para evitar operações artificiais de armazenamento.
 
 ### Estado dos gates (Fase 6)
 
-Fonte do plano: `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`. Status em 24/11/2026:
+Fonte do plano: `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`. Status em 24/11/2026; os detalhes e as evidências do lado Android estão em [`STATUS_GATES.md`](https://github.com/Renato1909/LensClickApp/blob/main/docs/STATUS_GATES.md):
 
-| Gate | Status | Pendência |
+| Gate | Status | Detalhe |
 |---|---|---|
-| A — Android reproduzível | Bloqueador | Projeto Kotlin fora da árvore; decidir monorepo vs. repo próprio e versionar build |
-| B — Auditoria de paridade | Rascunho | `MATRIZ_PARIDADE_ANDROID.md` existe, mas a coluna Android depende do Gate A |
-| C — Contrato móvel | Backend pronto | Validar Keystore/armazenamento seguro e observabilidade no cliente Android |
-| D — Paridade funcional | Pendente | Fatias verticais no app (conta, descoberta, portfólio, avaliações, mensagens) |
-| E — 2FA | Parcial | Backend pronto (#160); falta UI web e o ajuste do app `ad5cc75` (202 + `challengeToken` da resposta) |
-| F — Validação integral | Parcial | Web/API verdes; faltam testes JVM/instrumentados, dispositivo real e relatório por gate |
+| A — Android reproduzível | Fechado | Repo próprio versionado, Gradle 9.3.1, SDK 36/min 24; CI verde em build, lint, JVM e instrumentados API 24/36 |
+| B — Auditoria de paridade | Fechado no app | Matriz do app preenchida; o inventário web `MATRIZ_PARIDADE_ANDROID.md` ainda tem `?` a reconciliar |
+| C — Contrato móvel | Fechado no escopo contratual | Bearer + `AndroidKeystoreSessionStore` (AES-GCM); refresh de sessão fora do contrato atual |
+| D — Paridade funcional | Fechado | Auth, descoberta, portfólio, avaliações, mensagens, orçamentos e contratações/pagamentos (v1.3.0) |
+| E — 2FA | Parcial | Backend (#160) e app v1.3.0 prontos; falta a interface na central da conta web |
+| F — Validação integral | Parcial | Web/API verdes e app com 90 testes JVM + instrumentados no CI; faltam AAB e faixas (Gate I) |
 | G — Domínio e e-mail | Pendente | Registro/DNS, Custom Domain, DKIM/DMARC no Brevo e atualização de URLs |
 | H — Revisão jurídica | Pendente | Parecer formal de Termos e Privacidade (5.5.b) |
 | I — Google Play | Pendente | Console, upload key, AAB, Data safety, faixa interna → teste fechado → lançamento gradual |
@@ -352,7 +352,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 - **Health check mínimo e seguro** — `GET /api/health` executa `SELECT 1` no D1, retorna somente estado genérico e não consulta o R2 para evitar operações artificiais.
 - **Índices orientados pelas consultas reais** — a migration `0005` adicionou índices para listagem, estado e disponibilidade; o índice explícito redundante de `slug` foi removido, preservando o autoíndice da restrição `UNIQUE`.
 - **Roteador declarativo extraído** — o PR #34 criou `src/router.mjs` com as 25 combinações HTTP catalogadas, preservando origem, parâmetros dinâmicos, respostas e entrega de assets.
-- **2FA aceita no ADR 002 e implementada no backend** — o PR #138 registrou a decisão (TOTP RFC 6238 + 10 códigos de recuperação de uso único, opt-in na fase 1 com obrigação para `is_admin` após janela de migração, desafio com TTL de 5 min, dispositivo confiável de 90 dias revogável e desativação que revoga todas as sessões web e móveis). O PR #160 implementou o backend; Passkeys/WebAuthn seguem como evolução futura e código por e-mail/push approval foram rejeitados como fator primário. Gate E aprovado para a demo; faltam UI web e cliente Android.
+- **2FA aceita no ADR 002 e implementada no backend** — o PR #138 registrou a decisão (TOTP RFC 6238 + 10 códigos de recuperação de uso único, opt-in na fase 1 com obrigação para `is_admin` após janela de migração, desafio com TTL de 5 min, dispositivo confiável de 90 dias revogável e desativação que revoga todas as sessões web e móveis). O PR #160 implementou o backend; Passkeys/WebAuthn seguem como evolução futura e código por e-mail/push approval foram rejeitados como fator primário. Gate E aprovado para a demo; o cliente Android está pronto na v1.3.0 e falta a UI web.
 - **Agentes portados para o OpenCode** — os PRs #134 a #136 trouxeram os 11 agentes do Copilot para `.opencode/agents/` com `mode: primary` (selecionáveis no chat), mais o agente `explore`, totalizando 12. O PR #136 foi mergeado como squash vazio, porque o `mode: primary` já havia entrado em `main` pelo PR #135. O PR #140 elevou os 12 para `mode: all`, habilitando também a delegação por subagente, e fixou `default_agent: "arquiteto-de-software"` em `.opencode/opencode.json` — o cliente desktop (v2.1.1) não expõe seletor de agentes, então o default é o que faz o projeto usar seus agentes ali.
 - **Iniciativa A2 de performance** — o PR #137 alinhou o preload do hero à URL real do elemento LCP (`w=1600`), removeu ~2,4 KB de CSS morto, trocou `background-attachment: fixed` por `scroll` em telas ≤880px, normalizou `lang="pt-BR"` e paralelizou as chamadas `/api/account/professional-profile` e `/api/account/portfolio` na central da conta.
 
@@ -362,7 +362,7 @@ Todos os PRs listados abaixo já foram **mergeados** em `main`. Histórico (squa
 
 ### Críticos
 
-1. **2FA sem UI e verificação de e-mail não bloqueante** — a verificação existe, mas a Decisão 18 mantém o login em modo de aviso; contas não verificadas ainda podem entrar. A 2FA está implementada no backend (ADR 002, PR #160), porém sem interface na central da conta e com ajuste pendente no app Kotlin `ad5cc75`. Riscos já assumidos no ADR: segredo TOTP em claro no D1 (runbook de rotação pendente), phishing residual de TOTP e derivas de relógio.
+1. **2FA sem UI web e verificação de e-mail não bloqueante** — a verificação existe, mas a Decisão 18 mantém o login em modo de aviso; contas não verificadas ainda podem entrar. A 2FA está implementada no backend (ADR 002, PR #160) e no app Android v1.3.0, porém sem interface na central da conta web. Riscos já assumidos no ADR: segredo TOTP em claro no D1 (runbook de rotação pendente), phishing residual de TOTP e derivas de relógio.
 2. **Políticas longas ainda usam D1** — o escudo nativo protege rajadas, mas as janelas de 15 minutos e 1 hora continuam em `rate_limits`. A arquitetura é intencional e segura, porém ainda consome D1 nas rotas protegidas.
 
 ### Técnicos
@@ -521,7 +521,7 @@ Prioridades derivadas de `docs/CONTEXTO_PROJETO.md` e `docs/ROADMAP_EVOLUCAO.md`
 
 ### P5 — Segurança (médio/longo prazo, alto risco)
 - Verificação de e-mail no cadastro — concluída em 5.4.a, atualmente em modo de aviso.
-- 2FA opcional — backend implementado no PR #160 (ADR 002); faltam a UI da central da conta, o ajuste do app Kotlin e a decisão sobre obrigatoriedade para administradores.
+- 2FA opcional — backend implementado no PR #160 (ADR 002) e app Android pronto na v1.3.0; faltam a UI da central da conta web e a decisão sobre obrigatoriedade para administradores.
 - Autorização por papel (roles) — resolvida operacionalmente: `is_admin` + `requireAdmin` (5.4.b) e painel de moderação (5.4.c) ativos.
 - Revisão legal formal de termos e política (divulgações LGPD de alta prioridade — PR #89 — e itens de média prioridade — PR #91 — já implementados).
 
@@ -549,7 +549,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 | 24 | 5.8 Produto e presença digital | Média | Parcial — domínio/DNS/e-mail pendentes |
 | 25 | 6.1 Fonte de verdade e diagnóstico Android | Média | Não iniciada — projeto Kotlin ainda externo |
 | 26 | 6.2 Contrato móvel e paridade funcional | Alta | Parcial — contrato de orçamentos/propostas implementado e documentado (PRs #148–#153); demais fatias não iniciadas |
-| 27 | 6.3 Autenticação em duas etapas multicliente | Alta | Parcial — ADR aceito e backend implementado (#160); UI web e cliente Android pendentes |
+| 27 | 6.3 Autenticação em duas etapas multicliente | Alta | Parcial — ADR aceito, backend (#160) e app v1.3.0 prontos; falta a UI web |
 | 28 | 6.4 Validação integral web/API/Android | Alta | Planejada |
 | 29 | 6.5 Publicação Android na Google Play | Média | Não iniciada |
 | 30 | 6.6 Domínio, e-mail e revisão jurídica | Média | Pendente — gate de lançamento |
@@ -564,7 +564,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 3. [6.2] Definir o contrato móvel seguro e implementar paridade por fatias.
 4. [5.8.c/6.6] Escolher o domínio e configurar Cloudflare, DNS e remetente Brevo.
 5. [5.5.b/6.6] Conduzir a revisão jurídica formal em paralelo, concluindo-a antes do lançamento comercial.
-6. [6.3] Concluir o 2FA conforme o ADR 002 (Aceito): o backend e a migration `0018_two_factor.sql` já estão em produção (#160); faltam a UI web da central da conta e o ajuste do app Kotlin `ad5cc75` para aceitar `202` e usar o `challengeToken` da resposta.
+6. [6.3] Concluir o 2FA conforme o ADR 002 (Aceito): backend (#160) e app Android v1.3.0 já estão prontos; falta expor status, enrollment, códigos de recuperação e desativação na central da conta web.
 7. [6.4] Executar a validação integral e corrigir todos os achados críticos/altos.
 8. [6.5] Publicar na faixa interna, teste fechado e lançamento gradual da Google Play.
 ```
@@ -584,7 +584,7 @@ Levantamento concluído em 3 de setembro de 2026, com `main` em `86d3c3f`, a par
 - A iniciativa 5.2 foi concluída integralmente: backup remoto, política formal e restore isolado validados. A dependência crítica da 5.6 está atendida.
 - A iniciativa 5.3 foi concluída: HSTS e CSP foram validados nas respostas públicas, e o teto de cinco sessões foi coberto por testes de isolamento entre usuários.
 - As iniciativas 5.4.a (verificação de e-mail, Decisão 18), 5.4.b (papel administrativo, Decisão 19) e 5.4.c (painel de moderação, Decisão 20) foram concluídas e publicadas. A 5.5.a foi concluída pelo PR #113; a 5.5.b continua pendente por ser revisão legal externa. A 5.6 foi concluída pelos PRs #114/#115, a 5.7 pelos PRs #116/#117 e a 5.8.a/b pelo PR #119. Restam na Fase 5 apenas a revisão jurídica 5.5.b e a configuração de domínio, DNS e e-mail 5.8.c; a próxima iniciativa técnica planejada é a Fase 6.
-- O backend móvel avançou pelos PRs #148 (principal móvel nas rotas de conta), #149 (cadastro móvel), #153 (orçamentos/propostas/agenda/favoritos, migration `0015_budgets.sql`), #152 (códigos de erro estáveis + `docs/CONTRATO_ORCAMENTOS.md`), #155 (`Idempotency-Key`, migration `0016_idempotency_keys.sql`), #156 (refresh rotativo + auditoria `mobile_auth_audit` + bloqueio por conta, migration `0017_mobile_refresh_rotation.sql`) , #160 (2FA TOTP multicliente, migration `0018_two_factor.sql`) e #166 (contratações, migration `0019_engagements.sql`). A suíte cobre 61 rotas / 69 contratos e soma 280 testes. Registros de integração criados para o LensClickApp: `docs/MATRIZ_PARIDADE_ANDROID.md` (Gate B, coluna Android a classificar) e `docs/CONTRATO_MOVEL_ANDROID.md` (guia de consumo do backend).
+- O backend móvel avançou pelos PRs #148 (principal móvel nas rotas de conta), #149 (cadastro móvel), #153 (orçamentos/propostas/agenda/favoritos, migration `0015_budgets.sql`), #152 (códigos de erro estáveis + `docs/CONTRATO_ORCAMENTOS.md`), #155 (`Idempotency-Key`, migration `0016_idempotency_keys.sql`), #156 (refresh rotativo + auditoria `mobile_auth_audit` + bloqueio por conta, migration `0017_mobile_refresh_rotation.sql`) , #160 (2FA TOTP multicliente, migration `0018_two_factor.sql`) e #166 (contratações, migration `0019_engagements.sql`). A suíte cobre 61 rotas / 69 contratos e soma 280 testes. Registros de integração para o LensClickApp: `docs/MATRIZ_PARIDADE_ANDROID.md` (inventário web/API, a reconciliar com a matriz do app), `docs/CONTRATO_MOVEL_ANDROID.md` (guia de consumo do backend) e, no repositório do app, `docs/STATUS_GATES.md` (A–F fechados) e `docs/MATRIZ_PARIDADE.md` (paridade Android).
 
 ---
 
@@ -664,4 +664,4 @@ Use-os para delegar tarefas especializadas durante o desenvolvimento.
 
 ---
 
-**Última atualização deste handoff:** 24 de novembro de 2026, com base `main` em `2544815` (PR #166). Fase 5 encerrada com os gates externos (revisão legal formal e domínio próprio) pendentes; Fase 6 em execução — autenticação móvel, refresh rotativo e 2FA no backend já em produção (#128/#132/#148/#149/#156/#160), contratos Android e seed de demo documentados (#152/#159/#162), convergência visual da web padronizada (#164/#165) e contratações com avaliação validada (#166). Restam a UI web e o cliente Android da 2FA, a paridade funcional, a validação integral, domínio/jurídico e a publicação na Google Play; o detalhamento por gate está na seção "Estado dos gates (Fase 6)".
+**Última atualização deste handoff:** 24 de novembro de 2026, com base `main` em `2544815` (PR #166). Fase 5 encerrada com os gates externos (revisão legal formal e domínio próprio) pendentes; Fase 6 em execução — autenticação móvel, refresh rotativo e 2FA no backend já em produção (#128/#132/#148/#149/#156/#160), contratos Android e seed de demo documentados (#152/#159/#162), convergência visual da web padronizada (#164/#165) e contratações com avaliação validada (#166). O app Android v1.3.0 fechou os gates técnicos A–F; restam a UI web da 2FA, o AAB/faixas da Play e os gates externos de domínio e jurídico; o detalhamento por gate está na seção "Estado dos gates (Fase 6)".

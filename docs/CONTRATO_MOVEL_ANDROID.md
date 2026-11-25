@@ -113,7 +113,7 @@ erros, limites). Pontos de atenção para o cliente Android:
 - `POST /api/photographers/:slug/reviews` (Bearer) **existe** e mantém a regra de verificação: exige um pedido de contato **confirmado pelo fotógrafo** e ainda sem avaliação; sem isso responde `403 {"code":"review_not_eligible"}`. Envie `{rating: 1..5, comment: ≥10 chars}`; a listagem pública devolve `summary.total|average` e `reviews[{id, authorName, rating, comment, createdAt}]` (`clientName` também é enviado para compatibilidade).
 - Fluxo verificado continua disponível: `POST /api/photographers/:slug/review-requests` → fotógrafo `PUT /api/account/review-requests/:id {status:"confirmed"}` → `POST /api/account/review-requests/:id/review`.
 
-**Nota para a demo:** o app `ad5cc75` não envia `Idempotency-Key` e não chama `/refresh`; retries de escrita e renovação proativa não estão ativos no app (o backend suporta ambos). Ver `docs/MATRIZ_PARIDADE_ANDROID.md`.
+**Nota para a demo:** o app Android v1.3.0 ainda não envia `Idempotency-Key` e não chama `/refresh`; retries de escrita e renovação proativa não estão ativos no app (o backend suporta ambos). Ver `docs/MATRIZ_PARIDADE_ANDROID.md`.
 
 ## Limites (por principal, por janela)
 
@@ -180,7 +180,7 @@ Aliases do ADR 002 (`enrollment`/`confirm` e `POST /api/auth/2fa/verify`) també
 
 **Segurança:** desafio de 5 min no D1, 5 tentativas, janela TOTP ±1 passo, códigos de recuperação em SHA-256 e uso único; segredo nunca reaparece em respostas; desativação revoga sessões web + móveis e dispositivos confiáveis; eventos auditados em `two_factor_audit`.
 
-**Ajuste pendente no app Kotlin (`ad5cc75`):** tratar HTTP 202 no login (hoje cai como `SERVER`) e usar o `challengeToken` **da resposta** (hoje o app fabrica `"challenge_"+millis`, que o backend rejeita). Também trocar a senha fixa `senha123` da tela de desativação pela senha real. Ver `docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`.
+**Cliente Android (`LensClickApp` v1.3.0):** os ajustes históricos estão concluídos — HTTP 202 é tratado antes do `ensureSuccess`, o `challengeToken` é lido e validado da resposta, e a desativação envia a senha digitada pelo usuário. Evidência em `Renato1909/LensClickApp/docs/STATUS_GATES.md` (Gate E) e em `docs/ADR_002_AUTENTICACAO_EM_DUAS_ETAPAS.md`.
 
 ## Fora da versão 1 (adiado com risco aceito)
 

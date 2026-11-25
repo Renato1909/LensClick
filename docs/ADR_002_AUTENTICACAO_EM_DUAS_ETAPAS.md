@@ -1,7 +1,7 @@
 # ADR 002 — Autenticação em Duas Etapas Multicliente (2FA)
 
-- **Status:** Aceito e **implementado no backend** em 20/11/2026 (PR #160; Gate E aprovado para a demo da feira do LensClickApp). Fluxo web (UI) permanece pendente; ver item §5 e a ressalva do cliente Android abaixo.
-- **Ressalva do cliente Android (`ad5cc75`):** o ViewModel só reconhece `FORBIDDEN + 202` no login, mas o transporte mapeia 202 para `SERVER`, e o `challengeToken` é **fabricado no cliente** (`"challenge_"+millis`, ~18 chars) em vez de lido da resposta. O backend emite token de 43 chars e valida 40–200 no `verify`: o app precisa aceitar `202 {status:"twoFactorRequired", challengeToken, expiresAt}` e enviar esse token de volta. A UI de desativação envia senha fixa `senha123` — deve pedir a senha real. Sem esse ajuste no app, o fluxo 2FA ainda falha na demo (bloqueio documentado, fora deste repositório).
+- **Status:** Aceito, **implementado no backend** (PR #160) e **integrado no cliente Android** na v1.3.0 do `LensClickApp` (Gate E aprovado para a demo da feira). Falta apenas a interface na central da conta web; ver item §5.
+- **Cliente Android:** os três problemas históricos estão corrigidos e testados — HTTP 202 tratado antes do `ensureSuccess`, `challengeToken` lido e validado da resposta (sem token fabricado) e senha digitada pelo usuário na desativação (sem `senha123` em produção). Evidência: `Renato1909/LensClickApp/docs/STATUS_GATES.md` e `TwoFactorGatewayTest.kt` / `MobileAuthRepositoryTest.kt`.
 - **Data:** 16/10/2026
 - **Iniciativa:** 6.3.1 (Fase 6.3 — produção multicliente)
 - **Relacionado:** `docs/ADR_001_AUTENTICACAO_MOVEL.md` (Bearer opaco revogável, migration `0014_sessions_kind`), Decisões 9, 13, 17 e 18 de `docs/DECISOES_TECNICAS.md`
@@ -58,7 +58,7 @@ Ameaças fora do escopo deste ADR: SIM swap (relevante apenas se e-mail virar fa
 
 ### Contratos previstos (novo catálogo)
 
-Implementados no PR #160 (as rotas em **negrito** são as que o LensClickApp consome em `ad5cc75`). O app usa `setup` (equivalente a `enrollment`), `enable` (equivalente a `confirm`) e `password` (equivalente a `currentPassword`); ambos os nomes são expostos pelo backend para compatibilidade. Respostas incluem `success` (app) e `enabled`/`ok` (ADR) de forma aditiva.
+Implementados no PR #160 (as rotas em **negrito** são as que o LensClickApp consome na v1.3.0). O app usa `setup` (equivalente a `enrollment`), `enable` (equivalente a `confirm`) e `password` (equivalente a `currentPassword`); ambos os nomes são expostos pelo backend para compatibilidade. Respostas incluem `success` (app) e `enabled`/`ok` (ADR) de forma aditiva.
 
 | Rota | Autenticação | Efeito |
 |---|---|---|
@@ -105,7 +105,7 @@ Estados de erro e anatomia de contrato seguem a suíte existente de contratos po
 2. Módulo `src/twofactor.mjs` (enrollment, verificação, códigos, dispositivos) com handlers isolados.
 3. Contratos no catálogo + testes por rota; E2E de três fluxos críticos (ativar, entrar com desafio, entrar com código de recuperação).
 4. Página da central da conta (aba segurança) + tela de desafio pós-login; **i18n completa (os dois catálogos)** e tokens `--lc-*`.
-5. App Android: tela de código e tratamento de `twoFactorRequired` (após Gate A/D — o projeto Kotlin ainda é externo à árvore).
+5. Interface web da central da conta: o cliente Android já concluiu esta etapa; falta expor status, enrollment, confirmação, códigos de recuperação e desativação na web.
 6. Runbook de incidente de segredos + poda do audit no cron.
 
 ## 8. Critérios de aceitação para a implementação
