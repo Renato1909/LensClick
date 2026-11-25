@@ -69,9 +69,7 @@ em claro na saída) ou `--sql` para inspecionar o SQL (contém apenas hashes).
 
 ## Limitações conhecidas para a demo
 
-- **2FA:** o backend já suporta, mas o app `ad5cc75` fabrica o `challengeToken`
-  e trata HTTP 202 como erro — o fluxo 2FA no app só funciona após esse ajuste
-  no Kotlin. As contas demo **não** nascem com 2FA ativo (ver `ADR_002`).
+- **2FA:** backend e app já alinhados (v1.3.0 do `LensClickApp` — HTTP 202 e `challengeToken` reais). As contas demo **não** nascem com 2FA ativo; a ativação é opcional na tela da conta do app (ver `ADR_002` e `STATUS_GATES.md` do app). A central web ainda não expõe o fluxo.
 - O app não envia `Idempotency-Key` nem chama `/api/mobile/auth/refresh`;
   retry seguro e renovação proativa ficam para a próxima iteração do app.
 - Seed não cria imagens no R2: o perfil/portfólio aparecem sem foto.

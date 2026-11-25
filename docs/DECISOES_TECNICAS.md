@@ -377,7 +377,7 @@ A autenticação é implementada com os seguintes componentes:
 ### Consequências
 
 - **Benefícios:** senhas protegidas com salt individual, sessões revogáveis, cookie protegido contra XSS, recuperação de senha por token de uso único, runtime compatível.
-- **Limitações:** a verificação de e-mail opera em modo de aviso; a 2FA existe no backend (ADR 002, PR #160), mas ainda sem interface web e com ajuste pendente no app Kotlin; o rate limiting é híbrido, com escudo de rajada nativo na edge e política de janela longa no D1.
+- **Limitações:** a verificação de e-mail opera em modo de aviso; a 2FA existe no backend (ADR 002, PR #160) e no app v1.3.0, mas ainda sem interface web; o rate limiting é híbrido, com escudo de rajada nativo na edge e política de janela longa no D1.
 - **Pontos futuros:** o roadmap recomenda revisar periodicamente a expiração e a rotação de sessões, além de evoluir a política de 2FA (obrigatoriedade para administradores) e o bloqueio de login para contas não verificadas.
 
 ### Status
@@ -558,7 +558,7 @@ A segurança é implementada com os seguintes controles **já em produção**:
 
 - **Benefícios:** defesa em profundidade, privacidade por design, segredos fora do código, cabeçalhos de segurança, rate limit básico.
 - **Limitações conhecidas de segurança**:
-  - a 2FA está implementada no backend (ADR 002, PR #160), mas ainda sem UI web e com ajuste pendente no app Kotlin;
+  - a 2FA está implementada no backend (ADR 002, PR #160) e no app v1.3.0, mas ainda sem UI web;
   - a verificação de e-mail existe em modo de aviso, não bloqueante;
   - o rate limiting é híbrido: bindings nativos na edge protegem contra rajadas e o D1 mantém as políticas longas autoritativas;
   - termos e política precisam de revisão institucional antes de uso comercial;
