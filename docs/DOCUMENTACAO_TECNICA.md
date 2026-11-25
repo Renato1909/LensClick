@@ -46,7 +46,7 @@ A aplicacao utiliza uma arquitetura serverless na Cloudflare:
 
 - Agendamentos, pagamentos ou galerias de entrega.
 - Aplicativo Android incorporado à fonte de verdade: o app Kotlin existe fora desta árvore, mas paridade, autenticação móvel, testes e publicação ainda não foram auditados.
-- Autenticação em duas etapas para web e Android.
+- Autenticação em duas etapas no backend para web e Android (ADR 002, PR #160); faltam a interface web e o ajuste do app Kotlin.
 - Dominio personalizado (configuracao da 5.8.c ainda pendente).
 - Revisão jurídica formal dos Termos e da Política antes da publicação comercial.
 
@@ -760,7 +760,7 @@ A privacidade tem prioridade sobre uma URL publica simples. A foto privada passa
 
 - 5.5.b: revisão legal formal dos Termos de Uso e da Política de Privacidade, externa ao código e condição para publicação comercial.
 - 5.8.c: domínio próprio, DNS e remetente Brevo no domínio.
-- Fase 6: incorporar o projeto Android Studio em Kotlin, auditar paridade, definir autenticação móvel, implementar 2FA, validar e publicar na Google Play.
+- Fase 6: incorporar o projeto Android Studio em Kotlin, auditar paridade, concluir a 2FA do ADR 002 (backend pronto; faltam UI web e app Kotlin), validar e publicar na Google Play. O estado dos gates está em `docs/HANDOFF.md`.
 - Plano detalhado: `docs/PLANO_ANDROID_VALIDACAO_PUBLICACAO.md`.
 
 ### Prioridade media

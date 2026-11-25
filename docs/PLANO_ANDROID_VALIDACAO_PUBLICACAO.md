@@ -2,6 +2,7 @@
 
 > Plano de execução da Fase 6 do LensClick.
 > Escopo: aplicativo Android nativo em Kotlin, desenvolvido no Android Studio; paridade com a plataforma web; autenticação em duas etapas; validação integral; Google Play; domínio próprio; e revisão jurídica.
+> **Estado atual dos gates:** ver `docs/HANDOFF.md`, seção "Estado dos gates (Fase 6)".
 
 ---
 

@@ -154,11 +154,11 @@ Fluxo oficial (em `CONTRIBUTING.md`):
 ## 9. Banco de dados
 
 - **Cloudflare D1** (`lensclick-db`), binding `DB`.
-- **26 tabelas:** `users`, `sessions`, `password_reset_tokens`, `email_verification_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`, `budget_requests`, `proposals`, `favorites`, `budget_audit`, `idempotency_keys`, `mobile_auth_audit`, `two_factor_challenges`, `two_factor_recovery_codes`, `two_factor_trusted_devices`, `two_factor_audit`.
+- **Tabelas** (catálogo em `db/schema.ts`): `users`, `sessions`, `password_reset_tokens`, `email_verification_tokens`, `contact_messages`, `newsletter_subscriptions`, `rate_limits`, `professional_profiles`, `portfolio_items`, `review_requests`, `reviews`, `review_audit`, `conversations`, `messages`, `monitor_state`, `monitor_minute_buckets`, `budget_requests`, `proposals`, `favorites`, `budget_audit`, `idempotency_keys`, `mobile_auth_audit`, `two_factor_challenges`, `two_factor_recovery_codes`, `two_factor_trusted_devices`, `two_factor_audit`, `engagements`, `engagement_events`.
 - **PRAGMA foreign_keys=ON**; FKs com `ON DELETE CASCADE`.
 - **Statements preparados** com `.bind()` — nunca concatene SQL.
-- **Migrações** em `migrations/` (`0001`–`0018`), imutáveis. Nova alteração = `0019_*.sql`.
-- **`db/schema.ts` está sincronizado** na versão 18 e lista as 26 tabelas das migrações `0001`–`0018`. **As migrações continuam sendo a fonte de verdade.**
+- **Migrações** em `migrations/`, imutáveis; nova alteração recebe o próximo prefixo sequencial.
+- **`db/schema.ts` está sincronizado** com a última migration publicada e lista todas as tabelas. **As migrações continuam sendo a fonte de verdade.**
 - **Índices** em colunas de leitura frequente para reduzir consumo do plano gratuito.
 
 Modelo detalhado (MER/DER/dicionário): `docs/DOCUMENTACAO_TECNICA.md` seção 8.
@@ -241,13 +241,13 @@ Use o agente adequado à natureza da tarefa. Para mudanças transversais, comece
 
 Pontos que exigem atenção especial ou estão em débito técnico conhecido:
 
-- **Sincronia do catálogo de schema** — `db/schema.ts` está alinhado às migrações `0001`–`0013`; mudanças futuras devem atualizar o catálogo no mesmo PR, preservando as **migrações** como fonte de verdade.
+- **Sincronia do catálogo de schema** — `db/schema.ts` está alinhado às migrações publicadas; mudanças futuras devem atualizar o catálogo no mesmo PR, preservando as **migrações** como fonte de verdade.
 - **Helpers compartilhados permanecem em `src/worker.mjs`** — a iniciativa 4.2 extraiu todos os handlers de domínio (blocos legados removidos no PR #82); o worker mantém formatters, sessão, rate limiting, cache de edge e SSR como ponto de composição.
 - **Aliases visuais legados** (`--accent-2`, `--bg-*`, `--muted` etc.) — o lote principal (`--accent-1`, `--text`, `--radius`, `--shadow`) foi migrado para `--lc-*` na 5.7; o restante segue como débito documentado.
 - **Termos de Uso e Política de Privacidade** — pendentes de revisão institucional antes de publicação comercial.
 - **Aplicativo Android externo à árvore atual** — precisa ser incorporado ao Git, auditado contra a matriz web/API e validado antes da Google Play.
 - **Domínio próprio e e-mail institucional** — escolha/registro, Custom Domain Cloudflare e autenticação Brevo permanecem pendentes e são gates da Fase 6.
-- **2FA multicliente** — ainda não implementado; qualquer entrega deve compartilhar política e estado no backend para web e Android.
+- **2FA multicliente** — implementada no backend (ADR 002, PR #160); faltam a interface web e o ajuste do app Android. Qualquer entrega deve compartilhar política e estado no backend para web e Android.
 - **Auth git remoto no ambiente Windows** — pode estar indisponível; comandos git sensíveis podem precisar do usuário.
 
 Lista completa de débitos: `docs/CONTEXTO_PROJETO.md` (seção de débitos) e `docs/HANDOFF.md` (riscos).

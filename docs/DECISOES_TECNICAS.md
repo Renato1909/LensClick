@@ -377,8 +377,8 @@ A autenticação é implementada com os seguintes componentes:
 ### Consequências
 
 - **Benefícios:** senhas protegidas com salt individual, sessões revogáveis, cookie protegido contra XSS, recuperação de senha por token de uso único, runtime compatível.
-- **Limitações:** não existe segundo fator de autenticação (2FA); não existe verificação de e-mail; o rate limiting é híbrido, com escudo de rajada nativo na edge e política de janela longa no D1.
-- **Pontos futuros:** o roadmap recomenda revisar periodicamente a expiração e a rotação de sessões, além de considerar 2FA e verificação de e-mail.
+- **Limitações:** a verificação de e-mail opera em modo de aviso; a 2FA existe no backend (ADR 002, PR #160), mas ainda sem interface web e com ajuste pendente no app Kotlin; o rate limiting é híbrido, com escudo de rajada nativo na edge e política de janela longa no D1.
+- **Pontos futuros:** o roadmap recomenda revisar periodicamente a expiração e a rotação de sessões, além de evoluir a política de 2FA (obrigatoriedade para administradores) e o bloqueio de login para contas não verificadas.
 
 ### Status
 
@@ -558,16 +558,16 @@ A segurança é implementada com os seguintes controles **já em produção**:
 
 - **Benefícios:** defesa em profundidade, privacidade por design, segredos fora do código, cabeçalhos de segurança, rate limit básico.
 - **Limitações conhecidas de segurança**:
-  - não existe segundo fator de autenticacao (2FA);
-  - não existe verificação de e-mail;
+  - a 2FA está implementada no backend (ADR 002, PR #160), mas ainda sem UI web e com ajuste pendente no app Kotlin;
+  - a verificação de e-mail existe em modo de aviso, não bloqueante;
   - o rate limiting é híbrido: bindings nativos na edge protegem contra rajadas e o D1 mantém as políticas longas autoritativas;
   - termos e política precisam de revisão institucional antes de uso comercial;
-  - papéis `client` e `photographer` são dados de perfil, ainda não autorizam áreas diferentes.
-- **Pontos futuros:** o roadmap recomenda rotação periódica de segredos, auditoria trimestral e 2FA/verificação de e-mail. O `'unsafe-inline'` restante em `style-src` deve ser removido apenas após migrar os estilos inline sem regressão visual.
+  - `client` e `photographer` seguem como dados de perfil; a autorização administrativa usa `is_admin` + `requireAdmin` (Decisões 19 e 20).
+- **Pontos futuros:** o roadmap recomenda rotação periódica de segredos, auditoria trimestral, evolução da política de 2FA e decisão sobre bloqueio de login para contas não verificadas. O `'unsafe-inline'` restante em `style-src` deve ser removido apenas após migrar os estilos inline sem regressão visual.
 
 ### Status
 
-**Ativa.** HSTS, CSP de scripts e teto de sessões validados em produção; revisável para 2FA e verificação de e-mail.
+**Ativa.** HSTS, CSP de scripts e teto de sessões validados em produção; revisável para a política de 2FA e para o modo de verificação de e-mail.
 
 ---
 
@@ -741,7 +741,7 @@ O LensClick já emitia cabeçalhos de segurança e mantinha sessões revogáveis
 ### Consequências
 
 - **Benefícios:** HSTS e CSP consistentes em todas as páginas, scripts externos auditáveis e limite previsível de sessões por conta.
-- **Limitações:** HSTS só protege após o primeiro acesso HTTPS; `style-src` ainda permite estilos inline; não há 2FA nem verificação de e-mail.
+- **Limitações:** HSTS só protege após o primeiro acesso HTTPS; `style-src` ainda permite estilos inline; a 2FA está no backend (ADR 002) e a verificação de e-mail é não bloqueante.
 - **Operação:** alterações futuras na CSP devem manter `src/worker.mjs` e `public/_headers` sincronizados e cobertos por testes.
 
 ### Status
@@ -781,7 +781,7 @@ Contas podiam ser criadas com e-mail não verificado, sem confirmação de titul
 ### Consequências
 
 - **Benefícios:** titularidade confirmável, base para moderação (5.4.b/c) e portabilidade LGPD (5.5).
-- **Limitações:** sem bloqueio, contas não verificadas continuam operando; sem 2FA; sem papel administrativo.
+- **Limitações:** sem bloqueio, contas não verificadas continuam operando; a 2FA está no backend (ADR 002), mas sem UI web; o papel administrativo está ativo (Decisões 19 e 20).
 - **Operação:** expiração e uso único cobertos por testes; falha de entrega do Brevo gera `email.verification.delivery_failed`.
 
 ### Status
@@ -952,11 +952,11 @@ O único workflow validava sem publicar; deploys manuais via `wrangler deploy` v
 | 6 | Migrações versionadas e imutáveis | Ativa |
 | 7 | Pull Requests obrigatórios | Ativa |
 | 8 | Squash merge e proteção estrita de `main` | Ativa |
-| 9 | Autenticação por sessões, PBKDF2 e Web Crypto | Ativa (revisável para 2FA) |
+| 9 | Autenticação por sessões, PBKDF2 e Web Crypto | Ativa (2FA no backend — ADR 002) |
 | 10 | i18n por catálogos com `lang.js`/`window.i18n` | Ativa |
 | 11 | Design System com tokens `--lc-*` | Ativa (aliases temporários) |
 | 12 | Agentes especializados do Copilot | Ativa |
-| 13 | Segurança: R2 privado, validação, proteção de dados | Ativa (revisável para 2FA) |
+| 13 | Segurança: R2 privado, validação, proteção de dados | Ativa (2FA no backend — ADR 002) |
 | 14 | Roadmap técnico como documento vivo | Ativa (revisável trimestralmente) |
 | 15 | Variantes de imagem on-demand (Cloudflare Images) | Ativa |
 | 16 | Backup automático do D1 com retenção de 30 dias | Ativa e validada |
@@ -985,6 +985,6 @@ O único workflow validava sem publicar; deploys manuais via `wrangler deploy` v
 
 Estes pontos **não são decisões tomadas** — são candidatos a formalização conforme o produto evolui:
 
-- **Segundo fator de autenticacao (2FA)**: hoje não existe; formalizar o mecanismo (TOTP, SMS, e-mail) quando for priorizado.
-- **Papéis como autorização**: `client`/`photographer` seguem como dados de perfil; a autorização administrativa foi formalizada na Decisão 19 (`is_admin` + `requireAdmin`). O painel de moderação (5.4.c) segue pendente.
+- **Política de obrigatoriedade da 2FA**: o mecanismo já está formalizado no ADR 002 (TOTP + códigos de recuperação) e implementado no backend; falta decidir a janela de obrigatoriedade para administradores e a experiência web/Android.
+- **Papéis como autorização**: `client`/`photographer` seguem como dados de perfil; a autorização administrativa foi formalizada na Decisão 19 (`is_admin` + `requireAdmin`). O painel de moderação (5.4.c) já está em produção.
 - **Domínio personalizado**: listado como prioridade média; a decisão sobre o domínio e a configuração ainda não está formalizada.
